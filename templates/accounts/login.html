@@ -1,0 +1,84 @@
+{% extends "layouts/base-auth.html" %}
+{% load static %}
+
+{% block title %}Login{% endblock title %}
+
+{% block content %}
+
+<div class="auth-main"
+     style="
+        background: url('{% static 'assets/images/UCCI_051.jpg' %}') center/cover no-repeat;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+     ">
+
+    <!-- Overlay escuro para leitura -->
+    <div style="
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        backdrop-filter: blur(2px);
+    "></div>
+
+    <div class="auth-wrapper v1" style="position: relative; z-index: 5;">
+      <div class="auth-form">
+        <div class="position-relative my-5">
+
+          <div class="card mb-0 shadow-lg" style="border-radius: 18px;">
+            <form method="post" class="card-body p-4">
+              {% csrf_token %}
+
+              <!-- LOGO -->
+              <div class="text-center mb-3">
+                <img src="{% static 'assets/images/Logo SCME.png' %}"
+                     alt="logo"
+                     style="width: 90px; height: 90px; object-fit: contain;">
+              </div>
+
+              <h3 class="text-center fw-bold text-dark mb-4">Acesso UCCI</h3>
+
+              <!-- Erros globais -->
+              {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                  <div class="alert alert-danger py-1">{{ error }}</div>
+                {% endfor %}
+              {% endif %}
+
+              <!-- Campos -->
+              {% for field in form %}
+                <div class="form-group mb-3">
+                  <label class="form-label fw-semibold text-dark">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.errors %}
+                    <div class="text-danger small">{{ field.errors }}</div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+
+              <div class="d-flex mt-1 justify-content-between align-items-center">
+                <div class="form-check">
+                  <input class="form-check-input input-primary" type="checkbox" id="rememberMe" checked="">
+                  <label class="form-check-label text-muted" for="rememberMe">Lembrar-me</label>
+                </div>
+                <a href="{% url 'password_reset' %}" class="link-light">Recuperar senha</a>
+              </div>
+
+              <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary px-5 py-2">
+                  Entrar
+                </button>
+              </div>
+
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+</div>
+
+{% endblock content %}

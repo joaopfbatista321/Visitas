@@ -1,0 +1,63 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Registos externos</h2>
+      <a href="{% url 'visitas:registar_entrada_externo' %}" class="btn btn-primary">
+        Registar entrada externa
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-body table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Empresa</th>
+              <th>Tipo</th>
+              <th>Destino</th>
+              <th>Entrada</th>
+              <th>Saída</th>
+              <th style="width: 150px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for e in externos %}
+            <tr>
+              <td>{{ e.nome }}</td>
+              <td>{{ e.empresa|default:"-" }}</td>
+              <td>{{ e.get_tipo_externo_display }}</td>
+              <td>{{ e.destino|default:"-" }}</td>
+              <td>{{ e.data_hora_entrada|date:"d/m/Y H:i" }}</td>
+              <td>
+                {% if e.data_hora_saida %}
+                  {{ e.data_hora_saida|date:"d/m/Y H:i" }}
+                {% else %}
+                  <span class="text-danger">Em curso</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                {% if e.em_curso %}
+                  <a href="{% url 'visitas:registar_saida_externo' e.pk %}" class="btn btn-sm btn-outline-danger">
+                    Registar saída
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center">Nenhum registo externo.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

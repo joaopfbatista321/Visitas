@@ -1,0 +1,56 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <h2 class="mb-3">
+      {% if visitante %}Editar visitante{% else %}Novo visitante{% endif %}
+    </h2>
+
+    <div class="card">
+      <div class="card-body">
+
+        <form method="post">
+          {% csrf_token %}
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                {{ form.nome.label_tag }}
+                {{ form.nome }}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                {{ form.documento_identificacao.label_tag }}
+                {{ form.documento_identificacao }}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                {{ form.telefone.label_tag }}
+                {{ form.telefone }}
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="mb-3">
+                {{ form.parentesco.label_tag }}
+                {{ form.parentesco }}
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-success">Guardar</button>
+          <a href="{% url 'visitas:lista_visitantes' %}" class="btn btn-secondary">Voltar</a>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

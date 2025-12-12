@@ -1,0 +1,191 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">{{ utente.nome }}</h2>
+      <div>
+        {% if utente.ativo %}
+        <a href="{% url 'visitas:saida_utente' utente.pk %}" class="btn btn-danger btn-sm">
+          Dar alta / Registar saída
+        </a>
+        {% endif %}
+        <a href="{% url 'visitas:editar_utente' utente.pk %}" class="btn btn-warning btn-sm">Editar utente</a>
+        <a href="{% url 'visitas:registar_visita_utente' utente.pk %}" class="btn btn-primary btn-sm">Registar visita</a>
+      </div>
+    </div>
+
+    {% if utente.visitas_restritas %}
+    <div class="alert alert-danger">
+      <strong>⚠ ATENÇÃO:</strong> Este utente tem visitas restritas.
+      {% if utente.alerta_visitas %}
+        <br>{{ utente.alerta_visitas }}
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- INFORMAÇÕES DO UTENTE -->
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">Informações do Utente</h5>
+      </div>
+
+      <div class="card-body">
+
+        <div class="row">
+          <div class="col-md-6">
+            <p><strong>N.º Processo:</strong> {{ utente.numero_processo }}</p>
+            <p><strong>N.º Utente SNS:</strong> {{ utente.numero_utente_sns|default:"-" }}</p>
+            <p><strong>Género:</strong> {{ utente.get_genero_display|default:"-" }}</p>
+            <p><strong>Tipo de Internamento:</strong> {{ utente.get_tipo_internamento_display|default:"-" }}</p>
+          </div>
+
+          <div class="col-md-6">
+            <p><strong>Data de nascimento:</strong>
+              {% if utente.data_nascimento %}
+                {{ utente.data_nascimento|date:"d/m/Y" }}
+                {% if utente.idade %}
+                  — <strong>{{ utente.idade }} anos</strong>
+                {% endif %}
+              {% else %}
+                -
+              {% endif %}
+            </p>
+
+            <p><strong>Quarto:</strong> {{ utente.quarto|default:"-" }}</p>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+          <div class="col-md-4">
+            <p><strong>Entrada:</strong> {{ utente.data_entrada|date:"d/m/Y" }}</p>
+          </div>
+
+          <div class="col-md-4">
+            <p><strong>Data prevista de saída:</strong>
+              {{ utente.data_prevista_saida|date:"d/m/Y"|default:"-" }}
+            </p>
+          </div>
+
+          <div class="col-md-4">
+            <p><strong>Saída:</strong>
+              {% if utente.data_saida %}
+                {{ utente.data_saida|date:"d/m/Y" }}
+              {% else %}
+                <span class="text-success fw-bold">Ainda internado</span>
+              {% endif %}
+            </p>
+          </div>
+        </div>
+
+        <!-- Tipo de Alta -->
+        <p><strong>Tipo de Alta:</strong>
+        {% if utente.tipo_alta %}
+            {{ utente.get_tipo_alta_display }}
+        {% else %}
+            -
+        {% endif %}
+        </p>
+
+        <!-- Transferência -->
+        {% if utente.tipo_alta == "TRANSFERENCIA" %}
+        <p>
+        <strong>Transferido para:</strong>
+        {{ utente.transferido_para|default:"(não indicado)" }}
+        </p>
+        {% endif %}
+        <p>
+          <strong>Duração do internamento:</strong>
+          {% if utente.duracao_internamento %}
+            {% if utente.data_saida %}
+              {{ utente.duracao_internamento }} dias
+            {% else %}
+              Internamento em curso ({{ utente.duracao_internamento }} dias)
+            {% endif %}
+          {% else %}
+            -
+          {% endif %}
+        </p>
+
+        <hr>
+
+        <p><strong>Observações:</strong><br>{{ utente.observacoes|linebreaksbr|default:"-" }}</p>
+
+      </div>
+    </div>
+
+    <!-- VISITAS -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">Visitas deste utente</h5>
+      </div>
+
+      <div class="card-body table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Entrada</th>
+              <th>Saída</th>
+              <th>Duração</th>
+              <th>Visitante</th>
+              <th>Tipo</th>
+              <th>Parentesco</th>
+              <th>Motivo</th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for v in visitas %}
+            <tr>
+              <td>{{ v.data_hora_entrada|date:"d/m/Y H:i" }}</td>
+
+              <td>
+                {% if v.data_hora_saida %}
+                  {{ v.data_hora_saida|date:"d/m/Y H:i" }}
+                {% else %}
+                  <span class="text-danger">Em curso</span>
+                {% endif %}
+              </td>
+
+              <!-- DURAÇÃO CORRETA (v.duracao_horas_minutos) -->
+              <td>
+                {% if v.duracao_horas_minutos %}
+                  {{ v.duracao_horas_minutos }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+
+              <td>{{ v.nome_visitante }}</td>
+              <td>{{ v.get_tipo_visitante_display }}</td>
+              <td>{{ v.parentesco|default:"-" }}</td>
+              <td>{{ v.motivo|default:"-" }}</td>
+
+              <td class="text-end">
+                {% if v.em_curso %}
+                  <a href="{% url 'visitas:registar_saida_visita' v.pk %}" class="btn btn-sm btn-outline-danger">
+                    Registar saída
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+
+            {% empty %}
+            <tr>
+              <td colspan="8" class="text-center">Sem visitas registadas.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

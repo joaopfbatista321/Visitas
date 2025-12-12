@@ -1,0 +1,76 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <h2 class="mb-3">Relatório de visitas</h2>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <form method="get" class="row g-3">
+          <div class="col-md-4">
+            <label for="id_data_inicio" class="form-label">Data início</label>
+            <input type="date" id="id_data_inicio" name="data_inicio"
+                   class="form-control" value="{{ data_inicio }}">
+          </div>
+          <div class="col-md-4">
+            <label for="id_data_fim" class="form-label">Data fim</label>
+            <input type="date" id="id_data_fim" name="data_fim"
+                   class="form-control" value="{{ data_fim }}">
+          </div>
+          <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary me-2">Filtrar</button>
+            <a href="{% url 'visitas:visitas_relatorio' %}" class="btn btn-secondary">Limpar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Entrada</th>
+              <th>Saída</th>
+              <th>Utente</th>
+              <th>Visitante</th>
+              <th>Tipo</th>
+              <th>Motivo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if visitas %}
+              {% for v in visitas %}
+              <tr>
+                <td>{{ v.data_hora_entrada|date:"d/m/Y H:i" }}</td>
+                <td>
+                  {% if v.data_hora_saida %}
+                    {{ v.data_hora_saida|date:"d/m/Y H:i" }}
+                  {% else %}
+                    <span class="text-danger">Em curso</span>
+                  {% endif %}
+                </td>
+                <td>{{ v.utente.nome }}</td>
+                <td>{{ v.nome_visitante }}</td>
+                <td>{{ v.get_tipo_visitante_display }}</td>
+                <td>{{ v.motivo|default:"-" }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="text-center">Sem visitas no período.</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" class="text-center">Selecione um intervalo de datas.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

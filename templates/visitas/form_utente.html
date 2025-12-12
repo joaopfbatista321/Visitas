@@ -1,0 +1,25 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <h2 class="mb-3">
+      {% if utente %}Editar utente{% else %}Novo utente{% endif %}
+    </h2>
+
+    <div class="card">
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          {{ form.as_p }}
+
+          <button type="submit" class="btn btn-success">Guardar</button>
+          <a href="{% url 'visitas:lista_utentes' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

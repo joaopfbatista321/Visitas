@@ -1,0 +1,153 @@
+{% load i18n static admin_datta %}
+
+<nav class="pc-sidebar">
+  <div class="navbar-wrapper">
+    <div class="m-header">
+      <a href="{% url 'index' %}" class="b-brand text-primary">
+        <div style="display: flex; align-items: center;">
+          <img src="{% static 'assets/images/Logo SCME.png' %}"
+               alt="logo"
+               style="width: 60px; height: 60px; object-fit: contain;">
+
+          <span style="
+                margin-left: 20px;
+                color: white;
+                font-weight: normal;
+                font-size: 60px;
+                position: relative;
+                top: 5px;
+            ">
+            UCCI
+          </span>
+        </div>
+      </a>
+    </div>
+
+    <div class="navbar-content">
+      <ul class="pc-navbar">
+
+        {% if request.user.is_superuser %}
+        <li class="pc-item pc-caption">
+          <label>Administração</label>
+          <i data-feather="shield"></i>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'admin:index' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="settings"></i></span>
+            <span class="pc-mtext">Painel Admin</span>
+          </a>
+        </li>
+        {% endif %}
+
+        <!-- Dashboard Geral -->
+        <li class="pc-item pc-caption">
+          <label>Aplicação</label>
+          <i data-feather="grid"></i>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'index' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="home"></i></span>
+            <span class="pc-mtext">Dashboard geral</span>
+          </a>
+        </li>
+
+        <!-- Gestão de Visitas -->
+        <li class="pc-item pc-caption">
+          <label>Gestão de Visitas</label>
+          <i data-feather="user-check"></i>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'visitas:dashboard_visitas' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="activity"></i></span>
+            <span class="pc-mtext">Dashboard visitas</span>
+          </a>
+        </li>
+
+        <!-- Utentes -->
+        <li class="pc-item pc-hasmenu">
+          <a href="#!" class="pc-link">
+            <span class="pc-micon"><i data-feather="users"></i></span>
+            <span class="pc-mtext">Utentes</span>
+            <span class="pc-arrow"><i class="ti ti-chevron-right"></i></span>
+          </a>
+          <ul class="pc-submenu">
+            <li class="pc-item">
+              <a href="{% url 'visitas:lista_utentes' %}" class="pc-link">Listar utentes</a>
+            </li>
+            <li class="pc-item">
+              <a href="{% url 'visitas:criar_utente' %}" class="pc-link">Novo utente</a>
+            </li>
+          </ul>
+        </li>
+
+        <!-- Registo de Visitas -->
+        <li class="pc-item pc-caption">
+          <label>Registo de Visitas</label>
+          <i data-feather="log-in"></i>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'visitas:escolher_utente_para_visita' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="user-plus"></i></span>
+            <span class="pc-mtext">Registar nova visita</span>
+          </a>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'visitas:visitas_ativas' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="log-out"></i></span>
+            <span class="pc-mtext">Registar saída de visita</span>
+          </a>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'visitas:visitas_hoje' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="sunrise"></i></span>
+            <span class="pc-mtext">Visitas de hoje</span>
+          </a>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'visitas:visitas_relatorio' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="calendar"></i></span>
+            <span class="pc-mtext">Relatório de visitas</span>
+          </a>
+        </li>
+
+        <!-- Externos -->
+        <li class="pc-item pc-caption">
+          <label>Externos / Serviços</label>
+          <i data-feather="briefcase"></i>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'visitas:lista_externos' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="users"></i></span>
+            <span class="pc-mtext">Entradas externas</span>
+          </a>
+        </li>
+
+        <li class="pc-item">
+          <a href="{% url 'visitas:registar_entrada_externo' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="log-in"></i></span>
+            <span class="pc-mtext">Nova entrada externa</span>
+          </a>
+        </li>
+
+        <!-- Logout -->
+        {% if request.user.is_authenticated %}
+        <li class="pc-item">
+          <a href="{% url 'logout' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="log-out"></i></span>
+            <span class="pc-mtext">Logout</span>
+          </a>
+        </li>
+        {% endif %}
+
+      </ul>
+    </div>
+  </div>
+</nav>

@@ -1,0 +1,183 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Utentes</h2>
+      <a href="{% url 'visitas:criar_utente' %}" class="btn btn-primary">
+        Novo utente
+      </a>
+    </div>
+
+    <!-- Filtros e Pesquisa -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label mb-1">Pesquisar</label>
+            <input
+              type="text"
+              name="q"
+              value="{{ q }}"
+              class="form-control"
+              placeholder="Nome, N.º processo, quarto..."
+            >
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label mb-1 d-block">Estado</label>
+            <div class="btn-group" role="group">
+              <button type="submit" name="estado" value="ativos"
+                      class="btn btn-sm {% if estado == 'ativos' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Ativos
+              </button>
+              <button type="submit" name="estado" value="inativos"
+                      class="btn btn-sm {% if estado == 'inativos' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Inativos
+              </button>
+              <button type="submit" name="estado" value="todos"
+                      class="btn btn-sm {% if estado == 'todos' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                Todos
+              </button>
+            </div>
+          </div>
+
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-secondary w-100">
+              Aplicar
+            </button>
+          </div>
+
+          <div class="col-md-2">
+            <a href="{% url 'visitas:lista_utentes' %}" class="btn btn-light w-100">
+              Limpar
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Legenda das cores -->
+    <div class="mb-2 small">
+      <span class="badge bg-success me-2">Linha verde = utente ativo</span>
+      <span class="badge bg-secondary">Linha cinzenta = utente inativo</span>
+    </div>
+
+    <div class="card">
+      <div class="card-body table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>N.º Processo</th>
+              <th>Quarto</th>
+              <th>Entrada</th>
+              <th>Saída</th>
+              <th>Estado</th>
+              <th style="width: 220px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in page_obj %}
+            <tr class="{% if u.ativo %}table-success{% else %}table-secondary{% endif %}">
+              <td>{{ u.nome }}</td>
+              <td>{{ u.numero_processo }}</td>
+              <td>{{ u.quarto|default:"-" }}</td>
+              <td>{{ u.data_entrada|date:"d/m/Y" }}</td>
+              <td>
+                {% if u.data_saida %}
+                  {{ u.data_saida|date:"d/m/Y" }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td>
+                {% if u.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-dark">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'visitas:detalhe_utente' u.pk %}"
+                   class="btn btn-sm btn-outline-primary me-1">
+                  Ver
+                </a>
+
+                {% if u.ativo %}
+                  <a href="{% url 'visitas:saida_utente' u.pk %}"
+                     class="btn btn-sm btn-outline-danger">
+                    Saída
+                  </a>
+                {% else %}
+                  <button class="btn btn-sm btn-outline-secondary" disabled>
+                    Já saiu
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center">Nenhum utente encontrado.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginação -->
+      {% if page_obj.paginator.num_pages > 1 %}
+      <div class="card-footer">
+        <nav aria-label="Page navigation">
+          <ul class="pagination mb-0 justify-content-center">
+
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?page={{ page_obj.previous_page_number }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}">
+                «
+              </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">«</span>
+            </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+              {% if num == page_obj.number %}
+                <li class="page-item active">
+                  <span class="page-link">{{ num }}</span>
+                </li>
+              {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
+                <li class="page-item">
+                  <a class="page-link"
+                     href="?page={{ num }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}">{{ num }}</a>
+                </li>
+              {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link"
+                 href="?page={{ page_obj.next_page_number }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}">
+                »
+              </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">»</span>
+            </li>
+            {% endif %}
+
+          </ul>
+        </nav>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

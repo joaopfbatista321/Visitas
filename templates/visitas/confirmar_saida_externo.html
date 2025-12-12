@@ -1,0 +1,30 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <h2 class="mb-3">Registar saída de externo</h2>
+
+    <div class="card">
+      <div class="card-body">
+        <p>
+          Confirmar saída de <strong>{{ externo.nome }}</strong>
+          {% if externo.empresa %} ({{ externo.empresa }}){% endif %}
+          ?
+        </p>
+        <p>
+          Entrada em {{ externo.data_hora_entrada|date:"d/m/Y H:i" }}.
+        </p>
+
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">Confirmar saída agora</button>
+          <a href="{% url 'visitas:lista_externos' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

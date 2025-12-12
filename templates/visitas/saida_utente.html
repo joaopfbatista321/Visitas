@@ -1,0 +1,120 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="page-header">
+      <div class="page-block">
+        <h4 class="page-title">
+          Saída / Alta de <strong>{{ utente.nome }}</strong>
+        </h4>
+        <p class="text-muted mb-0">
+          N.º processo: {{ utente.numero_processo }}
+          {% if utente.quarto %} | Quarto: {{ utente.quarto }}{% endif %}
+        </p>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8 mx-auto">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Confirmar alta / saída do utente</h5>
+          </div>
+
+          <div class="card-body">
+
+            <!-- Informação superior -->
+            <div class="mb-3">
+              <p class="mb-1"><strong>Data de entrada:</strong> {{ utente.data_entrada|date:"d/m/Y" }}</p>
+
+              {% if utente.data_prevista_saida %}
+              <p class="mb-1">
+                <strong>Data prevista de saída:</strong> {{ utente.data_prevista_saida|date:"d/m/Y" }}
+              </p>
+              {% endif %}
+
+              {% if utente.data_saida %}
+              <p class="text-danger mb-1">
+                <strong>⚠ Este utente já tem saída registada:</strong>
+                {{ utente.data_saida|date:"d/m/Y" }}
+              </p>
+              {% endif %}
+            </div>
+
+            <hr>
+
+            <!-- FORM -->
+            <form method="POST">
+              {% csrf_token %}
+              {{ form.non_field_errors }}
+
+              <!-- DATA DE SAÍDA -->
+              <div class="mb-3">
+                <label class="form-label">Data de saída</label>
+                {{ form.data_saida }}
+                {% if form.data_saida.errors %}
+                  <div class="text-danger small">{{ form.data_saida.errors }}</div>
+                {% endif %}
+              </div>
+
+              <!-- TIPO DE ALTA -->
+              <div class="mb-3">
+                <label class="form-label">Tipo de alta</label>
+                {{ form.tipo_alta }}
+                {% if form.tipo_alta.errors %}
+                  <div class="text-danger small">{{ form.tipo_alta.errors }}</div>
+                {% endif %}
+              </div>
+
+              <!-- TRANSFERIDO PARA -->
+              <div class="mb-3" id="campo_transferencia" style="display: none;">
+                <label class="form-label">Para onde foi transferido?</label>
+                {{ form.transferido_para }}
+                {% if form.transferido_para.errors %}
+                  <div class="text-danger small">{{ form.transferido_para.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mt-4 d-flex justify-content-between">
+                <a href="{% url 'visitas:detalhe_utente' utente.pk %}" class="btn btn-secondary">
+                  Cancelar
+                </a>
+                <button type="submit" class="btn btn-danger">Confirmar saída</button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Mostrar/esconder campo de transferência conforme o tipo selecionado
+  function atualizarTransferencia() {
+    const tipoAlta = document.querySelector("select[name='tipo_alta']");
+    const campo = document.getElementById("campo_transferencia");
+
+    if (!tipoAlta) return;
+
+    if (tipoAlta.value === "TRANSFERENCIA") {
+      campo.style.display = "block";
+    } else {
+      campo.style.display = "none";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", atualizarTransferencia);
+
+  const tipoAltaSelect = document.querySelector("select[name='tipo_alta']");
+  if (tipoAltaSelect) {
+    tipoAltaSelect.addEventListener("change", atualizarTransferencia);
+  }
+</script>
+
+{% endblock %}

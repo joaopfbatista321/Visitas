@@ -1,0 +1,137 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="page-header">
+      <div class="page-block">
+        <h4 class="page-title">
+          Registar Visita para <strong>{{ utente.nome }}</strong>
+        </h4>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-8 mx-auto">
+
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Nova Visita</h5>
+          </div>
+
+          <div class="card-body">
+
+            {# ALERTA SE O UTENTE TIVER VISITAS RESTRITAS #}
+            {% if utente.visitas_restritas %}
+              <div class="alert alert-danger">
+                <strong>Atenção:</strong> este utente tem visitas restritas.<br>
+                {% if utente.alerta_visitas %}
+                  {{ utente.alerta_visitas|linebreaksbr }}
+                {% else %}
+                  Confirme as regras de visita antes de autorizar a entrada.
+                {% endif %}
+              </div>
+            {% endif %}
+
+            <form method="POST">
+              {% csrf_token %}
+              {{ form.non_field_errors }}
+
+              <div class="mb-3">
+                <label class="form-label">Tipo de visitante</label>
+                {{ form.tipo_visitante }}
+                {% if form.tipo_visitante.errors %}
+                  <div class="text-danger small">{{ form.tipo_visitante.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Nome do visitante</label>
+                {{ form.nome_visitante }}
+                {% if form.nome_visitante.errors %}
+                  <div class="text-danger small">{{ form.nome_visitante.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Documento de identificação</label>
+                {{ form.documento_identificacao }}
+                {% if form.documento_identificacao.errors %}
+                  <div class="text-danger small">{{ form.documento_identificacao.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Telefone</label>
+                {{ form.telefone }}
+                {% if form.telefone.errors %}
+                  <div class="text-danger small">{{ form.telefone.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Parentesco com o utente</label>
+                {{ form.parentesco }}
+                {% if form.parentesco.help_text %}
+                  <div class="form-text">{{ form.parentesco.help_text }}</div>
+                {% endif %}
+                {% if form.parentesco.errors %}
+                  <div class="text-danger small">{{ form.parentesco.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Data e hora de entrada</label>
+                  {{ form.data_hora_entrada }}
+                  {% if form.data_hora_entrada.errors %}
+                    <div class="text-danger small">{{ form.data_hora_entrada.errors }}</div>
+                  {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Data e hora de saída</label>
+                  {{ form.data_hora_saida }}
+                  {% if form.data_hora_saida.errors %}
+                    <div class="text-danger small">{{ form.data_hora_saida.errors }}</div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Motivo da visita</label>
+                {{ form.motivo }}
+                {% if form.motivo.errors %}
+                  <div class="text-danger small">{{ form.motivo.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+                {% if form.observacoes.errors %}
+                  <div class="text-danger small">{{ form.observacoes.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mt-4 text-end">
+                <a href="{% url 'visitas:detalhe_utente' utente.pk %}" class="btn btn-secondary">
+                  Cancelar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                  Registar Visita
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

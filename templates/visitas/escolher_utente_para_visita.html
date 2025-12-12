@@ -1,0 +1,59 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Escolher utente para registar visita</h2>
+      <a href="{% url 'visitas:criar_utente' %}" class="btn btn-sm btn-primary">
+        Novo utente
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-body table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>N.º processo</th>
+              <th>Quarto</th>
+              <th>Estado</th>
+              <th style="width: 150px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in utentes %}
+            <tr>
+              <td>{{ u.nome }}</td>
+              <td>{{ u.numero_processo }}</td>
+              <td>{{ u.quarto|default:"-" }}</td>
+              <td>
+                {% if u.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{% url 'visitas:registar_visita_utente' u.id %}" class="btn btn-sm btn-outline-primary">
+                  Registar visita
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center">
+                Não há utentes ativos para registar visitas.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Dashboard UCCI{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div class="page-block">
+        <div class="row align-items-center">
+          <div class="col-md-12">
+            <div class="page-header-title">
+              <h4 class="mb-0">Dashboard UCCI</h4>
+            </div>
+            <p class="text-muted mb-0">Resumo da atividade diária da Unidade</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === CARDS PRINCIPAIS === -->
+    <div class="row">
+
+      <div class="col-md-4">
+        <div class="card bg-primary text-white">
+          <div class="card-body">
+            <h5>Utentes Ativos</h5>
+            <h2 class="fw-bold">{{ total_utentes_ativos }}</h2>
+            <p class="mb-0">Atualmente internados</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card bg-success text-white">
+          <div class="card-body">
+            <h5>Visitas Hoje</h5>
+            <h2 class="fw-bold">{{ visitas_hoje }}</h2>
+            <p class="mb-0">Entradas registadas hoje</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card bg-danger text-white">
+          <div class="card-body">
+            <h5>Visitas em Curso</h5>
+            <h2 class="fw-bold">{{ visitas_em_curso }}</h2>
+            <p class="mb-0">Visitantes ainda dentro da unidade</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- === GRÁFICO MOVIMENTOS 30 DIAS === -->
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5>Entradas e Saídas (Últimos 30 dias)</h5>
+          </div>
+          <div class="card-body">
+            <div id="chart-movimentos" style="height: 300px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- === PRÓXIMAS ALTAS === -->
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5>Internamentos a terminar (próximos 5 dias)</h5>
+          </div>
+          <div class="card-body">
+            {% if proximas_altas %}
+              <ul class="list-group">
+                {% for u in proximas_altas %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>{{ u.nome }}</strong><br>
+                      Prevista: {{ u.data_prevista_saida|date:"d/m/Y" }}
+                    </div>
+                    <a href="{% url 'visitas:detalhe_utente' u.pk %}" class="btn btn-outline-primary btn-sm">Abrir</a>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0">Nenhuma alta prevista.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === VISITAS EM CURSO === -->
+    <div class="row mt-4">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <h5>Visitas em Curso</h5>
+          </div>
+          <div class="card-body">
+            {% if lista_visitas_em_curso %}
+              <div class="table-responsive">
+                <table class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Visitante</th>
+                      <th>Utente</th>
+                      <th>Entrada</th>
+                      <th>Duração</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for v in lista_visitas_em_curso %}
+                      <tr>
+                        <td>{{ v.nome_visitante }}</td>
+                        <td>{{ v.utente.nome }}</td>
+                        <td>{{ v.data_hora_entrada|date:"H:i d/m/Y" }}</td>
+                        <td>{{ v.duracao_horas_minutos|default:"-" }}</td>
+                        <td class="text-end">
+                          <a href="{% url 'visitas:registar_saida_visita' v.pk %}"
+                             class="btn btn-danger btn-sm">Registar saída</a>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted mb-0">Nenhuma visita em curso.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock content %}
+
+
+{% block extra_js %}
+<script src="{% static 'assets/js/plugins/apexcharts.min.js' %}"></script>
+
+<script>
+var options = {
+  chart: { type: 'line', height: 250 },
+  series: [
+    { name: "Entradas", data: {{ grafico_entradas|safe }} },
+    { name: "Saídas", data: {{ grafico_saidas|safe }} }
+  ],
+  xaxis: { categories: {{ grafico_dias|safe }} }
+};
+
+new ApexCharts(document.querySelector("#chart-movimentos"), options).render();
+</script>
+{% endblock extra_js %}

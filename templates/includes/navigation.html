@@ -1,0 +1,128 @@
+{% load static %}
+
+<header class="pc-header">
+  <div class="header-wrapper">
+
+    <!-- [Mobile / Sidebar] -->
+    <div class="me-auto pc-mob-drp">
+      <ul class="list-unstyled mb-0 d-flex align-items-center">
+
+        <!-- Botão para esconder/mostrar sidebar (desktop) -->
+        <li class="pc-h-item pc-sidebar-collapse">
+          <a href="#" class="pc-head-link ms-0" id="sidebar-hide">
+            <i data-feather="menu"></i>
+          </a>
+        </li>
+
+        <!-- Botão para menu mobile -->
+        <li class="pc-h-item pc-sidebar-popup">
+          <a href="#" class="pc-head-link ms-0" id="mobile-collapse">
+            <i data-feather="menu"></i>
+          </a>
+        </li>
+
+        <!-- Pesquisa simples (opcional) -->
+        <li class="dropdown pc-h-item">
+          <a
+            class="pc-head-link dropdown-toggle arrow-none m-0 trig-drp-search"
+            data-bs-toggle="dropdown"
+            href="#"
+            role="button"
+            aria-haspopup="false"
+            aria-expanded="false"
+          >
+            <i data-feather="search"></i>
+          </a>
+          <div class="dropdown-menu pc-h-dropdown drp-search">
+            <form class="px-3 py-2">
+              <input
+                type="search"
+                class="form-control border-0 shadow-none"
+                placeholder="Procurar..."
+              />
+            </form>
+          </div>
+        </li>
+
+      </ul>
+    </div>
+
+    <!-- [User / Login] -->
+    <div class="ms-auto">
+      <ul class="list-unstyled mb-0 d-flex align-items-center">
+
+        <li class="dropdown pc-h-item header-user-profile">
+          <a
+            class="pc-head-link dropdown-toggle arrow-none me-0"
+            data-bs-toggle="dropdown"
+            href="#"
+            role="button"
+            aria-haspopup="false"
+            data-bs-auto-close="outside"
+            aria-expanded="false"
+          >
+            <i data-feather="user"></i>
+          </a>
+
+          <div class="dropdown-menu dropdown-user-profile dropdown-menu-end pc-h-dropdown p-0 overflow-hidden">
+            <!-- Cabeçalho com info do utilizador -->
+            <div class="dropdown-header d-flex align-items-center justify-content-between bg-primary">
+              <div class="d-flex my-2">
+                <div class="flex-shrink-0">
+                  <img
+                    src="{% static 'assets/images/user/avatar-2.jpg' %}"
+                    alt="user-image"
+                    class="user-avtar wid-35"
+                  />
+                </div>
+                <div class="flex-grow-1 ms-3">
+                  {% if request.user.is_authenticated %}
+                    <h6 class="text-white mb-1">
+                      {{ request.user.get_full_name|default:request.user.username }}
+                    </h6>
+                    {% if request.user.email %}
+                      <span class="text-white text-opacity-75">
+                        {{ request.user.email }}
+                      </span>
+                    {% endif %}
+                  {% else %}
+                    <h6 class="text-white mb-1">Utilizador não autenticado</h6>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Corpo do dropdown -->
+            <div class="dropdown-body">
+              <div
+                class="profile-notification-scroll position-relative"
+                style="max-height: calc(100vh - 225px)"
+              >
+                <div class="d-grid my-2 px-3 pb-3">
+                  {% if request.user.is_authenticated %}
+                    <a href="{% url 'logout' %}" class="btn btn-primary">
+                      <svg class="pc-icon me-2">
+                        <use xlink:href="#custom-logout-1-outline"></use>
+                      </svg>
+                      Terminar sessão
+                    </a>
+                  {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary">
+                      <svg class="pc-icon me-2">
+                        <use xlink:href="#custom-logout-1-outline"></use>
+                      </svg>
+                      Iniciar sessão
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </li>
+
+      </ul>
+    </div>
+
+  </div>
+</header>

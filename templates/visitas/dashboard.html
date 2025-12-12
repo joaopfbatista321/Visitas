@@ -1,0 +1,332 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <h2 class="mb-3">Dashboard de Visitas e Internamentos</h2>
+
+    <!-- FILTRO POR ANO -->
+    <form method="get" class="row g-2 mb-4">
+      <div class="col-md-4">
+        <label class="form-label">Ano</label>
+        <select name="ano" class="form-select">
+          <option value="">-- Todos os anos --</option>
+          {% for a in anos_disponiveis %}
+          <option value="{{ a }}" {% if ano|default_if_none:'' == a|stringformat:"s" %}selected{% endif %}>
+            {{ a }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4 d-flex align-items-end">
+        <button class="btn btn-primary w-100">Filtrar</button>
+      </div>
+    </form>
+
+    <p class="text-muted">
+      Ano em análise:
+      <strong>
+        {% if ano %}
+          {{ ano }}
+        {% else %}
+          Todos
+        {% endif %}
+      </strong>
+    </p>
+
+    <!-- 1) CARTÕES DE VISITAS -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Visitas hoje (no ano filtrado)</h5>
+            <p class="display-6">{{ visitas_hoje }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Visitas últimos 7 dias</h5>
+            <p class="display-6">{{ visitas_semana }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Visitas em curso</h5>
+            <p class="display-6">{{ visitas_ativas }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2) CARTÕES DE INTERNAMENTOS -->
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Utentes admitidos (período)</h5>
+            <p class="display-6">{{ utentes_total }}</p>
+            <small class="text-muted">
+              Ativos: {{ utentes_ativos }} | Inativos: {{ utentes_inativos }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">{{ admissoes_label }}</h5>
+            <p class="display-6">{{ admissoes_30 }}</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Altas (período)</h5>
+            <p class="display-6">{{ altas_total }}</p>
+            <small class="text-muted d-block">
+              Normais: {{ altas_normal }} | Transf.: {{ altas_transferencia }}<br>
+              Óbito: {{ altas_obito }} | Perda vaga: {{ altas_perda_vaga }}
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <div class="card text-center">
+          <div class="card-body">
+            <h5 class="card-title">Médias</h5>
+            <p class="mb-1">
+              <strong>Idade:</strong>
+              {% if idade_media_global %}{{ idade_media_global }} anos{% else %}-{% endif %}
+            </p>
+            <p class="mb-0">
+              <strong>Duração internamento:</strong>
+              {% if duracao_media_internamento %}{{ duracao_media_internamento }} dias{% else %}-{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3) TABELA VISITAS POR DIA -->
+    <div class="card mb-4">
+      <div class="card-body table-responsive">
+        <h5 class="card-title">Visitas por dia (últimos 7 dias)</h5>
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Total de visitas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in visitas_por_dia %}
+            <tr>
+              <td>{{ row.day|date:"d/m/Y" }}</td>
+              <td>{{ row.total }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="2" class="text-center">Sem registos nos últimos dias.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 4) TABELA: INTERNAMENTO x TIPO DE ALTA -->
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <div class="card h-100">
+          <div class="card-body table-responsive">
+            <h5 class="card-title">Admissões e altas por tipologia de internamento</h5>
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Tipologia</th>
+                  <th>Utentes</th>
+                  <th>Alta</th>
+                  <th>Transferência</th>
+                  <th>Óbito</th>
+                  <th>Perda de vaga</th>
+                  <th>Total altas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in tabela_internamento %}
+                <tr>
+                  <td>{{ row.label }}</td>
+                  <td>{{ row.total }}</td>
+                  <td>{{ row.altas_normal }}</td>
+                  <td>{{ row.altas_transferencia }}</td>
+                  <td>{{ row.altas_obito }}</td>
+                  <td>{{ row.altas_perda_vaga }}</td>
+                  <td><strong>{{ row.total_altas }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center">Sem dados de internamentos.</td>
+                </tr>
+                {% endfor %}
+
+                <!-- TOTAL GLOBAL -->
+                <tr class="table-dark">
+                  <th>Total Geral</th>
+                  <th>{{ tabela_internamento_total.total }}</th>
+                  <th>{{ tabela_internamento_total.altas_normal }}</th>
+                  <th>{{ tabela_internamento_total.altas_transferencia }}</th>
+                  <th>{{ tabela_internamento_total.altas_obito }}</th>
+                  <th>{{ tabela_internamento_total.altas_perda_vaga }}</th>
+                  <th><strong>{{ tabela_internamento_total.total_altas }}</strong></th>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5) TABELA: GÉNERO -->
+      <div class="col-md-4">
+        <div class="card h-100">
+          <div class="card-body table-responsive">
+            <h5 class="card-title">Distribuição por género</h5>
+            <table class="table table-sm mb-0">
+              <thead>
+                <tr>
+                  <th>Género</th>
+                  <th>Utentes</th>
+                  <th>Idade média</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in tabela_genero %}
+                <tr>
+                  <td>{{ row.label }}</td>
+                  <td>{{ row.total }}</td>
+                  <td>
+                    {% if row.media_idade %}
+                      {{ row.media_idade }} anos
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="3" class="text-center">Sem dados de género.</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6) GRÁFICOS (ALTAS / GÉNERO) -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Altas por tipo</h5>
+            <div id="chart-altas-tipo"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Utentes por género</h5>
+            <div id="chart-genero"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7) GRÁFICO MENSAL: ADMISSÕES x ALTAS -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <h5 class="card-title">Admissões vs Altas (por mês)</h5>
+        <div id="chart-mensal"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/plugins/apexcharts.min.js' %}"></script>
+<script>
+  // Dados vindos do Django
+  const altasLabels = {{ chart_altas_labels|safe }};
+  const altasValues = {{ chart_altas_values|safe }};
+
+  const generoLabels = {{ chart_genero_labels|safe }};
+  const generoValues = {{ chart_genero_values|safe }};
+
+  const mesesLabels = {{ meses_labels|safe }};
+  const admissoesValues = {{ admissoes_values|safe }};
+  const altasMesValues = {{ altas_values_month|safe }};
+
+  // Gráfico: Altas por tipo (bar)
+  const optionsAltas = {
+    chart: {
+      type: 'bar',
+      height: 280
+    },
+    series: [{
+      name: 'Altas',
+      data: altasValues
+    }],
+    xaxis: {
+      categories: altasLabels
+    }
+  };
+  new ApexCharts(document.querySelector("#chart-altas-tipo"), optionsAltas).render();
+
+  // Gráfico: Utentes por género (pie)
+  const optionsGenero = {
+    chart: {
+      type: 'pie',
+      height: 280
+    },
+    labels: generoLabels,
+    series: generoValues
+  };
+  new ApexCharts(document.querySelector("#chart-genero"), optionsGenero).render();
+
+  // Gráfico: Admissões vs Altas por mês (line)
+  const optionsMensal = {
+    chart: {
+      type: 'line',
+      height: 320
+    },
+    series: [
+      {
+        name: 'Admissões',
+        data: admissoesValues
+      },
+      {
+        name: 'Altas',
+        data: altasMesValues
+      }
+    ],
+    xaxis: {
+      categories: mesesLabels
+    }
+  };
+  new ApexCharts(document.querySelector("#chart-mensal"), optionsMensal).render();
+</script>
+{% endblock %}
