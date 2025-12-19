@@ -1,0 +1,101 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <!-- HEADER PADRÃO -->
+    <div class="page-header mb-3">
+      <div class="page-block">
+        <div class="row align-items-center">
+          <div class="col-md-12">
+            <div class="page-header-title">
+              <h4 class="mb-0">
+                Editar isolamento
+              </h4>
+            </div>
+            <p class="text-muted mb-0">
+              {{ utente.nome }} — {{ isolamento.get_tipo_display }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORM -->
+    <div class="row">
+      <div class="col-md-8 mx-auto">
+
+        <div class="card">
+          <div class="card-body">
+
+            <form method="post">
+              {% csrf_token %}
+              {{ form.non_field_errors }}
+
+              <div class="mb-3">
+                <label class="form-label">Tipo de isolamento</label>
+                {{ form.tipo }}
+                {% if form.tipo.errors %}
+                  <div class="text-danger small">
+                    {{ form.tipo.errors }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Data e hora de início</label>
+                {{ form.data_inicio }}
+                {% if form.data_inicio.errors %}
+                  <div class="text-danger small">
+                    {{ form.data_inicio.errors }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Motivo</label>
+                {{ form.motivo }}
+                {% if form.motivo.errors %}
+                  <div class="text-danger small">
+                    {{ form.motivo.errors }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Observações</label>
+                {{ form.observacoes }}
+              </div>
+
+              <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'visitas:detalhe_utente' utente.pk %}"
+                   class="btn btn-secondary">
+                  Cancelar
+                </a>
+
+                <div class="d-flex gap-1">
+                  {% if isolamento.ativo %}
+                    <a href="{% url 'visitas:terminar_isolamento' isolamento.pk %}"
+                       class="btn btn-outline-danger">
+                      Terminar isolamento
+                    </a>
+                  {% endif %}
+
+                  <button type="submit" class="btn btn-primary">
+                    Guardar alterações
+                  </button>
+                </div>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

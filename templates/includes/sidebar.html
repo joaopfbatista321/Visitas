@@ -53,6 +53,14 @@
           </a>
         </li>
 
+        <li class="pc-item">
+          <a href="{% url 'acessos_rapidos' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="external-link"></i></span>
+            <span class="pc-mtext">Acessos rápidos</span>
+          </a>
+        </li>
+        
+
         <!-- Gestão de Visitas -->
         <li class="pc-item pc-caption">
           <label>Gestão de Visitas</label>
@@ -79,6 +87,12 @@
             </li>
             <li class="pc-item">
               <a href="{% url 'visitas:criar_utente' %}" class="pc-link">Novo utente</a>
+            </li>
+            <li class="pc-item">
+              <a href="{% url 'visitas:isolamentos_ativos' %}" class="pc-link">
+                <span class="pc-micon"><i data-feather="alert-triangle"></i></span>
+                <span class="pc-mtext">Isolamentos ativos</span>
+              </a>
             </li>
           </ul>
         </li>

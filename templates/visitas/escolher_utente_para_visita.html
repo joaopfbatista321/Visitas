@@ -11,14 +11,74 @@
       </a>
     </div>
 
+    <!-- Filtro / Pesquisa -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label mb-1">Pesquisar utente</label>
+            <input type="text"
+                   name="q"
+                   value="{{ q }}"
+                   class="form-control"
+                   placeholder="Nome, N.º processo, quarto...">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label mb-1">Ordenar por</label>
+            <select name="ordenar" class="form-control">
+              <option value="nome" {% if ordenar == 'nome' %}selected{% endif %}>Nome</option>
+              <option value="numero_processo" {% if ordenar == 'numero_processo' %}selected{% endif %}>N.º processo</option>
+              <option value="quarto" {% if ordenar == 'quarto' %}selected{% endif %}>Quarto</option>
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label mb-1">Direção</label>
+            <select name="direcao" class="form-control">
+              <option value="asc" {% if direcao == 'asc' %}selected{% endif %}>Ascendente</option>
+              <option value="desc" {% if direcao == 'desc' %}selected{% endif %}>Descendente</option>
+            </select>
+          </div>
+
+          <div class="col-md-1">
+            <button type="submit" class="btn btn-outline-secondary w-100">
+              OK
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-body table-responsive">
         <table class="table table-hover mb-0">
           <thead>
             <tr>
-              <th>Nome</th>
-              <th>N.º processo</th>
-              <th>Quarto</th>
+              <th>
+                <a href="?ordenar=nome&direcao={% if ordenar == 'nome' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  Nome
+                  {% if ordenar == 'nome' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?ordenar=numero_processo&direcao={% if ordenar == 'numero_processo' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  N.º processo
+                  {% if ordenar == 'numero_processo' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?ordenar=quarto&direcao={% if ordenar == 'quarto' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  Quarto
+                  {% if ordenar == 'quarto' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
               <th>Estado</th>
               <th style="width: 150px;"></th>
             </tr>

@@ -20,7 +20,15 @@
           </div>
           <div class="col-md-4 d-flex align-items-end">
             <button type="submit" class="btn btn-primary me-2">Filtrar</button>
-            <a href="{% url 'visitas:visitas_relatorio' %}" class="btn btn-secondary">Limpar</a>
+            <a href="{% url 'visitas:visitas_relatorio' %}" class="btn btn-secondary me-2">Limpar</a>
+
+            {# BOTÃO EXPORTAR PDF (só quando há datas) #}
+            {% if data_inicio and data_fim and visitas %}
+              <a href="{% url 'visitas:visitas_relatorio_pdf' %}?data_inicio={{ data_inicio }}&data_fim={{ data_fim }}"
+                 class="btn btn-outline-danger">
+                Exportar PDF
+              </a>
+            {% endif %}
           </div>
         </form>
       </div>

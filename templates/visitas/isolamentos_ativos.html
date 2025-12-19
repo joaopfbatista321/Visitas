@@ -1,0 +1,104 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Isolamentos Ativos</h2>
+
+      <form method="get" class="d-flex" style="gap:10px;">
+        <input class="form-control"
+               name="q"
+               value="{{ q }}"
+               placeholder="Pesquisar utente, processo, quarto...">
+        <button class="btn btn-outline-primary" type="submit">
+          Pesquisar
+        </button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-body table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
+            <tr>
+              <th>Utente</th>
+              <th>Tipo</th>
+              <th>Quarto</th>
+              <th>Piso</th>
+              <th>Início</th>
+              <th>Motivo</th>
+              <th>Observações</th>
+              <th style="width: 180px;"></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for i in isolamentos %}
+              <tr>
+                <td>
+                  <strong>{{ i.utente.nome }}</strong><br>
+                  <small class="text-muted">
+                    Proc. {{ i.utente.numero_processo }}
+                  </small>
+                </td>
+
+                <td>
+                  <span class="badge bg-danger">
+                    {{ i.get_tipo_display }}
+                  </span>
+                </td>
+
+                <td>{{ i.utente.quarto|default:"-" }}</td>
+
+                <td>
+                  {% if i.utente.quarto and i.utente.quarto.piso %}
+                    Piso {{ i.utente.quarto.piso }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+
+                <td>{{ i.data_inicio|date:"d/m/Y H:i" }}</td>
+
+                <td>{{ i.motivo|default:"-" }}</td>
+
+                <td style="max-width: 250px;">
+                  {% if i.observacoes %}
+                    <small class="text-muted">
+                      {{ i.observacoes|linebreaksbr }}
+                    </small>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="{% url 'visitas:detalhe_utente' i.utente.pk %}">
+                    Abrir
+                  </a>
+
+                  <a class="btn btn-sm btn-outline-danger"
+                     href="{% url 'visitas:terminar_isolamento' i.pk %}">
+                    Terminar
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center">
+                  Sem isolamentos ativos.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -12,6 +12,7 @@
             <tr>
               <th>Entrada</th>
               <th>Utente</th>
+              <th>Piso</th>
               <th>Visitante</th>
               <th>Tipo</th>
               <th>Motivo</th>
@@ -22,10 +23,21 @@
             {% for v in visitas %}
             <tr>
               <td>{{ v.data_hora_entrada|date:"d/m/Y H:i" }}</td>
+
               <td>{{ v.utente.nome }}</td>
+
+              <td>
+                {% if v.utente.quarto and v.utente.quarto.piso %}
+                  Piso {{ v.utente.quarto.piso }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+
               <td>{{ v.nome_visitante }}</td>
               <td>{{ v.get_tipo_visitante_display }}</td>
               <td>{{ v.motivo|default:"-" }}</td>
+
               <td class="text-end">
                 <a href="{% url 'visitas:registar_saida_visita' v.pk %}"
                    class="btn btn-sm btn-outline-danger">
@@ -35,7 +47,7 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="6" class="text-center">Não há visitas em curso.</td>
+              <td colspan="7" class="text-center">Não há visitas em curso.</td>
             </tr>
             {% endfor %}
           </tbody>

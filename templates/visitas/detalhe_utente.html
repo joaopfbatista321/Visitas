@@ -4,26 +4,92 @@
 <div class="pc-container">
   <div class="pc-content">
 
+    <!-- TÍTULO + AÇÕES -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="mb-0">{{ utente.nome }}</h2>
-      <div>
+
+      <div class="d-flex gap-1">
         {% if utente.ativo %}
-        <a href="{% url 'visitas:saida_utente' utente.pk %}" class="btn btn-danger btn-sm">
-          Dar alta / Registar saída
-        </a>
+          <a href="{% url 'visitas:saida_utente' utente.pk %}" class="btn btn-danger btn-sm">
+            Dar alta / Registar saída
+          </a>
         {% endif %}
-        <a href="{% url 'visitas:editar_utente' utente.pk %}" class="btn btn-warning btn-sm">Editar utente</a>
-        <a href="{% url 'visitas:registar_visita_utente' utente.pk %}" class="btn btn-primary btn-sm">Registar visita</a>
+
+        <a href="{% url 'visitas:editar_utente' utente.pk %}" class="btn btn-warning btn-sm">
+          Editar utente
+        </a>
+
+        {% if is_financeiro %}
+          <a href="{% url 'visitas:financeiro_utente' utente.pk %}"
+            class="btn btn-outline-success btn-sm">
+            Financeiro
+          </a>
+        {% endif %}
+
+
+        <a href="{% url 'visitas:registar_visita_utente' utente.pk %}" class="btn btn-primary btn-sm">
+          Registar visita
+        </a>
+
+        {% if not utente.isolamento_ativo %}
+          <a href="{% url 'visitas:criar_isolamento' utente.pk %}"
+             class="btn btn-outline-danger btn-sm">
+            Registar isolamento
+          </a>
+        {% endif %}
       </div>
     </div>
 
+    <!-- ALERTA VISITAS RESTRITAS -->
     {% if utente.visitas_restritas %}
-    <div class="alert alert-danger">
-      <strong>⚠ ATENÇÃO:</strong> Este utente tem visitas restritas.
-      {% if utente.alerta_visitas %}
-        <br>{{ utente.alerta_visitas }}
-      {% endif %}
-    </div>
+      <div class="alert alert-danger">
+        <strong>⚠ ATENÇÃO:</strong> Este utente tem visitas restritas.
+        {% if utente.alerta_visitas %}
+          <br>{{ utente.alerta_visitas }}
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <!-- ALERTA ISOLAMENTO -->
+    {% if utente.isolamento_ativo %}
+      <div class="alert alert-warning border border-danger">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <strong>🛑 UTENTE EM ISOLAMENTO</strong><br>
+
+            <span class="badge bg-danger">
+              {{ utente.isolamento_ativo.get_tipo_display }}
+            </span>
+
+            <div class="mt-2 small">
+              <strong>Início:</strong>
+              {{ utente.isolamento_ativo.data_inicio|date:"d/m/Y H:i" }}<br>
+
+              {% if utente.isolamento_ativo.motivo %}
+                <strong>Motivo:</strong> {{ utente.isolamento_ativo.motivo }}<br>
+              {% endif %}
+
+              {% if utente.isolamento_ativo.observacoes %}
+                <strong>Obs.:</strong>
+                {{ utente.isolamento_ativo.observacoes|linebreaksbr }}
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="d-flex flex-column gap-1">
+            <a href="{% url 'visitas:editar_isolamento' utente.isolamento_ativo.pk %}"
+              class="btn btn-sm btn-outline-primary">
+              Editar isolamento
+            </a>
+
+            <a href="{% url 'visitas:terminar_isolamento' utente.isolamento_ativo.pk %}"
+              class="btn btn-sm btn-outline-danger">
+              Terminar isolamento
+            </a>
+          </div>
+
+        </div>
+      </div>
     {% endif %}
 
     <!-- INFORMAÇÕES DO UTENTE -->
@@ -46,9 +112,7 @@
             <p><strong>Data de nascimento:</strong>
               {% if utente.data_nascimento %}
                 {{ utente.data_nascimento|date:"d/m/Y" }}
-                {% if utente.idade %}
-                  — <strong>{{ utente.idade }} anos</strong>
-                {% endif %}
+                {% if utente.idade %} — <strong>{{ utente.idade }} anos</strong>{% endif %}
               {% else %}
                 -
               {% endif %}
@@ -82,30 +146,9 @@
           </div>
         </div>
 
-        <!-- Tipo de Alta -->
-        <p><strong>Tipo de Alta:</strong>
-        {% if utente.tipo_alta %}
-            {{ utente.get_tipo_alta_display }}
-        {% else %}
-            -
-        {% endif %}
-        </p>
-
-        <!-- Transferência -->
-        {% if utente.tipo_alta == "TRANSFERENCIA" %}
-        <p>
-        <strong>Transferido para:</strong>
-        {{ utente.transferido_para|default:"(não indicado)" }}
-        </p>
-        {% endif %}
-        <p>
-          <strong>Duração do internamento:</strong>
+        <p><strong>Duração do internamento:</strong>
           {% if utente.duracao_internamento %}
-            {% if utente.data_saida %}
-              {{ utente.duracao_internamento }} dias
-            {% else %}
-              Internamento em curso ({{ utente.duracao_internamento }} dias)
-            {% endif %}
+            {{ utente.duracao_internamento }} dias
           {% else %}
             -
           {% endif %}
@@ -113,10 +156,86 @@
 
         <hr>
 
-        <p><strong>Observações:</strong><br>{{ utente.observacoes|linebreaksbr|default:"-" }}</p>
+        <p><strong>Observações:</strong><br>
+          {{ utente.observacoes|linebreaksbr|default:"-" }}
+        </p>
 
       </div>
     </div>
+
+    <!-- HISTÓRICO DE ISOLAMENTOS -->
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0">Isolamentos</h5>
+        </div>
+
+        <div class="card-body table-responsive">
+          <table class="table table-sm table-hover mb-0 align-middle">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Estado</th>
+                <th>Motivo</th>
+                <th>Observações</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for i in utente.isolamentos.all %}
+                <tr class="{% if i.ativo %}table-warning{% endif %}">
+                  <td>{{ i.get_tipo_display }}</td>
+                  <td>{{ i.data_inicio|date:"d/m/Y H:i" }}</td>
+                  <td>{{ i.data_fim|date:"d/m/Y H:i"|default:"-" }}</td>
+
+                  <td>
+                    {% if i.ativo %}
+                      <span class="badge bg-danger">Ativo</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Terminado</span>
+                    {% endif %}
+                  </td>
+
+                  <td>{{ i.motivo|default:"-" }}</td>
+
+                  <td style="max-width: 280px;">
+                    {% if i.observacoes %}
+                      <small class="text-muted">
+                        {{ i.observacoes|linebreaksbr }}
+                      </small>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+
+                  <td class="text-end">
+                    <a href="{% url 'visitas:editar_isolamento' i.pk %}"
+                      class="btn btn-sm btn-outline-secondary">
+                      Editar
+                    </a>
+
+                    {% if i.ativo %}
+                      <a href="{% url 'visitas:terminar_isolamento' i.pk %}"
+                        class="btn btn-sm btn-outline-danger ms-1">
+                        Terminar
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="7" class="text-center">
+                    Sem isolamentos registados.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+      </div>
 
     <!-- VISITAS -->
     <div class="card">
@@ -141,50 +260,47 @@
 
           <tbody>
             {% for v in visitas %}
-            <tr>
-              <td>{{ v.data_hora_entrada|date:"d/m/Y H:i" }}</td>
+              <tr>
+                <td>{{ v.data_hora_entrada|date:"d/m/Y H:i" }}</td>
 
-              <td>
-                {% if v.data_hora_saida %}
-                  {{ v.data_hora_saida|date:"d/m/Y H:i" }}
-                {% else %}
-                  <span class="text-danger">Em curso</span>
-                {% endif %}
-              </td>
+                <td>
+                  {% if v.data_hora_saida %}
+                    {{ v.data_hora_saida|date:"d/m/Y H:i" }}
+                  {% else %}
+                    <span class="text-danger">Em curso</span>
+                  {% endif %}
+                </td>
 
-              <!-- DURAÇÃO CORRETA (v.duracao_horas_minutos) -->
-              <td>
-                {% if v.duracao_horas_minutos %}
-                  {{ v.duracao_horas_minutos }}
-                {% else %}
-                  -
-                {% endif %}
-              </td>
+                <td>{{ v.duracao_horas_minutos|default:"-" }}</td>
+                <td>{{ v.nome_visitante }}</td>
+                <td>{{ v.get_tipo_visitante_display }}</td>
+                <td>{{ v.parentesco|default:"-" }}</td>
+                <td>{{ v.motivo|default:"-" }}</td>
 
-              <td>{{ v.nome_visitante }}</td>
-              <td>{{ v.get_tipo_visitante_display }}</td>
-              <td>{{ v.parentesco|default:"-" }}</td>
-              <td>{{ v.motivo|default:"-" }}</td>
+                <td class="text-end">
+                  {% if v.em_curso %}
+                    <a href="{% url 'visitas:registar_saida_visita' v.pk %}"
+                      class="btn btn-sm btn-outline-danger">
+                      Registar saída
+                    </a>
+                  {% endif %}
 
-              <td class="text-end">
-                {% if v.em_curso %}
-                  <a href="{% url 'visitas:registar_saida_visita' v.pk %}" class="btn btn-sm btn-outline-danger">
-                    Registar saída
+                  <a href="{% url 'visitas:registar_visita_utente' utente.pk %}?from={{ v.pk }}"
+                    class="btn btn-sm btn-outline-secondary ms-1">
+                    Nova visita com estes dados
                   </a>
-                {% endif %}
-              </td>
-            </tr>
-
+                </td>
+              </tr>
             {% empty %}
-            <tr>
-              <td colspan="8" class="text-center">Sem visitas registadas.</td>
-            </tr>
+              <tr>
+                <td colspan="8" class="text-center">Sem visitas registadas.</td>
+              </tr>
             {% endfor %}
           </tbody>
-
         </table>
       </div>
     </div>
+
 
   </div>
 </div>

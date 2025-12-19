@@ -1,6 +1,6 @@
 from datetime import timedelta, date
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import models
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
@@ -9,13 +9,19 @@ from django.utils.timezone import localdate
 from django.db.models import Q
 from django.core.paginator import Paginator
 
-from .forms import UtenteForm, VisitaForm, ExternoForm, UtenteSaidaForm
+from .forms import UtenteForm, VisitaForm, ExternoForm, UtenteSaidaForm, IsolamentoForm, MovimentoFinanceiroForm
 
 import json
 from django.db.models.functions import TruncDate, TruncMonth
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+
+from .models import Visita, Utente, TipoAlta, TipoInternamento, Genero, Externo, Isolamento, MovimentoFinanceiro
+from django.contrib import messages
 
 
-from .models import Visita, Utente, TipoAlta, TipoInternamento, Genero, Externo
+
 # ============================================================
 # UTENTES
 # ============================================================
@@ -26,6 +32,10 @@ def lista_utentes(request):
     estado = request.GET.get("estado", "ativos")  # 'ativos', 'inativos', 'todos'
     q = request.GET.get("q", "").strip()
 
+    # NOVO: parâmetros de ordenação
+    ordenar = request.GET.get("ordenar", "nome")      # nome, numero_processo, quarto, data_entrada, data_saida, estado
+    direcao = request.GET.get("direcao", "asc")       # asc ou desc
+
     utentes = Utente.objects.all()
 
     # Filtro de estado
@@ -33,7 +43,6 @@ def lista_utentes(request):
         utentes = utentes.filter(data_saida__isnull=True)
     elif estado == "inativos":
         utentes = utentes.filter(data_saida__isnull=False)
-    # se for 'todos', não filtra por data_saida
 
     # Pesquisa
     if q:
@@ -43,21 +52,45 @@ def lista_utentes(request):
             | Q(quarto__codigo__icontains=q)
         )
 
-    # Ordenar: ativos primeiro, depois inativos, e por nome
-    utentes = (
-        utentes
-        .annotate(
-            is_ativo=models.Case(
-                models.When(data_saida__isnull=True, then=models.Value(1)),
-                default=models.Value(0),
-                output_field=models.IntegerField(),
-            )
+    # Annotate para saber se é ativo (1) ou não (0)
+    utentes = utentes.annotate(
+        is_ativo=models.Case(
+            models.When(data_saida__isnull=True, then=models.Value(1)),
+            default=models.Value(0),
+            output_field=models.IntegerField(),
         )
-        .order_by("-is_ativo", "nome")
     )
 
+    # Mapeamento dos nomes de colunas do front → campos da BD
+    ordenar_map = {
+        "nome": "nome",
+        "numero_processo": "numero_processo",
+        "quarto": "quarto__codigo",   # se o teu quarto não tiver 'codigo', podes pôr só "quarto"
+        "data_entrada": "data_entrada",
+        "data_saida": "data_saida",
+        "estado": "is_ativo",
+    }
+
+    campo = ordenar_map.get(ordenar, "nome")
+
+    # Direção
+    if direcao == "desc":
+        campo = f"-{campo}"
+
+    # Ordem final:
+    # - se não estivermos a ordenar por estado, mantemos "ativos primeiro"
+    order_by_list = []
+    if ordenar != "estado":
+        order_by_list.append("-is_ativo")
+    order_by_list.append(campo)
+    # secundário por nome para estabilizar
+    if ordenar != "nome":
+        order_by_list.append("nome")
+
+    utentes = utentes.order_by(*order_by_list)
+
     # Paginação
-    paginator = Paginator(utentes, 10)  # 10 por página (ajusta se quiseres)
+    paginator = Paginator(utentes, 10)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -65,6 +98,8 @@ def lista_utentes(request):
         "page_obj": page_obj,
         "estado": estado,
         "q": q,
+        "ordenar": ordenar,
+        "direcao": direcao,
     }
     return render(request, "visitas/lista_utentes.html", context)
 
@@ -73,12 +108,22 @@ def lista_utentes(request):
 @login_required
 def detalhe_utente(request, pk):
     utente = get_object_or_404(Utente, pk=pk)
-    visitas = utente.visitas.all().order_by("-data_hora_entrada")
 
-    return render(request, "visitas/detalhe_utente.html", {
+    visitas = (
+        Visita.objects
+        .filter(utente=utente)
+        .order_by("-data_hora_entrada")
+    )
+
+    is_financeiro = request.user.groups.filter(name="Financeiro").exists()
+
+    context = {
         "utente": utente,
         "visitas": visitas,
-    })
+        "is_financeiro": is_financeiro,
+    }
+
+    return render(request, "visitas/detalhe_utente.html", context)
 
 
 @login_required
@@ -154,21 +199,52 @@ def saida_utente(request, pk):
 def registar_visita_utente(request, utente_id):
     utente = get_object_or_404(Utente, pk=utente_id)
 
+    # id da visita a copiar (se vier da querystring)
+    copiar_de_id = request.GET.get("from")
+    initial = {}
+    visita_original = None
+
+    if copiar_de_id:
+        # garantes que a visita é do mesmo utente
+        visita_original = get_object_or_404(
+            Visita,
+            pk=copiar_de_id,
+            utente=utente
+        )
+
+        # Campos a reutilizar
+        initial = {
+            "tipo_visitante": visita_original.tipo_visitante,
+            "nome_visitante": visita_original.nome_visitante,
+            "documento_identificacao": visita_original.documento_identificacao,
+            "telefone": visita_original.telefone,
+            "parentesco": visita_original.parentesco,
+            # normalmente queres nova data/hora,
+            # por isso não copio estas (deixas o utilizador meter):
+            # "data_hora_entrada": visita_original.data_hora_entrada,
+            # "data_hora_saida": visita_original.data_hora_saida,
+            "motivo": visita_original.motivo,
+            "observacoes": visita_original.observacoes,
+        }
+
     if request.method == "POST":
         form = VisitaForm(request.POST)
         if form.is_valid():
             visita = form.save(commit=False)
             visita.utente = utente
             visita.registado_por = request.user
+            # se quiseres no futuro ligar a nova visita à original,
+            # aqui poderias fazer algo como: visita.reaberta_de = visita_original
             visita.save()
             return redirect("visitas:detalhe_utente", pk=utente.pk)
     else:
-        form = VisitaForm()
+        form = VisitaForm(initial=initial)
 
     return render(request, "visitas/form_visita.html", {
         "form": form,
         "utente": utente,
     })
+
 
 
 @login_required
@@ -573,6 +649,189 @@ def dashboard_visitas(request):
 
 @login_required
 def escolher_utente_para_visita(request):
-    utentes = Utente.objects.filter(data_saida__isnull=True).order_by("nome")
-    return render(request, "visitas/escolher_utente_para_visita.html", {"utentes": utentes})
+    q = request.GET.get("q", "").strip()
+    ordenar = request.GET.get("ordenar", "nome")   # nome, numero_processo, quarto
+    direcao = request.GET.get("direcao", "asc")    # asc ou desc
 
+    utentes = Utente.objects.filter(data_saida__isnull=True)
+
+    if q:
+        utentes = utentes.filter(
+            Q(nome__icontains=q)
+            | Q(numero_processo__icontains=q)
+            | Q(quarto__codigo__icontains=q)
+        )
+
+    ordenar_map = {
+        "nome": "nome",
+        "numero_processo": "numero_processo",
+        "quarto": "quarto__codigo",  # ajusta se for só 'quarto'
+    }
+
+    campo = ordenar_map.get(ordenar, "nome")
+    if direcao == "desc":
+        campo = f"-{campo}"
+
+    utentes = utentes.order_by(campo, "nome")
+
+    return render(request, "visitas/escolher_utente_para_visita.html", {
+        "utentes": utentes,
+        "q": q,
+        "ordenar": ordenar,
+        "direcao": direcao,
+    })
+
+
+
+@login_required
+def visitas_relatorio_pdf(request):
+    data_inicio = request.GET.get("data_inicio")
+    data_fim = request.GET.get("data_fim")
+
+    if not data_inicio or not data_fim:
+        return redirect("visitas:visitas_relatorio")
+
+    visitas = (
+        Visita.objects
+        .filter(data_hora_entrada__date__range=[data_inicio, data_fim])
+        .select_related("utente")
+        .order_by("-data_hora_entrada")
+    )
+
+    context = {
+        "visitas": visitas,
+        "data_inicio": data_inicio,
+        "data_fim": data_fim,
+    }
+
+    template = get_template("visitas/visitas_relatorio_pdf.html")
+    html = template.render(context)
+
+    # preparar resposta HTTP como PDF
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="relatorio_visitas.pdf"'
+
+    # gerar PDF
+    pisa_status = pisa.CreatePDF(html, dest=response)
+
+    if pisa_status.err:
+        # em caso de erro, podes devolver o HTML para debug
+        return HttpResponse("Erro ao gerar PDF:\n" + html)
+    return response
+
+@login_required
+def criar_isolamento(request, utente_id):
+    utente = get_object_or_404(Utente, pk=utente_id)
+
+    # (opcional) impedir mais do que 1 isolamento ativo
+    if utente.isolamentos.filter(ativo=True).exists():
+        messages.warning(request, "Este utente já tem um isolamento ativo.")
+        return redirect("visitas:detalhe_utente", pk=utente.pk)
+
+    if request.method == "POST":
+        form = IsolamentoForm(request.POST)
+        if form.is_valid():
+            iso = form.save(commit=False)
+            iso.utente = utente
+            iso.criado_por = request.user
+            iso.save()
+            messages.success(request, "Isolamento registado com sucesso.")
+            return redirect("visitas:detalhe_utente", pk=utente.pk)
+    else:
+        form = IsolamentoForm()
+
+    return render(request, "visitas/isolamento_form.html", {
+        "form": form,
+        "utente": utente,
+    })
+
+@login_required
+def terminar_isolamento(request, isolamento_id):
+    iso = get_object_or_404(Isolamento, pk=isolamento_id)
+
+    if not iso.ativo:
+        return redirect("visitas:detalhe_utente", pk=iso.utente.pk)
+
+    if request.method == "POST":
+        iso.ativo = False
+        iso.data_fim = timezone.now()
+        iso.terminado_por = request.user
+        iso.terminado_em = timezone.now()
+        iso.save()
+        messages.success(request, "Isolamento terminado.")
+        return redirect("visitas:detalhe_utente", pk=iso.utente.pk)
+
+    return render(request, "visitas/isolamento_terminar_confirmar.html", {
+        "isolamento": iso,
+    })
+
+@login_required
+def isolamentos_ativos(request):
+    q = (request.GET.get("q") or "").strip()
+
+    isolamentos = (
+        Isolamento.objects
+        .filter(ativo=True)
+        .select_related("utente", "utente__quarto")
+        .order_by("-data_inicio")
+    )
+
+    if q:
+        isolamentos = isolamentos.filter(
+            Q(utente__nome__icontains=q) |
+            Q(utente__numero_processo__icontains=q) |
+            Q(utente__quarto__codigo__icontains=q)
+        )
+
+    return render(request, "visitas/isolamentos_ativos.html", {
+        "isolamentos": isolamentos,
+        "q": q,
+    })
+
+@login_required
+def editar_isolamento(request, isolamento_id):
+    isolamento = get_object_or_404(Isolamento, pk=isolamento_id)
+
+    if request.method == "POST":
+        form = IsolamentoForm(request.POST, instance=isolamento)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Isolamento atualizado com sucesso.")
+            return redirect("visitas:detalhe_utente", pk=isolamento.utente.pk)
+    else:
+        form = IsolamentoForm(instance=isolamento)
+
+    return render(request, "visitas/isolamento_editar.html", {
+        "isolamento": isolamento,
+        "utente": isolamento.utente,
+        "form": form,
+    })
+
+def is_financeiro(user):
+    return user.groups.filter(name="Financeiro").exists()
+
+@login_required
+@user_passes_test(is_financeiro)
+def financeiro_utente(request, pk):
+
+    utente = get_object_or_404(Utente, pk=pk)
+
+    movimentos = utente.movimentos.all()
+    form = MovimentoFinanceiroForm()
+
+    if request.method == "POST":
+        form = MovimentoFinanceiroForm(request.POST)
+        if form.is_valid():
+            movimento = form.save(commit=False)
+            movimento.utente = utente
+            movimento.registado_por = request.user
+            movimento.save()
+            return redirect("visitas:financeiro_utente", pk=utente.pk)
+
+    context = {
+        "utente": utente,
+        "movimentos": movimentos,
+        "form": form,
+    }
+
+    return render(request, "visitas/financeiro_utente.html", context)

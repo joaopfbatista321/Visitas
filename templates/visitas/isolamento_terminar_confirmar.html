@@ -1,0 +1,23 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="card">
+      <div class="card-body">
+        <h4>Terminar isolamento</h4>
+        <p class="mb-1"><strong>Utente:</strong> {{ isolamento.utente.nome }}</p>
+        <p class="mb-3"><strong>Tipo:</strong> {{ isolamento.get_tipo_display }}</p>
+
+        <form method="post">
+          {% csrf_token %}
+          <a href="{% url 'visitas:detalhe_utente' isolamento.utente.pk %}" class="btn btn-secondary">Cancelar</a>
+          <button type="submit" class="btn btn-danger">Confirmar término</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

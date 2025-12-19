@@ -1,0 +1,74 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <!-- Header -->
+    <div class="page-header mb-4">
+      <div class="page-block">
+        <h4 class="mb-1">Acessos Rápidos</h4>
+        <p class="text-muted mb-0">
+          Plataformas internas e sistemas institucionais
+        </p>
+      </div>
+    </div>
+
+    <div class="row">
+
+      <!-- Wiki SCME -->
+      <div class="col-md-4">
+        <a href="https://wiki.local.scment.pt/login"
+           target="_blank"
+           class="text-decoration-none">
+          <div class="card h-100 border-primary">
+            <div class="card-body">
+              <h5 class="card-title text-primary">Wiki SCME</h5>
+              <p class="card-text text-muted">
+                Documentação interna, procedimentos e manuais.
+              </p>
+              <span class="badge bg-primary">Interno</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- RNCCI -->
+      <div class="col-md-4">
+        <a href="https://umcciweb-rncci.min-saude.pt/index.php?action=Login&module=Users"
+           target="_blank"
+           class="text-decoration-none">
+          <div class="card h-100 border-success">
+            <div class="card-body">
+              <h5 class="card-title text-success">RNCCI</h5>
+              <p class="card-text text-muted">
+                Plataforma da Rede Nacional de Cuidados Continuados Integrados.
+              </p>
+              <span class="badge bg-success">Ministério da Saúde</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- GH SCMENT -->
+      <div class="col-md-4">
+        <a href="https://gh.scment.org/Default_N.aspx"
+           target="_blank"
+           class="text-decoration-none">
+          <div class="card h-100 border-warning">
+            <div class="card-body">
+              <h5 class="card-title text-warning">GH SCMENT</h5>
+              <p class="card-text text-muted">
+                Gestão hospitalar e administrativa da instituição.
+              </p>
+              <span class="badge bg-warning text-dark">Gestão</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}

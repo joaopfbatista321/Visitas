@@ -1,0 +1,112 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de visitas</title>
+  <style>
+    body {
+      font-family: DejaVu Sans, sans-serif;
+      font-size: 11px;
+    }
+
+    h1, h2, h3 {
+      margin: 4px 0;
+      padding: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #444444;
+      padding: 4px;
+    }
+
+    th {
+      background-color: #eeeeee;
+      font-weight: bold;
+    }
+
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .mt-10 { margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER EM TODAS AS PÁGINAS -->
+  <pdf:header>
+    <table width="100%">
+      <tr>
+        <!-- Logo canto superior esquerdo -->
+        <td width="20%" valign="middle">
+          <img src="{% static 'assets/images/Logo SCME.png' %}" height="40">
+        </td>
+
+        <!-- Título do relatório -->
+        <td width="80%" valign="middle" align="left">
+          <h2>Relatório de Visitas</h2>
+          <span style="font-size: 10px;">
+            Período: {{ data_inicio }} a {{ data_fim }}
+          </span>
+        </td>
+      </tr>
+    </table>
+    <hr/>
+  </pdf:header>
+
+  <!-- FOOTER EM TODAS AS PÁGINAS -->
+  <pdf:footer>
+    <hr/>
+    <p class="text-center" style="font-size: 10px;">
+      Página <pdf:pagenumber /> de <pdf:pagecount />
+    </p>
+  </pdf:footer>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <h3 class="mt-10">Listagem de visitas</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Entrada</th>
+        <th>Saída</th>
+        <th>Utente</th>
+        <th>Visitante</th>
+        <th>Tipo</th>
+        <th>Motivo</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if visitas %}
+        {% for v in visitas %}
+        <tr>
+          <td>{{ v.data_hora_entrada|date:"d/m/Y H:i" }}</td>
+          <td>
+            {% if v.data_hora_saida %}
+              {{ v.data_hora_saida|date:"d/m/Y H:i" }}
+            {% else %}
+              Em curso
+            {% endif %}
+          </td>
+          <td>{{ v.utente.nome }}</td>
+          <td>{{ v.nome_visitante }}</td>
+          <td>{{ v.get_tipo_visitante_display }}</td>
+          <td>{{ v.motivo|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="6" class="text-center">Sem visitas no período selecionado.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+</body>
+</html>

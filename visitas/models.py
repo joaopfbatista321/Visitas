@@ -2,6 +2,11 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import date
+from django.conf import settings
+from decimal import Decimal
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 
 User = get_user_model()
 
@@ -130,6 +135,23 @@ class Utente(models.Model):
         related_name="utentes_registados_saida",
     )
 
+    saldo = models.DecimalField(
+        "Saldo disponível",
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00")
+    )
+
+    # Contacto de emergência 1
+    contacto_emergencia1_nome = models.CharField(max_length=100, blank=True)
+    contacto_emergencia1_telefone = models.CharField(max_length=30, blank=True)
+    contacto_emergencia1_parentesco = models.CharField(max_length=50, blank=True)
+
+    # Contacto de emergência 2
+    contacto_emergencia2_nome = models.CharField(max_length=100, blank=True)
+    contacto_emergencia2_telefone = models.CharField(max_length=30, blank=True)
+    contacto_emergencia2_parentesco = models.CharField(max_length=50, blank=True)
+
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
@@ -140,6 +162,8 @@ class Utente(models.Model):
 
     def __str__(self):
         return f"{self.nome} ({self.numero_processo})"
+    
+
 
     # ----------------------- PROPRIEDADES -----------------------
 
@@ -296,3 +320,98 @@ class Externo(models.Model):
         if self.data_hora_saida:
             return self.data_hora_saida - self.data_hora_entrada
         return None
+
+class TipoIsolamento(models.TextChoices):
+    CONTACTO = "CONTACTO", "Isolamento de contacto"
+    GOTICULAS = "GOTICULAS", "Isolamento por gotículas"
+    VIA_AEREA = "VIA_AEREA", "Isolamento por via aérea"
+
+
+class Isolamento(models.Model):
+    utente = models.ForeignKey(
+        "Utente",
+        on_delete=models.CASCADE,
+        related_name="isolamentos"
+    )
+
+    tipo = models.CharField(max_length=20, choices=TipoIsolamento.choices)
+    ativo = models.BooleanField(default=True)
+
+    data_inicio = models.DateTimeField(default=timezone.now)
+    data_fim = models.DateTimeField(null=True, blank=True)
+
+    motivo = models.CharField(max_length=255, blank=True, default="")
+    observacoes = models.TextField(blank=True, default="")
+
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="isolamentos_criados"
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    terminado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="isolamentos_terminados"
+    )
+    terminado_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-ativo", "-data_inicio"]
+
+    def __str__(self):
+        return f"{self.utente} - {self.get_tipo_display()} ({'Ativo' if self.ativo else 'Terminado'})"
+    
+@property
+def isolamento_ativo(self):
+    return self.isolamentos.filter(ativo=True).order_by("-data_inicio").first()
+
+
+class MovimentoFinanceiro(models.Model):
+    ENTRADA = "ENTRADA"
+    SAIDA = "SAIDA"
+
+    TIPO_CHOICES = [
+        (ENTRADA, "Entrada"),
+        (SAIDA, "Saída"),
+    ]
+
+    utente = models.ForeignKey(
+        Utente,
+        on_delete=models.CASCADE,
+        related_name="movimentos"
+    )
+
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    valor = models.DecimalField(max_digits=10, decimal_places=2)
+    descricao = models.CharField(max_length=255)
+
+    data = models.DateTimeField(auto_now_add=True)
+    registado_por = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
+    class Meta:
+        ordering = ("-data",)
+
+
+@receiver(post_save, sender=MovimentoFinanceiro)
+def atualizar_saldo(sender, instance, created, **kwargs):
+    if not created:
+        return
+
+    utente = instance.utente
+
+    if instance.tipo == MovimentoFinanceiro.ENTRADA:
+        utente.saldo += instance.valor
+    else:
+        utente.saldo -= instance.valor
+
+    utente.save(update_fields=["saldo"])

@@ -70,12 +70,60 @@
         <table class="table table-hover mb-0 align-middle">
           <thead>
             <tr>
-              <th>Nome</th>
-              <th>N.º Processo</th>
-              <th>Quarto</th>
-              <th>Entrada</th>
-              <th>Saída</th>
-              <th>Estado</th>
+              <th>
+                <a href="?ordenar=nome&direcao={% if ordenar == 'nome' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  Nome
+                  {% if ordenar == 'nome' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
+
+              <th>
+                <a href="?ordenar=numero_processo&direcao={% if ordenar == 'numero_processo' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  N.º Processo
+                  {% if ordenar == 'numero_processo' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
+
+              <th>
+                <a href="?ordenar=quarto&direcao={% if ordenar == 'quarto' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  Quarto
+                  {% if ordenar == 'quarto' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
+
+              <th>
+                <a href="?ordenar=data_entrada&direcao={% if ordenar == 'data_entrada' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  Entrada
+                  {% if ordenar == 'data_entrada' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
+
+              <th>
+                <a href="?ordenar=data_saida&direcao={% if ordenar == 'data_saida' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  Saída
+                  {% if ordenar == 'data_saida' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
+
+              <th>
+                <a href="?ordenar=estado&direcao={% if ordenar == 'estado' and direcao == 'asc' %}desc{% else %}asc{% endif %}{% if estado %}&estado={{ estado }}{% endif %}{% if q %}&q={{ q }}{% endif %}">
+                  Estado
+                  {% if ordenar == 'estado' %}
+                    {% if direcao == 'asc' %}▲{% else %}▼{% endif %}
+                  {% endif %}
+                </a>
+              </th>
+
               <th style="width: 220px;"></th>
             </tr>
           </thead>
@@ -136,7 +184,7 @@
             {% if page_obj.has_previous %}
             <li class="page-item">
               <a class="page-link"
-                 href="?page={{ page_obj.previous_page_number }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}">
+                 href="?page={{ page_obj.previous_page_number }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}&ordenar={{ ordenar }}&direcao={{ direcao }}">
                 «
               </a>
             </li>
@@ -154,7 +202,9 @@
               {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
                 <li class="page-item">
                   <a class="page-link"
-                     href="?page={{ num }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}">{{ num }}</a>
+                     href="?page={{ num }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}&ordenar={{ ordenar }}&direcao={{ direcao }}">
+                    {{ num }}
+                  </a>
                 </li>
               {% endif %}
             {% endfor %}
@@ -162,7 +212,7 @@
             {% if page_obj.has_next %}
             <li class="page-item">
               <a class="page-link"
-                 href="?page={{ page_obj.next_page_number }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}">
+                 href="?page={{ page_obj.next_page_number }}&estado={{ estado }}{% if q %}&q={{ q }}{% endif %}&ordenar={{ ordenar }}&direcao={{ direcao }}">
                 »
               </a>
             </li>

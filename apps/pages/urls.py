@@ -5,4 +5,7 @@ from . import views
 
 urlpatterns = [
   path('', views.index,  name='index'),
+
+  path("acessos-rapidos/", views.acessos_rapidos, name="acessos_rapidos"),
 ]
+

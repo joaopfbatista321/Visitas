@@ -90,3 +90,6 @@ def sample_page(request):
   }
   return render(request, 'pages/sample-page.html', context)
 
+@login_required
+def acessos_rapidos(request):
+    return render(request, "pages/acessos_rapidos.html")

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Externo, Utente, Visita, TipoAlta
+from .models import Externo, Utente, Visita, TipoAlta, Isolamento, MovimentoFinanceiro
 
 
 # Widgets para datas e datetimes em HTML5
@@ -40,11 +40,22 @@ class UtenteForm(BaseStyledModelForm):
             "data_prevista_saida",
             "data_saida",
             "tipo_alta",
-            "transferido_para",      # ← NOVO CAMPO NO FORM
+            "transferido_para",      
             "visitas_restritas",
             "alerta_visitas",
             "observacoes",
+
+            "saldo",
+
+            "contacto_emergencia1_nome",
+            "contacto_emergencia1_telefone",
+            "contacto_emergencia1_parentesco",
+
+            "contacto_emergencia2_nome",
+            "contacto_emergencia2_telefone",
+            "contacto_emergencia2_parentesco",
         ]
+        
         widgets = {
             "data_nascimento": DateInput(),
             "data_entrada": DateInput(),
@@ -135,4 +146,32 @@ class ExternoForm(BaseStyledModelForm):
             "data_hora_entrada": DateTimeInput(),
             "data_hora_saida": DateTimeInput(),
             "observacoes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+
+class IsolamentoForm(BaseStyledModelForm):
+    class Meta:
+        model = Isolamento
+        fields = ["tipo", "data_inicio", "motivo", "observacoes"]
+        widgets = {
+            "data_inicio": DateTimeInput(),
+            "observacoes": forms.Textarea(attrs={"rows": 4}),
+        }
+
+class MovimentoFinanceiroForm(forms.ModelForm):
+    class Meta:
+        model = MovimentoFinanceiro
+        fields = ["tipo", "valor", "descricao"]
+
+        widgets = {
+            "tipo": forms.Select(attrs={"class": "form-select"}),
+            "valor": forms.NumberInput(attrs={
+                "class": "form-control",
+                "step": "0.01",
+                "min": "0.01"
+            }),
+            "descricao": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Justificação obrigatória"
+            }),
         }
