@@ -115,12 +115,35 @@ def detalhe_utente(request, pk):
         .order_by("-data_hora_entrada")
     )
 
+    q = request.GET.get("q", "").strip()
+    estado = request.GET.get("estado", "").strip()
+    tipo = request.GET.get("tipo", "").strip()
+
+    if q:
+        visitas = visitas.filter(
+            Q(nome_visitante__icontains=q) |
+            Q(parentesco__icontains=q) |
+            Q(motivo__icontains=q)
+        )
+
+    if estado == "em_curso":
+        visitas = visitas.filter(data_hora_saida__isnull=True)
+    elif estado == "terminada":
+        visitas = visitas.filter(data_hora_saida__isnull=False)
+
+    if tipo:
+        visitas = visitas.filter(tipo_visitante=tipo)
+
     is_financeiro = request.user.groups.filter(name="Financeiro").exists()
 
     context = {
         "utente": utente,
         "visitas": visitas,
         "is_financeiro": is_financeiro,
+        "q": q,
+        "estado": estado,
+        "tipo": tipo,
+        "tipos_visitante": Visita._meta.get_field("tipo_visitante").choices,
     }
 
     return render(request, "visitas/detalhe_utente.html", context)
