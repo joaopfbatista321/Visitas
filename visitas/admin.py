@@ -50,7 +50,7 @@ class UtenteAdmin(admin.ModelAdmin):
         "numero_processo",
     )
 
-    inlines = [IsolamentoInline]
+
     inlines = [IsolamentoInline, MovimentoFinanceiroInline]
 
 

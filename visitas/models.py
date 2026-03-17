@@ -142,12 +142,10 @@ class Utente(models.Model):
         default=Decimal("0.00")
     )
 
-    # Contacto de emergência 1
     contacto_emergencia1_nome = models.CharField(max_length=100, blank=True)
     contacto_emergencia1_telefone = models.CharField(max_length=30, blank=True)
     contacto_emergencia1_parentesco = models.CharField(max_length=50, blank=True)
 
-    # Contacto de emergência 2
     contacto_emergencia2_nome = models.CharField(max_length=100, blank=True)
     contacto_emergencia2_telefone = models.CharField(max_length=30, blank=True)
     contacto_emergencia2_parentesco = models.CharField(max_length=50, blank=True)
@@ -162,6 +160,37 @@ class Utente(models.Model):
 
     def __str__(self):
         return f"{self.nome} ({self.numero_processo})"
+
+    @property
+    def ativo(self):
+        return self.data_saida is None
+
+    @property
+    def idade(self):
+        if not self.data_nascimento:
+            return None
+        hoje = date.today()
+        return hoje.year - self.data_nascimento.year - (
+            (hoje.month, hoje.day) < (self.data_nascimento.month, self.data_nascimento.day)
+        )
+
+    @property
+    def duracao_internamento(self):
+        if not self.data_entrada:
+            return None
+        fim = self.data_saida or date.today()
+        return (fim - self.data_entrada).days
+
+    @property
+    def atraso_previsto(self):
+        if not self.data_prevista_saida:
+            return None
+        fim = self.data_saida or date.today()
+        return (fim - self.data_prevista_saida).days
+
+    @property
+    def isolamento_ativo(self):
+        return self.isolamentos.filter(ativo=True).order_by("-data_inicio").first()
     
 
 
