@@ -1,0 +1,28 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+
+{% block transportes_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Viaturas</h4>
+  <a href="{% url 'visitas:criar_viatura' %}" class="btn btn-primary">Nova viatura</a>
+</div>
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead><tr><th>Matrícula</th><th>Designação</th><th>Tipo</th><th>Capacidade</th><th>Documentos</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for item in viaturas %}
+        <tr class="{% if not item.ativo %}table-secondary{% endif %}">
+          <td><strong>{{ item.matricula }}</strong></td>
+          <td>{{ item.designacao }}<br><small class="text-muted">{{ item.marca }} {{ item.modelo }}</small></td>
+          <td>{{ item.get_tipo_display }}</td>
+          <td>{{ item.numero_lugares }} lugares{% if item.adaptada_cadeira_rodas %}<br><span class="badge bg-info text-dark">Cadeira de rodas</span>{% endif %}{% if item.permite_maca %} <span class="badge bg-info text-dark">Maca</span>{% endif %}</td>
+          <td>{% if item.documentos_validos %}<span class="badge bg-success">Válidos</span>{% else %}<span class="badge bg-danger">Verificar</span>{% endif %}</td>
+          <td>{% if item.ativo %}<span class="badge bg-success">Disponível</span>{% else %}<span class="badge bg-secondary">Inativa</span>{% endif %}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'visitas:editar_viatura' item.pk %}">Editar</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="7" class="text-center">Ainda não existem viaturas.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock transportes_content %}

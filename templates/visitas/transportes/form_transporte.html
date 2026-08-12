@@ -1,0 +1,58 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+
+{% block transportes_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">{% if transporte %}Editar marcação{% else %}Nova marcação de transporte{% endif %}</h4>
+  <a href="{% url 'visitas:calendario_transportes' %}" class="btn btn-sm btn-outline-secondary">Voltar</a>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+  <div class="card">
+    <div class="card-header"><h5 class="mb-0">Dados da deslocação</h5></div>
+    <div class="card-body">
+      <div class="row g-3">
+        {% for field in form %}
+          <div class="{% if field.name == 'observacoes' or field.name == 'outras_necessidades' %}col-12{% elif field.name == 'necessita_cadeira_rodas' or field.name == 'necessita_maca' or field.name == 'necessita_oxigenio' %}col-md-4{% else %}col-md-6{% endif %}{% if field.name == 'viatura' or field.name == 'condutor' %} transporte-interno{% endif %}{% if field.name == 'entidade_transporte' %} transporte-externo{% endif %}">
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="form-check mt-4">
+                {{ field }}
+                <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              </div>
+            {% else %}
+              <label class="form-label" for="{{ field.id_for_label }}">
+                {{ field.label }}{% if field.field.required %} <span class="text-danger">*</span>{% endif %}
+              </label>
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for erro in field.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card-footer d-flex gap-2">
+      <button type="submit" class="btn btn-success">Guardar marcação</button>
+      <a href="{% url 'visitas:calendario_transportes' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </div>
+</form>
+{% endblock transportes_content %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const meio = document.getElementById('{{ form.meio_transporte.id_for_label }}');
+  function atualizarCampos() {
+    const interno = meio.value === 'INSTITUICAO';
+    document.querySelectorAll('.transporte-interno').forEach(el => el.classList.toggle('d-none', !interno));
+    document.querySelectorAll('.transporte-externo').forEach(el => el.classList.toggle('d-none', interno));
+  }
+  meio.addEventListener('change', atualizarCampos);
+  atualizarCampos();
+});
+</script>
+{% endblock extra_js %}

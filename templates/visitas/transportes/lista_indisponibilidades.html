@@ -1,0 +1,32 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+
+{% block transportes_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div><h4 class="mb-0">Indisponibilidades</h4><small class="text-muted">Férias, manutenção, avaria ou outro impedimento.</small></div>
+  <a href="{% url 'visitas:criar_indisponibilidade' %}" class="btn btn-primary">Nova indisponibilidade</a>
+</div>
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead><tr><th>Recurso</th><th>Início</th><th>Fim</th><th>Motivo</th><th>Observações</th><th></th></tr></thead>
+      <tbody>
+        {% for item in indisponibilidades %}
+        <tr>
+          <td>{% if item.viatura %}<span class="badge bg-primary me-1">Viatura</span>{{ item.viatura }}{% else %}<span class="badge bg-info text-dark me-1">Condutor</span>{{ item.condutor }}{% endif %}</td>
+          <td>{{ item.inicio|date:"d/m/Y H:i" }}</td>
+          <td>{{ item.fim|date:"d/m/Y H:i" }}</td>
+          <td>{{ item.motivo }}</td>
+          <td>{{ item.observacoes|default:"-"|truncatechars:80 }}</td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'visitas:editar_indisponibilidade' item.pk %}">Editar</a>
+            <form method="post" action="{% url 'visitas:apagar_indisponibilidade' item.pk %}" class="d-inline" onsubmit="return confirm('Eliminar esta indisponibilidade?');">
+              {% csrf_token %}<button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="text-center">Não existem indisponibilidades.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock transportes_content %}

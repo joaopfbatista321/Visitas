@@ -1,0 +1,118 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+{% load static %}
+
+{% block transportes_content %}
+<link href="{% static 'visitas/transportes/fullcalendar/skeleton.css' %}" rel="stylesheet">
+<link href="{% static 'visitas/transportes/fullcalendar/classic.theme.css' %}" rel="stylesheet">
+<link href="{% static 'visitas/transportes/fullcalendar/classic.palette.css' %}" rel="stylesheet">
+
+<div class="card mb-3 transport-no-print">
+  <div class="card-header"><h5 class="mb-0">Filtros do calendário</h5></div>
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label for="filtro-estado" class="form-label mb-1">Estado</label>
+        <select id="filtro-estado" class="form-select">
+          <option value="">Todos os estados</option>
+          {% for valor, nome in estados %}<option value="{{ valor }}">{{ nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="filtro-tipo" class="form-label mb-1">Tipo de deslocação</label>
+        <select id="filtro-tipo" class="form-select">
+          <option value="">Todos os tipos</option>
+          {% for valor, nome in tipos_deslocacao %}<option value="{{ valor }}">{{ nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="filtro-viatura" class="form-label mb-1">Viatura</label>
+        <select id="filtro-viatura" class="form-select">
+          <option value="">Todas as viaturas</option>
+          {% for item in viaturas %}<option value="{{ item.pk }}">{{ item }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label for="filtro-condutor" class="form-label mb-1">Condutor</label>
+        <select id="filtro-condutor" class="form-select">
+          <option value="">Todos os condutores</option>
+          {% for item in condutores %}<option value="{{ item.pk }}">{{ item }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mb-2 small transport-no-print">
+  <span class="badge bg-warning text-dark me-1">Pendente</span>
+  <span class="badge bg-primary me-1">Confirmado</span>
+  <span class="badge bg-info text-dark me-1">Em curso</span>
+  <span class="badge bg-success me-1">Concluído</span>
+  <span class="badge bg-secondary">Cancelado</span>
+  <span class="text-muted ms-2">Clique num dia para criar uma marcação.</span>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Calendário</h5>
+    <a href="{% url 'visitas:lista_transportes' %}" class="btn btn-sm btn-outline-secondary">Ver em lista</a>
+  </div>
+  <div class="card-body"><div id="calendario-transportes"></div></div>
+</div>
+{% endblock transportes_content %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'visitas/transportes/fullcalendar/fullcalendar.global.js' %}"></script>
+<script src="{% static 'visitas/transportes/fullcalendar/classic.global.js' %}"></script>
+<script src="{% static 'visitas/transportes/fullcalendar/pt.global.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const calendar = new FullCalendar.Calendar(document.getElementById('calendario-transportes'), {
+    themeSystem: 'classic',
+    locale: 'pt',
+    firstDay: 1,
+    initialView: window.innerWidth < 768 ? 'listWeek' : 'dayGridMonth',
+    height: 'auto',
+    nowIndicator: true,
+    navLinks: true,
+    selectable: true,
+    dayMaxEvents: true,
+    slotMinTime: '06:00:00',
+    slotMaxTime: '22:00:00',
+    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
+    buttonText: { today: 'Hoje', month: 'Mês', week: 'Semana', day: 'Dia', list: 'Agenda' },
+    events: {
+      url: "{% url 'visitas:eventos_transportes' %}",
+      extraParams: function () {
+        return {
+          estado: document.getElementById('filtro-estado').value,
+          tipo: document.getElementById('filtro-tipo').value,
+          viatura: document.getElementById('filtro-viatura').value,
+          condutor: document.getElementById('filtro-condutor').value
+        };
+      },
+      failure: function () { alert('Não foi possível carregar as marcações.'); }
+    },
+    dateClick: function (info) {
+      let inicio = info.dateStr;
+      if (!inicio.includes('T')) inicio += 'T09:00:00';
+      window.location.href = "{% url 'visitas:criar_transporte' %}?inicio=" + encodeURIComponent(inicio);
+    },
+    eventClick: function (info) {
+      if (info.event.url) {
+        info.jsEvent.preventDefault();
+        window.location.href = info.event.url;
+      }
+    },
+    eventDidMount: function (info) {
+      const p = info.event.extendedProps;
+      info.el.title = [p.estado, p.tipo, p.viatura, p.condutor].filter(Boolean).join(' · ');
+    }
+  });
+  calendar.render();
+  ['filtro-estado', 'filtro-tipo', 'filtro-viatura', 'filtro-condutor'].forEach(function (id) {
+    document.getElementById(id).addEventListener('change', function () { calendar.refetchEvents(); });
+  });
+});
+</script>
+{% endblock extra_js %}

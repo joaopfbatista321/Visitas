@@ -1,0 +1,24 @@
+{# Opcional: incluir este bloco dentro do template visitas/detalhe_utente.html. #}
+<div class="card" style="margin-top:1rem;">
+  <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
+    <h5 style="margin:0;">Transportes do utente</h5>
+    {% if utente.ativo %}
+      <a class="btn btn-primary btn-sm" href="{% url 'visitas:criar_transporte' %}?utente={{ utente.pk }}">+ Marcar transporte</a>
+    {% endif %}
+  </div>
+  <div class="card-body" style="overflow-x:auto;">
+    <table class="table table-sm">
+      <thead><tr><th>Data</th><th>Destino</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for item in utente.transportes.all|slice:":5" %}
+          <tr>
+            <td>{{ item.data_hora_saida|date:"d/m/Y H:i" }}</td>
+            <td>{{ item.destino }}</td>
+            <td>{{ item.get_estado_display }}</td>
+            <td><a class="btn btn-outline-primary btn-sm" href="{% url 'visitas:detalhe_transporte' item.pk %}">Abrir</a></td>
+          </tr>
+        {% empty %}<tr><td colspan="4">Este utente ainda não tem transportes registados.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

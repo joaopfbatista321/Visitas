@@ -1,0 +1,89 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Transportes{% endblock title %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .transport-status { min-width: 88px; }
+  .transport-toolbar .btn { white-space: nowrap; }
+  .transport-detail dt { color: #6c757d; font-weight: 600; }
+  .transport-detail dd { margin-bottom: .75rem; }
+  .fc .fc-toolbar-title { font-size: 1.25rem; }
+  .fc .fc-button { text-transform: capitalize; }
+  .fc .fc-button-primary {
+    background-color: #4680ff;
+    border-color: #4680ff;
+    color: #fff;
+  }
+  .fc .fc-button-primary:hover,
+  .fc .fc-button-primary:focus {
+    background-color: #2f66d0;
+    border-color: #2f66d0;
+    color: #fff;
+  }
+  .fc .fc-button-primary:not(:disabled).fc-button-active,
+  .fc .fc-button-primary:not(:disabled):active {
+    background-color: #1f56c1;
+    border-color: #1f56c1;
+    color: #fff;
+  }
+  .fc .fc-button-primary:disabled {
+    background-color: #a9c2f7;
+    border-color: #a9c2f7;
+    color: #fff;
+  }
+  .fc .fc-col-header-cell-cushion,
+  .fc .fc-daygrid-day-number { color: #374151; }
+  @media (max-width: 767.98px) {
+    .fc .fc-toolbar { align-items: stretch; flex-direction: column; gap: .5rem; }
+    .fc .fc-toolbar-chunk { display: flex; justify-content: center; }
+  }
+  @media print {
+    .pc-header, .pc-sidebar, .transport-no-print, footer { display: none !important; }
+    .pc-container { margin: 0 !important; }
+    .pc-content { padding: 0 !important; }
+    .card { border: 0 !important; box-shadow: none !important; }
+  }
+</style>
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 transport-no-print">
+      <div>
+        <h2 class="mb-1">Transportes de utentes</h2>
+        <p class="text-muted mb-0">Deslocações temporárias para fora da UCCI</p>
+      </div>
+      <a href="{% url 'visitas:criar_transporte' %}" class="btn btn-primary">
+        <i data-feather="plus" class="me-1"></i> Nova marcação
+      </a>
+    </div>
+
+    <div class="card mb-3 transport-no-print">
+      <div class="card-body py-2">
+        <div class="d-flex flex-wrap gap-2 transport-toolbar">
+          <a href="{% url 'visitas:calendario_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'calendario_transportes' %}btn-primary{% else %}btn-outline-primary{% endif %}">Calendário</a>
+          <a href="{% url 'visitas:lista_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_transportes' %}btn-primary{% else %}btn-outline-primary{% endif %}">Lista</a>
+          <a href="{% url 'visitas:lista_viaturas' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_viaturas' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Viaturas</a>
+          <a href="{% url 'visitas:lista_condutores' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_condutores' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Condutores</a>
+          <a href="{% url 'visitas:lista_indisponibilidades' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_indisponibilidades' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Indisponibilidades</a>
+          <a href="{% url 'visitas:relatorio_diario_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'relatorio_diario_transportes' %}btn-dark{% else %}btn-outline-dark{% endif %}">Folha diária</a>
+        </div>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block transportes_content %}{% endblock transportes_content %}
+  </div>
+</div>
+{% endblock content %}

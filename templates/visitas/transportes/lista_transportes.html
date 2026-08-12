@@ -1,0 +1,65 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+
+{% block transportes_content %}
+<div class="card mb-3 transport-no-print">
+  <div class="card-header"><h5 class="mb-0">Pesquisar transportes</h5></div>
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label mb-1">Pesquisar</label>
+        <input class="form-control" name="q" value="{{ q }}" placeholder="Utente, processo, destino ou motivo">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1">Estado</label>
+        <select class="form-select" name="estado">
+          <option value="">Todos</option>
+          {% for valor, nome in estados %}<option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1">Desde</label>
+        <input class="form-control" type="date" name="data_inicio" value="{{ data_inicio|date:'Y-m-d' }}">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label mb-1">Até</label>
+        <input class="form-control" type="date" name="data_fim" value="{{ data_fim|date:'Y-m-d' }}">
+      </div>
+      <div class="col-md-2 d-flex gap-1">
+        <button class="btn btn-primary w-100" type="submit">Aplicar</button>
+        <a class="btn btn-light w-100" href="{% url 'visitas:lista_transportes' %}">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Marcações de transporte</h5>
+    <a href="{% url 'visitas:criar_transporte' %}" class="btn btn-sm btn-primary">Nova marcação</a>
+  </div>
+  <div class="card-body table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead><tr><th>Data / hora</th><th>Utente</th><th>Destino</th><th>Viatura</th><th>Condutor</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for item in transportes %}
+        <tr>
+          <td><strong>{{ item.data_hora_saida|date:"d/m/Y H:i" }}</strong><br><small class="text-muted">Regresso: {{ item.data_hora_regresso_previsto|date:"d/m/Y H:i" }}</small></td>
+          <td>{{ item.utente.nome }}<br><small class="text-muted">Proc. {{ item.utente.numero_processo }}</small></td>
+          <td>{{ item.destino }}<br><small class="text-muted">{{ item.get_tipo_deslocacao_display }}</small></td>
+          <td>{{ item.viatura|default:"-" }}</td>
+          <td>{{ item.condutor|default:"-" }}</td>
+          <td>
+            {% if item.estado == 'PENDENTE' %}<span class="badge bg-warning text-dark transport-status">Pendente</span>
+            {% elif item.estado == 'CONFIRMADO' %}<span class="badge bg-primary transport-status">Confirmado</span>
+            {% elif item.estado == 'EM_CURSO' %}<span class="badge bg-info text-dark transport-status">Em curso</span>
+            {% elif item.estado == 'CONCLUIDO' %}<span class="badge bg-success transport-status">Concluído</span>
+            {% else %}<span class="badge bg-secondary transport-status">Cancelado</span>{% endif %}
+          </td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'visitas:detalhe_transporte' item.pk %}">Ver</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="7" class="text-center">Nenhum transporte encontrado.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock transportes_content %}

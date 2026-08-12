@@ -2,22 +2,53 @@ from datetime import timedelta, date
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import models
+from django.db import transaction
 from django.db.models import Count
+from django.core.exceptions import ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.timezone import localdate
 from django.db.models import Q
 from django.core.paginator import Paginator
 
-from .forms import UtenteForm, VisitaForm, ExternoForm, UtenteSaidaForm, IsolamentoForm, MovimentoFinanceiroForm
+from .forms import (
+    UtenteForm,
+    VisitaForm,
+    ExternoForm,
+    UtenteSaidaForm,
+    IsolamentoForm,
+    MovimentoFinanceiroForm,
+    TransporteForm,
+    ViaturaForm,
+    CondutorForm,
+    IndisponibilidadeForm,
+)
 
 import json
 from django.db.models.functions import TruncDate, TruncMonth
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
+from django.urls import reverse
+from django.utils.dateparse import parse_date, parse_datetime
+from django.views.decorators.http import require_POST
 from xhtml2pdf import pisa
 
-from .models import Visita, Utente, TipoAlta, TipoInternamento, Genero, Externo, Isolamento, MovimentoFinanceiro
+from .models import (
+    Visita,
+    Utente,
+    TipoAlta,
+    TipoInternamento,
+    Genero,
+    Externo,
+    Isolamento,
+    MovimentoFinanceiro,
+    Viatura,
+    Condutor,
+    Transporte,
+    Indisponibilidade,
+    EstadoTransporte,
+    TipoDeslocacao,
+)
 from django.contrib import messages
 
 
@@ -858,3 +889,385 @@ def financeiro_utente(request, pk):
     }
 
     return render(request, "visitas/financeiro_utente.html", context)
+
+
+# ============================================================
+# TRANSPORTES DE UTENTES / VIATURAS / CONDUTORES
+# ============================================================
+
+def _datetime_local(valor):
+    data = parse_datetime(valor) if valor else None
+    if data and timezone.is_naive(data):
+        data = timezone.make_aware(data)
+    return data
+
+
+def _adicionar_erros_validacao(form, erro):
+    if hasattr(erro, "message_dict"):
+        for campo, mensagens_erro in erro.message_dict.items():
+            destino = campo if campo in form.fields else None
+            for mensagem in mensagens_erro:
+                form.add_error(destino, mensagem)
+    else:
+        for mensagem in erro.messages:
+            form.add_error(None, mensagem)
+
+
+def _guardar_com_bloqueio(transporte):
+    """Evita duas marcações simultâneas da mesma viatura/condutor."""
+    with transaction.atomic():
+        if transporte.viatura_id:
+            Viatura.objects.select_for_update().get(pk=transporte.viatura_id)
+        if transporte.condutor_id:
+            Condutor.objects.select_for_update().get(pk=transporte.condutor_id)
+        transporte.full_clean()
+        transporte.save()
+
+
+@login_required
+def calendario_transportes(request):
+    return render(
+        request,
+        "visitas/transportes/calendario.html",
+        {
+            "estados": EstadoTransporte.choices,
+            "tipos_deslocacao": TipoDeslocacao.choices,
+            "viaturas": Viatura.objects.filter(ativo=True),
+            "condutores": Condutor.objects.filter(ativo=True),
+        },
+    )
+
+
+@login_required
+def eventos_transportes(request):
+    inicio = _datetime_local(request.GET.get("start"))
+    fim = _datetime_local(request.GET.get("end"))
+    transportes = Transporte.objects.select_related(
+        "utente", "viatura", "condutor"
+    )
+
+    if inicio:
+        transportes = transportes.filter(data_hora_regresso_previsto__gt=inicio)
+    if fim:
+        transportes = transportes.filter(data_hora_saida__lt=fim)
+
+    estado = request.GET.get("estado", "").strip()
+    tipo = request.GET.get("tipo", "").strip()
+    viatura = request.GET.get("viatura", "").strip()
+    condutor = request.GET.get("condutor", "").strip()
+
+    if estado:
+        transportes = transportes.filter(estado=estado)
+    if tipo:
+        transportes = transportes.filter(tipo_deslocacao=tipo)
+    if viatura.isdigit():
+        transportes = transportes.filter(viatura_id=viatura)
+    if condutor.isdigit():
+        transportes = transportes.filter(condutor_id=condutor)
+
+    eventos = []
+    for transporte in transportes:
+        titulo = f"{transporte.utente.nome} — {transporte.destino}"
+        eventos.append(
+            {
+                "id": transporte.pk,
+                "title": titulo,
+                "start": transporte.data_hora_saida.isoformat(),
+                "end": transporte.data_hora_regresso_previsto.isoformat(),
+                "url": reverse(
+                    "visitas:detalhe_transporte", args=[transporte.pk]
+                ),
+                "backgroundColor": transporte.cor_calendario,
+                "borderColor": transporte.cor_calendario,
+                "extendedProps": {
+                    "estado": transporte.get_estado_display(),
+                    "tipo": transporte.get_tipo_deslocacao_display(),
+                    "viatura": str(transporte.viatura) if transporte.viatura else "",
+                    "condutor": str(transporte.condutor) if transporte.condutor else "",
+                },
+            }
+        )
+    return JsonResponse(eventos, safe=False)
+
+
+@login_required
+def lista_transportes(request):
+    transportes = Transporte.objects.select_related(
+        "utente", "viatura", "condutor"
+    ).order_by("data_hora_saida")
+    q = request.GET.get("q", "").strip()
+    estado = request.GET.get("estado", "").strip()
+    data_inicio = parse_date(request.GET.get("data_inicio", ""))
+    data_fim = parse_date(request.GET.get("data_fim", ""))
+
+    if q:
+        transportes = transportes.filter(
+            Q(utente__nome__icontains=q)
+            | Q(utente__numero_processo__icontains=q)
+            | Q(destino__icontains=q)
+            | Q(motivo__icontains=q)
+        )
+    if estado:
+        transportes = transportes.filter(estado=estado)
+    if data_inicio:
+        transportes = transportes.filter(data_hora_saida__date__gte=data_inicio)
+    if data_fim:
+        transportes = transportes.filter(data_hora_saida__date__lte=data_fim)
+
+    return render(
+        request,
+        "visitas/transportes/lista_transportes.html",
+        {
+            "transportes": transportes,
+            "estados": EstadoTransporte.choices,
+            "q": q,
+            "estado": estado,
+            "data_inicio": data_inicio,
+            "data_fim": data_fim,
+        },
+    )
+
+
+@login_required
+def criar_transporte(request):
+    initial = {}
+    inicio = _datetime_local(request.GET.get("inicio"))
+    if inicio:
+        initial["data_hora_saida"] = inicio
+        initial["data_hora_regresso_previsto"] = inicio + timedelta(hours=3)
+    utente_id = request.GET.get("utente", "")
+    if utente_id.isdigit():
+        utente = Utente.objects.filter(pk=utente_id, data_saida__isnull=True).first()
+        if utente:
+            initial["utente"] = utente
+
+    if request.method == "POST":
+        form = TransporteForm(request.POST)
+        if form.is_valid():
+            transporte = form.save(commit=False)
+            transporte.criado_por = request.user
+            transporte.atualizado_por = request.user
+            try:
+                _guardar_com_bloqueio(transporte)
+            except ValidationError as erro:
+                _adicionar_erros_validacao(form, erro)
+            else:
+                messages.success(request, "Transporte marcado com sucesso.")
+                return redirect("visitas:detalhe_transporte", pk=transporte.pk)
+    else:
+        form = TransporteForm(initial=initial)
+
+    return render(
+        request,
+        "visitas/transportes/form_transporte.html",
+        {"form": form, "transporte": None},
+    )
+
+
+@login_required
+def editar_transporte(request, pk):
+    transporte = get_object_or_404(Transporte, pk=pk)
+    if transporte.estado in {EstadoTransporte.CONCLUIDO, EstadoTransporte.CANCELADO} and not request.user.is_superuser:
+        messages.warning(request, "Um transporte concluído ou cancelado só pode ser alterado por um administrador.")
+        return redirect("visitas:detalhe_transporte", pk=pk)
+
+    if request.method == "POST":
+        form = TransporteForm(request.POST, instance=transporte)
+        if form.is_valid():
+            transporte = form.save(commit=False)
+            transporte.atualizado_por = request.user
+            try:
+                _guardar_com_bloqueio(transporte)
+            except ValidationError as erro:
+                _adicionar_erros_validacao(form, erro)
+            else:
+                messages.success(request, "Marcação atualizada com sucesso.")
+                return redirect("visitas:detalhe_transporte", pk=pk)
+    else:
+        form = TransporteForm(instance=transporte)
+
+    return render(
+        request,
+        "visitas/transportes/form_transporte.html",
+        {"form": form, "transporte": transporte},
+    )
+
+
+@login_required
+def detalhe_transporte(request, pk):
+    transporte = get_object_or_404(
+        Transporte.objects.select_related(
+            "utente", "viatura", "condutor", "criado_por", "atualizado_por"
+        ),
+        pk=pk,
+    )
+    return render(
+        request,
+        "visitas/transportes/detalhe_transporte.html",
+        {"transporte": transporte},
+    )
+
+
+@require_POST
+@login_required
+def acao_transporte(request, pk, acao):
+    with transaction.atomic():
+        transporte = get_object_or_404(
+            Transporte.objects.select_for_update(), pk=pk
+        )
+        agora = timezone.now()
+
+        if acao == "confirmar" and transporte.estado == EstadoTransporte.PENDENTE:
+            transporte.estado = EstadoTransporte.CONFIRMADO
+            mensagem = "Transporte confirmado."
+        elif acao == "iniciar" and transporte.estado in {
+            EstadoTransporte.PENDENTE,
+            EstadoTransporte.CONFIRMADO,
+        }:
+            transporte.estado = EstadoTransporte.EM_CURSO
+            transporte.data_hora_saida_real = agora
+            mensagem = "Saída efetiva registada."
+        elif acao == "concluir" and transporte.estado == EstadoTransporte.EM_CURSO:
+            transporte.estado = EstadoTransporte.CONCLUIDO
+            transporte.data_hora_regresso_real = agora
+            mensagem = "Regresso à UCCI registado."
+        elif acao == "cancelar" and transporte.estado not in {
+            EstadoTransporte.CONCLUIDO,
+            EstadoTransporte.CANCELADO,
+        }:
+            transporte.estado = EstadoTransporte.CANCELADO
+            mensagem = "Transporte cancelado."
+        else:
+            messages.error(request, "Esta alteração de estado não é permitida.")
+            return redirect("visitas:detalhe_transporte", pk=pk)
+
+        transporte.atualizado_por = request.user
+        try:
+            transporte.full_clean()
+        except ValidationError as erro:
+            if hasattr(erro, "message_dict"):
+                detalhes = [
+                    mensagem
+                    for lista in erro.message_dict.values()
+                    for mensagem in lista
+                ]
+            else:
+                detalhes = erro.messages
+            messages.error(request, "Não foi possível alterar o estado: " + " ".join(detalhes))
+            return redirect("visitas:detalhe_transporte", pk=pk)
+        transporte.save()
+    messages.success(request, mensagem)
+    return redirect("visitas:detalhe_transporte", pk=pk)
+
+
+@login_required
+def relatorio_diario_transportes(request):
+    dia = parse_date(request.GET.get("data", "")) or timezone.localdate()
+    transportes = Transporte.objects.filter(
+        data_hora_saida__date=dia
+    ).select_related("utente", "utente__quarto", "viatura", "condutor")
+    return render(
+        request,
+        "visitas/transportes/relatorio_diario.html",
+        {"dia": dia, "transportes": transportes},
+    )
+
+
+@login_required
+def lista_viaturas(request):
+    return render(
+        request,
+        "visitas/transportes/lista_viaturas.html",
+        {"viaturas": Viatura.objects.all()},
+    )
+
+
+@login_required
+def gerir_viatura(request, pk=None):
+    viatura = get_object_or_404(Viatura, pk=pk) if pk else None
+    if request.method == "POST":
+        form = ViaturaForm(request.POST, instance=viatura)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Viatura guardada com sucesso.")
+            return redirect("visitas:lista_viaturas")
+    else:
+        form = ViaturaForm(instance=viatura)
+    return render(
+        request,
+        "visitas/transportes/form_recurso.html",
+        {"form": form, "titulo": "Viatura", "voltar": "visitas:lista_viaturas"},
+    )
+
+
+@login_required
+def lista_condutores(request):
+    return render(
+        request,
+        "visitas/transportes/lista_condutores.html",
+        {"condutores": Condutor.objects.all()},
+    )
+
+
+@login_required
+def gerir_condutor(request, pk=None):
+    condutor = get_object_or_404(Condutor, pk=pk) if pk else None
+    if request.method == "POST":
+        form = CondutorForm(request.POST, instance=condutor)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Condutor guardado com sucesso.")
+            return redirect("visitas:lista_condutores")
+    else:
+        form = CondutorForm(instance=condutor)
+    return render(
+        request,
+        "visitas/transportes/form_recurso.html",
+        {"form": form, "titulo": "Condutor", "voltar": "visitas:lista_condutores"},
+    )
+
+
+@login_required
+def lista_indisponibilidades(request):
+    indisponibilidades = Indisponibilidade.objects.select_related(
+        "viatura", "condutor"
+    )
+    return render(
+        request,
+        "visitas/transportes/lista_indisponibilidades.html",
+        {"indisponibilidades": indisponibilidades},
+    )
+
+
+@login_required
+def gerir_indisponibilidade(request, pk=None):
+    indisponibilidade = get_object_or_404(Indisponibilidade, pk=pk) if pk else None
+    if request.method == "POST":
+        form = IndisponibilidadeForm(request.POST, instance=indisponibilidade)
+        if form.is_valid():
+            objeto = form.save(commit=False)
+            if not objeto.pk:
+                objeto.criado_por = request.user
+            objeto.save()
+            messages.success(request, "Indisponibilidade guardada com sucesso.")
+            return redirect("visitas:lista_indisponibilidades")
+    else:
+        form = IndisponibilidadeForm(instance=indisponibilidade)
+    return render(
+        request,
+        "visitas/transportes/form_recurso.html",
+        {
+            "form": form,
+            "titulo": "Indisponibilidade",
+            "voltar": "visitas:lista_indisponibilidades",
+        },
+    )
+
+
+@require_POST
+@login_required
+def apagar_indisponibilidade(request, pk):
+    indisponibilidade = get_object_or_404(Indisponibilidade, pk=pk)
+    indisponibilidade.delete()
+    messages.success(request, "Indisponibilidade eliminada.")
+    return redirect("visitas:lista_indisponibilidades")

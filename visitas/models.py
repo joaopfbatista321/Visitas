@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import date
@@ -444,3 +445,383 @@ def atualizar_saldo(sender, instance, created, **kwargs):
         utente.saldo -= instance.valor
 
     utente.save(update_fields=["saldo"])
+
+
+# ============================================================
+# TRANSPORTES DE UTENTES / VIATURAS / CONDUTORES
+# ============================================================
+
+class TipoViatura(models.TextChoices):
+    LIGEIRA = "LIGEIRA", "Ligeira"
+    ADAPTADA = "ADAPTADA", "Adaptada"
+    AMBULANCIA = "AMBULANCIA", "Ambulância"
+    OUTRA = "OUTRA", "Outra"
+
+
+class Viatura(models.Model):
+    matricula = models.CharField("Matrícula", max_length=15, unique=True)
+    designacao = models.CharField("Designação", max_length=120)
+    tipo = models.CharField(
+        "Tipo de viatura",
+        max_length=15,
+        choices=TipoViatura.choices,
+        default=TipoViatura.LIGEIRA,
+    )
+    marca = models.CharField("Marca", max_length=80, blank=True)
+    modelo = models.CharField("Modelo", max_length=80, blank=True)
+    numero_lugares = models.PositiveSmallIntegerField("N.º de lugares", default=5)
+    adaptada_cadeira_rodas = models.BooleanField(
+        "Preparada para cadeira de rodas", default=False
+    )
+    permite_maca = models.BooleanField("Permite transporte em maca", default=False)
+    validade_seguro = models.DateField("Validade do seguro", blank=True, null=True)
+    validade_inspecao = models.DateField("Validade da inspeção", blank=True, null=True)
+    ativo = models.BooleanField("Disponível para marcação", default=True)
+    observacoes = models.TextField("Observações", blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["matricula"]
+        verbose_name = "Viatura"
+        verbose_name_plural = "Viaturas"
+
+    def __str__(self):
+        return f"{self.matricula} — {self.designacao}"
+
+    @property
+    def documentos_validos(self):
+        hoje = timezone.localdate()
+        return not (
+            (self.validade_seguro and self.validade_seguro < hoje)
+            or (self.validade_inspecao and self.validade_inspecao < hoje)
+        )
+
+
+class Condutor(models.Model):
+    nome = models.CharField("Nome", max_length=180)
+    numero_mecanografico = models.CharField(
+        "N.º mecanográfico", max_length=30, blank=True, null=True, unique=True
+    )
+    telefone = models.CharField("Telefone", max_length=30, blank=True)
+    categoria_carta = models.CharField("Categoria da carta", max_length=30, blank=True)
+    numero_carta = models.CharField("N.º da carta", max_length=50, blank=True)
+    validade_carta = models.DateField("Validade da carta", blank=True, null=True)
+    ativo = models.BooleanField("Disponível para marcação", default=True)
+    observacoes = models.TextField("Observações", blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["nome"]
+        verbose_name = "Condutor"
+        verbose_name_plural = "Condutores"
+
+    def __str__(self):
+        if self.numero_mecanografico:
+            return f"{self.nome} ({self.numero_mecanografico})"
+        return self.nome
+
+    @property
+    def carta_valida(self):
+        return not self.validade_carta or self.validade_carta >= timezone.localdate()
+
+
+class TipoDeslocacao(models.TextChoices):
+    CONSULTA = "CONSULTA", "Consulta"
+    EXAME = "EXAME", "Exame"
+    TRATAMENTO = "TRATAMENTO", "Tratamento"
+    URGENCIA = "URGENCIA", "Urgência"
+    TRANSFERENCIA = "TRANSFERENCIA", "Transferência temporária"
+    OUTRO = "OUTRO", "Outro"
+
+
+class MeioTransporte(models.TextChoices):
+    INSTITUICAO = "INSTITUICAO", "Viatura da instituição"
+    AMBULANCIA = "AMBULANCIA", "Ambulância externa"
+    TAXI = "TAXI", "Táxi / TVDE"
+    FAMILIA = "FAMILIA", "Família"
+    OUTRO = "OUTRO", "Outro"
+
+
+class EstadoTransporte(models.TextChoices):
+    PENDENTE = "PENDENTE", "Pendente"
+    CONFIRMADO = "CONFIRMADO", "Confirmado"
+    EM_CURSO = "EM_CURSO", "Em curso"
+    CONCLUIDO = "CONCLUIDO", "Concluído"
+    CANCELADO = "CANCELADO", "Cancelado"
+
+
+class Transporte(models.Model):
+    utente = models.ForeignKey(
+        "Utente",
+        on_delete=models.PROTECT,
+        related_name="transportes",
+        verbose_name="Utente",
+    )
+    tipo_deslocacao = models.CharField(
+        "Tipo de deslocação",
+        max_length=20,
+        choices=TipoDeslocacao.choices,
+        default=TipoDeslocacao.CONSULTA,
+    )
+    motivo = models.CharField("Motivo", max_length=250)
+    destino = models.CharField("Destino", max_length=250)
+
+    data_hora_saida = models.DateTimeField("Saída prevista da UCCI")
+    data_hora_consulta = models.DateTimeField(
+        "Hora da consulta/exame", blank=True, null=True
+    )
+    data_hora_regresso_previsto = models.DateTimeField("Regresso previsto à UCCI")
+    data_hora_saida_real = models.DateTimeField(
+        "Saída efetiva", blank=True, null=True, editable=False
+    )
+    data_hora_regresso_real = models.DateTimeField(
+        "Regresso efetivo", blank=True, null=True, editable=False
+    )
+
+    meio_transporte = models.CharField(
+        "Meio de transporte",
+        max_length=20,
+        choices=MeioTransporte.choices,
+        default=MeioTransporte.INSTITUICAO,
+    )
+    viatura = models.ForeignKey(
+        Viatura,
+        on_delete=models.PROTECT,
+        related_name="transportes",
+        verbose_name="Viatura",
+        blank=True,
+        null=True,
+    )
+    condutor = models.ForeignKey(
+        Condutor,
+        on_delete=models.PROTECT,
+        related_name="transportes",
+        verbose_name="Condutor",
+        blank=True,
+        null=True,
+    )
+    entidade_transporte = models.CharField(
+        "Entidade/pessoa responsável pelo transporte",
+        max_length=180,
+        blank=True,
+        help_text="Ex.: Bombeiros, táxi ou familiar.",
+    )
+
+    acompanhante_nome = models.CharField("Acompanhante", max_length=180, blank=True)
+    acompanhante_contacto = models.CharField(
+        "Contacto do acompanhante", max_length=30, blank=True
+    )
+    necessita_cadeira_rodas = models.BooleanField("Cadeira de rodas", default=False)
+    necessita_maca = models.BooleanField("Maca", default=False)
+    necessita_oxigenio = models.BooleanField("Oxigénio", default=False)
+    outras_necessidades = models.CharField(
+        "Outras necessidades", max_length=250, blank=True
+    )
+
+    estado = models.CharField(
+        "Estado",
+        max_length=15,
+        choices=EstadoTransporte.choices,
+        default=EstadoTransporte.PENDENTE,
+    )
+    observacoes = models.TextField("Observações", blank=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transportes_criados",
+        editable=False,
+    )
+    atualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transportes_atualizados",
+        editable=False,
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["data_hora_saida"]
+        verbose_name = "Transporte de utente"
+        verbose_name_plural = "Transportes de utentes"
+        indexes = [
+            models.Index(fields=["data_hora_saida", "data_hora_regresso_previsto"]),
+            models.Index(fields=["estado"]),
+        ]
+
+    def __str__(self):
+        return f"{self.utente} — {self.data_hora_saida:%d/%m/%Y %H:%M}"
+
+    @property
+    def cor_calendario(self):
+        return {
+            EstadoTransporte.PENDENTE: "#f59e0b",
+            EstadoTransporte.CONFIRMADO: "#2563eb",
+            EstadoTransporte.EM_CURSO: "#7c3aed",
+            EstadoTransporte.CONCLUIDO: "#16a34a",
+            EstadoTransporte.CANCELADO: "#6b7280",
+        }.get(self.estado, "#2563eb")
+
+    def _transportes_sobrepostos(self):
+        if not self.data_hora_saida or not self.data_hora_regresso_previsto:
+            return Transporte.objects.none()
+        return Transporte.objects.exclude(pk=self.pk).exclude(
+            estado=EstadoTransporte.CANCELADO
+        ).filter(
+            data_hora_saida__lt=self.data_hora_regresso_previsto,
+            data_hora_regresso_previsto__gt=self.data_hora_saida,
+        )
+
+    def clean(self):
+        super().clean()
+        erros = {}
+
+        if (
+            self.data_hora_saida
+            and self.data_hora_regresso_previsto
+            and self.data_hora_regresso_previsto <= self.data_hora_saida
+        ):
+            erros["data_hora_regresso_previsto"] = (
+                "O regresso previsto tem de ser posterior à saída."
+            )
+
+        if self.data_hora_consulta and self.data_hora_saida:
+            if self.data_hora_consulta < self.data_hora_saida:
+                erros["data_hora_consulta"] = (
+                    "A consulta/exame não pode ser anterior à saída prevista."
+                )
+            elif (
+                self.data_hora_regresso_previsto
+                and self.data_hora_consulta > self.data_hora_regresso_previsto
+            ):
+                erros["data_hora_consulta"] = (
+                    "A consulta/exame não pode ser posterior ao regresso previsto."
+                )
+
+        if self.data_hora_saida_real and self.data_hora_regresso_real:
+            if self.data_hora_regresso_real <= self.data_hora_saida_real:
+                erros["data_hora_regresso_real"] = (
+                    "O regresso efetivo tem de ser posterior à saída efetiva."
+                )
+
+        if self.estado != EstadoTransporte.CANCELADO:
+            if self.meio_transporte == MeioTransporte.INSTITUICAO:
+                if not self.viatura_id:
+                    erros["viatura"] = "Selecione uma viatura da instituição."
+                if not self.condutor_id:
+                    erros["condutor"] = "Selecione um condutor."
+            elif not (self.entidade_transporte or "").strip():
+                erros["entidade_transporte"] = (
+                    "Indique a entidade ou pessoa responsável pelo transporte."
+                )
+
+        if self.estado != EstadoTransporte.CANCELADO and self.data_hora_saida:
+            dia_saida = (
+                timezone.localtime(self.data_hora_saida).date()
+                if timezone.is_aware(self.data_hora_saida)
+                else self.data_hora_saida.date()
+            )
+
+            if self.viatura_id:
+                if not self.viatura.ativo:
+                    erros["viatura"] = "A viatura selecionada está indisponível."
+                elif self.viatura.validade_seguro and self.viatura.validade_seguro < dia_saida:
+                    erros["viatura"] = "O seguro da viatura estará expirado nesta data."
+                elif self.viatura.validade_inspecao and self.viatura.validade_inspecao < dia_saida:
+                    erros["viatura"] = "A inspeção da viatura estará expirada nesta data."
+                elif self.necessita_cadeira_rodas and not self.viatura.adaptada_cadeira_rodas:
+                    erros["viatura"] = "Selecione uma viatura preparada para cadeira de rodas."
+                elif self.necessita_maca and not self.viatura.permite_maca:
+                    erros["viatura"] = "Selecione uma viatura que permita transporte em maca."
+
+            if self.condutor_id:
+                if not self.condutor.ativo:
+                    erros["condutor"] = "O condutor selecionado está indisponível."
+                elif self.condutor.validade_carta and self.condutor.validade_carta < dia_saida:
+                    erros["condutor"] = "A carta do condutor estará expirada nesta data."
+
+            if self.data_hora_regresso_previsto:
+                sobrepostos = self._transportes_sobrepostos()
+                if self.viatura_id and sobrepostos.filter(viatura_id=self.viatura_id).exists():
+                    erros["viatura"] = "Esta viatura já está atribuída a outro transporte nesse horário."
+                if self.condutor_id and sobrepostos.filter(condutor_id=self.condutor_id).exists():
+                    erros["condutor"] = "Este condutor já está atribuído a outro transporte nesse horário."
+
+                indisponibilidades = Indisponibilidade.objects.filter(
+                    inicio__lt=self.data_hora_regresso_previsto,
+                    fim__gt=self.data_hora_saida,
+                )
+                if self.viatura_id and indisponibilidades.filter(viatura_id=self.viatura_id).exists():
+                    erros["viatura"] = "A viatura tem uma indisponibilidade registada nesse horário."
+                if self.condutor_id and indisponibilidades.filter(condutor_id=self.condutor_id).exists():
+                    erros["condutor"] = "O condutor tem uma indisponibilidade registada nesse horário."
+
+        if erros:
+            raise ValidationError(erros)
+
+
+class Indisponibilidade(models.Model):
+    viatura = models.ForeignKey(
+        Viatura,
+        on_delete=models.CASCADE,
+        related_name="indisponibilidades",
+        blank=True,
+        null=True,
+    )
+    condutor = models.ForeignKey(
+        Condutor,
+        on_delete=models.CASCADE,
+        related_name="indisponibilidades",
+        blank=True,
+        null=True,
+    )
+    inicio = models.DateTimeField("Início")
+    fim = models.DateTimeField("Fim")
+    motivo = models.CharField("Motivo", max_length=250)
+    observacoes = models.TextField("Observações", blank=True)
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="indisponibilidades_transporte_criadas",
+        editable=False,
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-inicio"]
+        verbose_name = "Indisponibilidade"
+        verbose_name_plural = "Indisponibilidades"
+
+    def __str__(self):
+        recurso = self.viatura or self.condutor
+        return f"{recurso} — {self.inicio:%d/%m/%Y %H:%M}"
+
+    def clean(self):
+        super().clean()
+        erros = {}
+        if bool(self.viatura_id) == bool(self.condutor_id):
+            raise ValidationError("Selecione exatamente uma viatura ou um condutor.")
+        if self.inicio and self.fim and self.fim <= self.inicio:
+            erros["fim"] = "O fim tem de ser posterior ao início."
+
+        if self.inicio and self.fim:
+            transportes = Transporte.objects.exclude(
+                estado=EstadoTransporte.CANCELADO
+            ).filter(
+                data_hora_saida__lt=self.fim,
+                data_hora_regresso_previsto__gt=self.inicio,
+            )
+            if self.viatura_id and transportes.filter(viatura_id=self.viatura_id).exists():
+                erros["viatura"] = "A viatura já tem transportes marcados neste período."
+            if self.condutor_id and transportes.filter(condutor_id=self.condutor_id).exists():
+                erros["condutor"] = "O condutor já tem transportes marcados neste período."
+        if erros:
+            raise ValidationError(erros)

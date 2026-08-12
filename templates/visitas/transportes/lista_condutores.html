@@ -1,0 +1,28 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+
+{% block transportes_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Condutores</h4>
+  <a href="{% url 'visitas:criar_condutor' %}" class="btn btn-primary">Novo condutor</a>
+</div>
+<div class="card">
+  <div class="card-body table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead><tr><th>Nome</th><th>N.º mecanográfico</th><th>Telefone</th><th>Carta</th><th>Validade</th><th>Estado</th><th></th></tr></thead>
+      <tbody>
+        {% for item in condutores %}
+        <tr class="{% if not item.ativo %}table-secondary{% endif %}">
+          <td><strong>{{ item.nome }}</strong></td>
+          <td>{{ item.numero_mecanografico|default:"-" }}</td>
+          <td>{{ item.telefone|default:"-" }}</td>
+          <td>{{ item.categoria_carta|default:"-" }}{% if item.numero_carta %}<br><small class="text-muted">{{ item.numero_carta }}</small>{% endif %}</td>
+          <td>{% if item.carta_valida %}<span class="badge bg-success">Válida</span>{% else %}<span class="badge bg-danger">Expirada</span>{% endif %}{% if item.validade_carta %}<br><small>{{ item.validade_carta|date:"d/m/Y" }}</small>{% endif %}</td>
+          <td>{% if item.ativo %}<span class="badge bg-success">Disponível</span>{% else %}<span class="badge bg-secondary">Inativo</span>{% endif %}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{% url 'visitas:editar_condutor' item.pk %}">Editar</a></td>
+        </tr>
+        {% empty %}<tr><td colspan="7" class="text-center">Ainda não existem condutores.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock transportes_content %}

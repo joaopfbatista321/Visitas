@@ -5,18 +5,12 @@
     <div class="m-header">
       <a href="{% url 'index' %}" class="b-brand text-primary">
         <div style="display: flex; align-items: center;">
-          <img src="{% static 'assets/images/Logo SCME.png' %}"
-               alt="logo"
-               style="width: 60px; height: 60px; object-fit: contain;">
-
-          <span style="
-                margin-left: 20px;
-                color: white;
-                font-weight: normal;
-                font-size: 60px;
-                position: relative;
-                top: 5px;
-            ">
+          <img
+            src="{% static 'assets/images/Logo SCME.png' %}"
+            alt="Logótipo da SCME"
+            style="width: 60px; height: 60px; object-fit: contain;"
+          >
+          <span style="margin-left: 20px; color: white; font-weight: normal; font-size: 60px; position: relative; top: 5px;">
             UCCI
           </span>
         </div>
@@ -27,138 +21,193 @@
       <ul class="pc-navbar">
 
         {% if request.user.is_superuser %}
-        <li class="pc-item pc-caption">
-          <label>Administração</label>
-          <i data-feather="shield"></i>
-        </li>
+          <li class="pc-item pc-caption">
+            <label>Administração</label>
+            <i data-feather="shield"></i>
+          </li>
 
-        <li class="pc-item">
-          <a href="{% url 'admin:index' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="settings"></i></span>
-            <span class="pc-mtext">Painel Admin</span>
-          </a>
-        </li>
+          <li class="pc-item{% if request.resolver_match.app_name == 'admin' %} active{% endif %}">
+            <a href="{% url 'admin:index' %}" class="pc-link">
+              <span class="pc-micon"><i data-feather="settings"></i></span>
+              <span class="pc-mtext">Painel Admin</span>
+            </a>
+          </li>
         {% endif %}
 
-        <!-- Dashboard Geral -->
+        <!-- APLICAÇÃO -->
         <li class="pc-item pc-caption">
           <label>Aplicação</label>
           <i data-feather="grid"></i>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'index' %} active{% endif %}">
           <a href="{% url 'index' %}" class="pc-link">
             <span class="pc-micon"><i data-feather="home"></i></span>
             <span class="pc-mtext">Dashboard geral</span>
           </a>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'acessos_rapidos' %} active{% endif %}">
           <a href="{% url 'acessos_rapidos' %}" class="pc-link">
             <span class="pc-micon"><i data-feather="external-link"></i></span>
             <span class="pc-mtext">Acessos rápidos</span>
           </a>
         </li>
-        
 
-        <!-- Gestão de Visitas -->
+        <!-- GESTÃO DE VISITAS -->
         <li class="pc-item pc-caption">
           <label>Gestão de Visitas</label>
           <i data-feather="user-check"></i>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_visitas' %} active{% endif %}">
           <a href="{% url 'visitas:dashboard_visitas' %}" class="pc-link">
             <span class="pc-micon"><i data-feather="activity"></i></span>
             <span class="pc-mtext">Dashboard visitas</span>
           </a>
         </li>
 
-        <!-- Utentes -->
-        <li class="pc-item pc-hasmenu">
+        <!-- UTENTES -->
+        <li class="pc-item pc-hasmenu{% if request.resolver_match.url_name == 'lista_utentes' or request.resolver_match.url_name == 'criar_utente' or request.resolver_match.url_name == 'isolamentos_ativos' %} active pc-trigger{% endif %}">
           <a href="#!" class="pc-link">
             <span class="pc-micon"><i data-feather="users"></i></span>
             <span class="pc-mtext">Utentes</span>
             <span class="pc-arrow"><i class="ti ti-chevron-right"></i></span>
           </a>
           <ul class="pc-submenu">
-            <li class="pc-item">
+            <li class="pc-item{% if request.resolver_match.url_name == 'lista_utentes' %} active{% endif %}">
               <a href="{% url 'visitas:lista_utentes' %}" class="pc-link">Listar utentes</a>
             </li>
-            <li class="pc-item">
+            <li class="pc-item{% if request.resolver_match.url_name == 'criar_utente' %} active{% endif %}">
               <a href="{% url 'visitas:criar_utente' %}" class="pc-link">Novo utente</a>
             </li>
-            <li class="pc-item">
+            <li class="pc-item{% if request.resolver_match.url_name == 'isolamentos_ativos' %} active{% endif %}">
               <a href="{% url 'visitas:isolamentos_ativos' %}" class="pc-link">
-                <span class="pc-micon"><i data-feather="alert-triangle"></i></span>
-                <span class="pc-mtext">Isolamentos ativos</span>
+                Isolamentos ativos
               </a>
             </li>
           </ul>
         </li>
 
-        <!-- Registo de Visitas -->
+        <!-- REGISTO DE VISITAS -->
         <li class="pc-item pc-caption">
           <label>Registo de Visitas</label>
           <i data-feather="log-in"></i>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'escolher_utente_para_visita' %} active{% endif %}">
           <a href="{% url 'visitas:escolher_utente_para_visita' %}" class="pc-link">
             <span class="pc-micon"><i data-feather="user-plus"></i></span>
             <span class="pc-mtext">Registar nova visita</span>
           </a>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'visitas_ativas' %} active{% endif %}">
           <a href="{% url 'visitas:visitas_ativas' %}" class="pc-link">
             <span class="pc-micon"><i data-feather="log-out"></i></span>
             <span class="pc-mtext">Registar saída de visita</span>
           </a>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'visitas_hoje' %} active{% endif %}">
           <a href="{% url 'visitas:visitas_hoje' %}" class="pc-link">
             <span class="pc-micon"><i data-feather="sunrise"></i></span>
             <span class="pc-mtext">Visitas de hoje</span>
           </a>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'visitas_relatorio' %} active{% endif %}">
           <a href="{% url 'visitas:visitas_relatorio' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="calendar"></i></span>
+            <span class="pc-micon"><i data-feather="file-text"></i></span>
             <span class="pc-mtext">Relatório de visitas</span>
           </a>
         </li>
 
-        <!-- Externos -->
+        <!-- TRANSPORTES DE UTENTES -->
+        <li class="pc-item pc-caption">
+          <label>Transportes de Utentes</label>
+          <i data-feather="truck"></i>
+        </li>
+
+        <li class="pc-item{% if request.resolver_match.url_name == 'calendario_transportes' %} active{% endif %}">
+          <a href="{% url 'visitas:calendario_transportes' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="calendar"></i></span>
+            <span class="pc-mtext">Calendário</span>
+          </a>
+        </li>
+
+        <li class="pc-item{% if request.resolver_match.url_name == 'criar_transporte' %} active{% endif %}">
+          <a href="{% url 'visitas:criar_transporte' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="plus-circle"></i></span>
+            <span class="pc-mtext">Nova marcação</span>
+          </a>
+        </li>
+
+        <li class="pc-item{% if request.resolver_match.url_name == 'lista_transportes' %} active{% endif %}">
+          <a href="{% url 'visitas:lista_transportes' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="list"></i></span>
+            <span class="pc-mtext">Listar transportes</span>
+          </a>
+        </li>
+
+        <li class="pc-item pc-hasmenu{% if request.resolver_match.url_name == 'lista_viaturas' or request.resolver_match.url_name == 'criar_viatura' or request.resolver_match.url_name == 'editar_viatura' or request.resolver_match.url_name == 'lista_condutores' or request.resolver_match.url_name == 'criar_condutor' or request.resolver_match.url_name == 'editar_condutor' or request.resolver_match.url_name == 'lista_indisponibilidades' or request.resolver_match.url_name == 'criar_indisponibilidade' or request.resolver_match.url_name == 'editar_indisponibilidade' %} active pc-trigger{% endif %}">
+          <a href="#!" class="pc-link">
+            <span class="pc-micon"><i data-feather="sliders"></i></span>
+            <span class="pc-mtext">Gestão de recursos</span>
+            <span class="pc-arrow"><i class="ti ti-chevron-right"></i></span>
+          </a>
+          <ul class="pc-submenu">
+            <li class="pc-item{% if request.resolver_match.url_name == 'lista_viaturas' or request.resolver_match.url_name == 'criar_viatura' or request.resolver_match.url_name == 'editar_viatura' %} active{% endif %}">
+              <a href="{% url 'visitas:lista_viaturas' %}" class="pc-link">Viaturas</a>
+            </li>
+            <li class="pc-item{% if request.resolver_match.url_name == 'lista_condutores' or request.resolver_match.url_name == 'criar_condutor' or request.resolver_match.url_name == 'editar_condutor' %} active{% endif %}">
+              <a href="{% url 'visitas:lista_condutores' %}" class="pc-link">Condutores</a>
+            </li>
+            <li class="pc-item{% if request.resolver_match.url_name == 'lista_indisponibilidades' or request.resolver_match.url_name == 'criar_indisponibilidade' or request.resolver_match.url_name == 'editar_indisponibilidade' %} active{% endif %}">
+              <a href="{% url 'visitas:lista_indisponibilidades' %}" class="pc-link">Indisponibilidades</a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="pc-item{% if request.resolver_match.url_name == 'relatorio_diario_transportes' %} active{% endif %}">
+          <a href="{% url 'visitas:relatorio_diario_transportes' %}" class="pc-link">
+            <span class="pc-micon"><i data-feather="printer"></i></span>
+            <span class="pc-mtext">Folha diária</span>
+          </a>
+        </li>
+
+        <!-- EXTERNOS -->
         <li class="pc-item pc-caption">
           <label>Externos / Serviços</label>
           <i data-feather="briefcase"></i>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'lista_externos' %} active{% endif %}">
           <a href="{% url 'visitas:lista_externos' %}" class="pc-link">
             <span class="pc-micon"><i data-feather="users"></i></span>
             <span class="pc-mtext">Entradas externas</span>
           </a>
         </li>
 
-        <li class="pc-item">
+        <li class="pc-item{% if request.resolver_match.url_name == 'registar_entrada_externo' %} active{% endif %}">
           <a href="{% url 'visitas:registar_entrada_externo' %}" class="pc-link">
             <span class="pc-micon"><i data-feather="log-in"></i></span>
             <span class="pc-mtext">Nova entrada externa</span>
           </a>
         </li>
 
-        <!-- Logout -->
         {% if request.user.is_authenticated %}
-        <li class="pc-item">
-          <a href="{% url 'logout' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="log-out"></i></span>
-            <span class="pc-mtext">Logout</span>
-          </a>
-        </li>
+          <li class="pc-item pc-caption">
+            <label>Sessão</label>
+            <i data-feather="user"></i>
+          </li>
+
+          <li class="pc-item">
+            <a href="{% url 'logout' %}" class="pc-link">
+              <span class="pc-micon"><i data-feather="log-out"></i></span>
+              <span class="pc-mtext">Logout</span>
+            </a>
+          </li>
         {% endif %}
 
       </ul>
