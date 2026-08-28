@@ -249,6 +249,13 @@ class TransporteForm(BaseStyledModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Todos os campos ficam opcionais
+        for campo in self.fields.values():
+            campo.required = False
+
+        # Apenas o utente é obrigatório
+        self.fields["utente"].required = True
+
         utente_atual = getattr(self.instance, "utente_id", None)
         viatura_atual = getattr(self.instance, "viatura_id", None)
         condutor_atual = getattr(self.instance, "condutor_id", None)
@@ -256,9 +263,11 @@ class TransporteForm(BaseStyledModelForm):
         self.fields["utente"].queryset = Utente.objects.filter(
             Q(data_saida__isnull=True) | Q(pk=utente_atual)
         ).order_by("nome")
+
         self.fields["viatura"].queryset = Viatura.objects.filter(
             Q(ativo=True) | Q(pk=viatura_atual)
         ).order_by("matricula")
+
         self.fields["condutor"].queryset = Condutor.objects.filter(
             Q(ativo=True) | Q(pk=condutor_atual)
         ).order_by("nome")
