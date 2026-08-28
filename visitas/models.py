@@ -564,10 +564,9 @@ class Transporte(models.Model):
         max_length=20,
         choices=TipoDeslocacao.choices,
         default=TipoDeslocacao.CONSULTA,
-        blank=True,
     )
-    motivo = models.CharField("Motivo", max_length=250, blank=True,)
-    destino = models.CharField("Destino", max_length=250, blank=True,)
+    motivo = models.CharField("Motivo", max_length=250)
+    destino = models.CharField("Destino", max_length=250)
 
     data_hora_saida = models.DateTimeField("Saída prevista da UCCI")
     data_hora_consulta = models.DateTimeField(
@@ -586,7 +585,6 @@ class Transporte(models.Model):
         max_length=20,
         choices=MeioTransporte.choices,
         default=MeioTransporte.INSTITUICAO,
-        blank=True,
     )
     viatura = models.ForeignKey(
         Viatura,
