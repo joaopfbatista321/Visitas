@@ -189,7 +189,7 @@ class QuantidadeFormMixin:
     campo_origem = None
     campos_origem_alternativos = ()
     valor_predefinido = None
-    passo = "0.01"
+    passo = "1"
 
     def _valor_origem(self):
         nomes_campos = (
@@ -279,7 +279,7 @@ class ProdutoSolicitadoForm(forms.ModelForm):
                 attrs={
                     "class": "form-control form-control-sm",
                     "min": "0",
-                    "step": "0.01",
+                    "step": "1",
                 }
             ),
             "observacao_enfermagem": forms.TextInput(
@@ -322,7 +322,7 @@ class ProdutoPreparadoForm(
 ):
     campo_quantidade = "quantidade_preparada"
     campo_origem = "quantidade_solicitada"
-    passo = "0.01"
+    passo = "1"
 
     class Meta:
         model = LinhaProdutoPedido
@@ -378,7 +378,7 @@ class ProdutoEntregueForm(
         "quantidade_solicitada",
     )
     valor_predefinido = 0
-    passo = "0.01"
+    passo = "1"
 
     class Meta:
         model = LinhaProdutoPedido
@@ -434,7 +434,7 @@ class ProdutoRecebidoForm(
 ):
     campo_quantidade = "quantidade_recebida"
     campo_origem = "quantidade_entregue"
-    passo = "0.01"
+    passo = "1"
 
     class Meta:
         model = LinhaProdutoPedido
@@ -490,7 +490,7 @@ class ProdutoConsumidoForm(
 ):
     campo_quantidade = "quantidade_consumida"
     campo_origem = "quantidade_recebida"
-    passo = "0.01"
+    passo = "1"
 
     class Meta:
         model = LinhaProdutoPedido

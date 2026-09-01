@@ -2,7 +2,6 @@ from datetime import datetime, time
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
@@ -600,10 +599,6 @@ class PedidoCozinha(models.Model):
 
 
 class LinhaProdutoPedido(models.Model):
-    VALIDADOR_QUANTIDADE = [
-        MinValueValidator(0),
-    ]
-
     pedido = models.ForeignKey(
         PedidoCozinha,
         on_delete=models.CASCADE,
@@ -618,48 +613,33 @@ class LinhaProdutoPedido(models.Model):
         verbose_name="Produto",
     )
 
-    quantidade_solicitada = models.DecimalField(
+    quantidade_solicitada = models.PositiveIntegerField(
         "Quantidade solicitada",
-        max_digits=8,
-        decimal_places=2,
         default=0,
-        validators=VALIDADOR_QUANTIDADE,
     )
 
-    quantidade_preparada = models.DecimalField(
+    quantidade_preparada = models.PositiveIntegerField(
         "Quantidade preparada",
-        max_digits=8,
-        decimal_places=2,
         null=True,
         blank=True,
-        validators=VALIDADOR_QUANTIDADE,
     )
 
-    quantidade_entregue = models.DecimalField(
+    quantidade_entregue = models.PositiveIntegerField(
         "Quantidade entregue",
-        max_digits=8,
-        decimal_places=2,
         null=True,
         blank=True,
-        validators=VALIDADOR_QUANTIDADE,
     )
 
-    quantidade_recebida = models.DecimalField(
+    quantidade_recebida = models.PositiveIntegerField(
         "Quantidade recebida",
-        max_digits=8,
-        decimal_places=2,
         null=True,
         blank=True,
-        validators=VALIDADOR_QUANTIDADE,
     )
 
-    quantidade_consumida = models.DecimalField(
+    quantidade_consumida = models.PositiveIntegerField(
         "Quantidade consumida",
-        max_digits=8,
-        decimal_places=2,
         null=True,
         blank=True,
-        validators=VALIDADOR_QUANTIDADE,
     )
 
     observacao_enfermagem = models.CharField(
@@ -707,27 +687,11 @@ class LinhaProdutoPedido(models.Model):
         return {
             "produto_id": self.produto_id,
             "produto": self.produto.nome,
-            "solicitada": str(self.quantidade_solicitada),
-            "preparada": (
-                str(self.quantidade_preparada)
-                if self.quantidade_preparada is not None
-                else None
-            ),
-            "entregue": (
-                str(self.quantidade_entregue)
-                if self.quantidade_entregue is not None
-                else None
-            ),
-            "recebida": (
-                str(self.quantidade_recebida)
-                if self.quantidade_recebida is not None
-                else None
-            ),
-            "consumida": (
-                str(self.quantidade_consumida)
-                if self.quantidade_consumida is not None
-                else None
-            ),
+            "solicitada": self.quantidade_solicitada,
+            "preparada": self.quantidade_preparada,
+            "entregue": self.quantidade_entregue,
+            "recebida": self.quantidade_recebida,
+            "consumida": self.quantidade_consumida,
         }
 
 
