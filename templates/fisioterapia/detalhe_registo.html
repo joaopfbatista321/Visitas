@@ -1,0 +1,278 @@
+{% extends "fisioterapia/base_fisioterapia.html" %}
+
+{% block fisioterapia_content %}
+
+<!-- CABEÇALHO -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+  <div>
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+      <h4 class="mb-0">
+        Registo de Fisioterapia
+      </h4>
+
+      {% if registo.visibilidade == "CONFIDENCIAL" %}
+        <span class="badge bg-danger">
+          Apenas eu
+        </span>
+      {% elif registo.visibilidade == "GRUPO" %}
+        <span class="badge bg-warning text-dark">
+          Grupo profissional
+        </span>
+      {% else %}
+        <span class="badge bg-success">
+          Todos os profissionais clínicos
+        </span>
+      {% endif %}
+    </div>
+
+    <p class="text-muted mb-0">
+      {{ registo.utente.nome }}
+      · Processo {{ registo.utente.numero_processo }}
+      · {{ registo.data_registo|date:"d/m/Y H:i" }}
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    {% if pode_editar %}
+      <a
+        href="{% url 'fisioterapia:editar_registo' registo.pk %}"
+        class="btn btn-warning"
+      >
+        Editar registo
+      </a>
+    {% endif %}
+
+    <a
+      href="{% url 'fisioterapia:registos_utente' registo.utente.pk %}"
+      class="btn btn-outline-secondary"
+    >
+      Voltar ao histórico
+    </a>
+  </div>
+</div>
+
+
+<div class="row">
+
+  <!-- CONTEÚDO CLÍNICO -->
+  <div class="col-xl-8">
+
+    <!-- Intervenções -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Intervenções realizadas
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <div class="d-flex flex-wrap gap-2">
+          {% for intervencao in registo.tipos_intervencao.all %}
+            <span class="badge bg-light-primary text-primary">
+              {{ intervencao.nome }}
+            </span>
+          {% empty %}
+            <span class="text-muted">
+              Sem intervenção classificada.
+            </span>
+          {% endfor %}
+        </div>
+
+        {% if registo.tipo_trabalho %}
+          <hr>
+
+          <strong>Descrição complementar</strong>
+
+          <div class="mt-2">
+            {{ registo.tipo_trabalho }}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+
+    <!-- Trabalho realizado -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Trabalho realizado
+        </h5>
+      </div>
+
+      <div class="card-body">
+        {% if registo.trabalho_realizado %}
+          {{ registo.trabalho_realizado|linebreaksbr }}
+        {% else %}
+          <span class="text-muted">
+            Não indicado.
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+
+    <!-- Evolução -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Resposta e evolução do utente
+        </h5>
+      </div>
+
+      <div class="card-body">
+        {% if registo.resposta_utente %}
+          {{ registo.resposta_utente|linebreaksbr }}
+        {% else %}
+          <span class="text-muted">
+            Não indicada.
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+
+    <!-- Plano seguinte -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Plano para a próxima sessão
+        </h5>
+      </div>
+
+      <div class="card-body">
+        {% if registo.plano_seguinte %}
+          {{ registo.plano_seguinte|linebreaksbr }}
+        {% else %}
+          <span class="text-muted">
+            Não indicado.
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- INFORMAÇÃO LATERAL -->
+  <div class="col-xl-4">
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Informação do registo
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <p>
+          <strong>Utente:</strong><br>
+          {{ registo.utente.nome }}
+        </p>
+
+        <p>
+          <strong>Número de processo:</strong><br>
+          {{ registo.utente.numero_processo }}
+        </p>
+
+        {% if registo.utente.quarto %}
+          <p>
+            <strong>Quarto e piso:</strong><br>
+            Quarto {{ registo.utente.quarto.codigo }}
+            ·
+            {{ registo.utente.quarto.get_piso_display }}
+          </p>
+        {% endif %}
+
+        <p>
+          <strong>Data do atendimento:</strong><br>
+          {{ registo.data_registo|date:"d/m/Y H:i" }}
+        </p>
+
+        <p>
+          <strong>Fisioterapeuta:</strong><br>
+          {{ registo.profissional.get_full_name|default:registo.profissional.username }}
+        </p>
+
+        <p>
+          <strong>Visibilidade:</strong><br>
+          {{ registo.get_visibilidade_display }}
+        </p>
+
+        {% if registo.participacao %}
+          <p>
+            <strong>Sessão:</strong><br>
+
+            {% if pode_gerir_fisioterapia %}
+              <a href="{% url 'fisioterapia:detalhe_sessao' registo.participacao.sessao.pk %}">
+                {{ registo.participacao.sessao.titulo }}
+              </a>
+            {% else %}
+              {{ registo.participacao.sessao.titulo }}
+            {% endif %}
+
+            <br>
+
+            <small class="text-muted">
+              {{ registo.participacao.sessao.inicio|date:"d/m/Y H:i" }}
+            </small>
+          </p>
+        {% endif %}
+
+        <p>
+          <strong>Criado em:</strong><br>
+          {{ registo.criado_em|date:"d/m/Y H:i" }}
+        </p>
+
+        <p class="mb-0">
+          <strong>Última alteração:</strong><br>
+          {{ registo.atualizado_em|date:"d/m/Y H:i" }}
+        </p>
+      </div>
+    </div>
+
+
+    {% if not pode_editar %}
+      <div class="alert alert-info">
+        Pode consultar este registo, mas apenas
+        <strong>
+          {{ registo.profissional.get_full_name|default:registo.profissional.username }}
+        </strong>
+        pode alterá-lo.
+      </div>
+    {% endif %}
+
+
+    {% if registo.visibilidade == "CONFIDENCIAL" %}
+      <div class="alert alert-danger">
+        <strong>Registo confidencial</strong>
+
+        <div class="small mt-1">
+          Este conteúdo está disponível apenas para o autor.
+        </div>
+      </div>
+
+    {% elif registo.visibilidade == "GRUPO" %}
+      <div class="alert alert-warning">
+        <strong>Registo do grupo profissional</strong>
+
+        <div class="small mt-1">
+          Este conteúdo está disponível para a equipa
+          de Fisioterapia.
+        </div>
+      </div>
+
+    {% else %}
+      <div class="alert alert-success">
+        <strong>Registo clínico partilhado</strong>
+
+        <div class="small mt-1">
+          Disponível para Enfermagem, Médicos, Psicologia,
+          Fisioterapia e Serviço Social.
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock fisioterapia_content %}

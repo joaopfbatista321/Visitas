@@ -6,9 +6,11 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h2 class="mb-0">Utentes</h2>
-      <a href="{% url 'visitas:criar_utente' %}" class="btn btn-primary">
-        Novo utente
-      </a>
+      {% if pode_gerir_utentes %}
+        <a href="{% url 'visitas:criar_utente' %}" class="btn btn-primary">
+          Novo utente
+        </a>
+      {% endif %}
     </div>
 
     <!-- Filtros e Pesquisa -->
@@ -154,12 +156,12 @@
                   Ver
                 </a>
 
-                {% if u.ativo %}
+                {% if pode_gerir_utentes and u.ativo %}
                   <a href="{% url 'visitas:saida_utente' u.pk %}"
                      class="btn btn-sm btn-outline-danger">
                     Saída
                   </a>
-                {% else %}
+                {% elif pode_gerir_utentes %}
                   <button class="btn btn-sm btn-outline-secondary" disabled>
                     Já saiu
                   </button>

@@ -1,0 +1,103 @@
+{% extends "cozinha/base_cozinha.html" %}
+
+{% block cozinha_content %}
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="mb-1">{{ titulo }}</h5>
+        <p class="text-muted mb-0">{{ pedido.unidade.nome }} · {{ pedido.data_servico|date:"d/m/Y" }} · {{ pedido.get_tipo_display }}</p>
+      </div>
+      <div class="d-flex gap-2">
+        {% if pedido.tipo == "REFEICOES" %}<span class="badge bg-warning text-dark">Refeições</span>
+        {% else %}<span class="badge bg-info">Suplementos</span>{% endif %}
+        <span class="badge bg-secondary">{{ pedido.get_estado_display }}</span>
+      </div>
+    </div>
+    <div class="card-body">
+      {% if fase == "preparacao" %}<div class="alert alert-warning mb-0">Confirme ou altere as quantidades que serão preparadas.</div>
+      {% elif fase == "entrega" %}
+        <div class="alert alert-info mb-0">
+          <strong>A Cozinha está a registar a entrega.</strong>
+          <div class="small mt-1">
+            {% if pedido.tipo == "REFEICOES" %}O pedido ficará concluído como entregue, sem confirmação da Enfermagem.
+            {% else %}A Enfermagem poderá criar outro pedido e confirmar as quantidades recebidas.{% endif %}
+          </div>
+        </div>
+      {% elif fase == "rececao" %}<div class="alert alert-info mb-0">Confirme os suplementos recebidos. As diferenças ficam registadas como divergências.</div>
+      {% elif fase == "consumo" %}<div class="alert alert-success mb-0">Registe os suplementos efetivamente consumidos.</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header"><h5 class="mb-0">{% if pedido.tipo == "REFEICOES" %}Refeições{% else %}Produtos e suplementos{% endif %}</h5></div>
+    <div class="card-body table-responsive">
+      {{ linhas_formset.management_form }}
+      {% if linhas_formset.non_form_errors %}
+        <div class="alert alert-danger">{% for erro in linhas_formset.non_form_errors %}<div>{{ erro }}</div>{% endfor %}</div>
+      {% endif %}
+      <table class="table table-sm table-hover align-middle">
+        <thead><tr>
+          {% if pedido.tipo == "REFEICOES" %}<th>Refeição</th><th>Dieta</th>{% else %}<th>Produto</th><th>Unidade</th>{% endif %}
+          <th class="text-center">Solicitada</th>
+          {% if fase != "preparacao" %}<th class="text-center">Preparada</th>{% endif %}
+          {% if fase == "rececao" or fase == "consumo" %}<th class="text-center">Entregue</th>{% endif %}
+          {% if fase == "consumo" %}<th class="text-center">Recebida</th>{% endif %}
+          <th style="width:170px">
+            {% if fase == "preparacao" %}Quantidade preparada{% elif fase == "entrega" %}Quantidade entregue{% elif fase == "rececao" %}Quantidade recebida{% else %}Quantidade consumida{% endif %}
+          </th>
+          <th style="min-width:230px">Observação</th>
+        </tr></thead>
+        <tbody>
+          {% for linha in linhas_formset %}
+            <tr>
+              {% for hidden in linha.hidden_fields %}{{ hidden }}{% endfor %}
+              {% if pedido.tipo == "REFEICOES" %}<td><strong>{{ linha.instance.tipo_refeicao.nome }}</strong></td><td>{{ linha.instance.tipo_dieta.nome }}</td>
+              {% else %}<td><strong>{{ linha.instance.produto.nome }}</strong></td><td>{{ linha.instance.produto.get_unidade_medida_display }}</td>{% endif %}
+              <td class="text-center">{{ linha.instance.quantidade_solicitada }}</td>
+              {% if fase != "preparacao" %}<td class="text-center">{{ linha.instance.quantidade_preparada|default_if_none:"—" }}</td>{% endif %}
+              {% if fase == "rececao" or fase == "consumo" %}<td class="text-center">{{ linha.instance.quantidade_entregue|default_if_none:"—" }}</td>{% endif %}
+              {% if fase == "consumo" %}<td class="text-center">{{ linha.instance.quantidade_recebida|default_if_none:"—" }}</td>{% endif %}
+              <td>
+                {% if fase == "preparacao" %}{{ linha.quantidade_preparada }}{% for erro in linha.quantidade_preparada.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+                {% elif fase == "entrega" %}{{ linha.quantidade_entregue }}{% for erro in linha.quantidade_entregue.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+                {% elif fase == "rececao" %}{{ linha.quantidade_recebida }}{% for erro in linha.quantidade_recebida.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+                {% else %}{{ linha.quantidade_consumida }}{% for erro in linha.quantidade_consumida.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}{% endif %}
+              </td>
+              <td>
+                {% if fase == "preparacao" or fase == "entrega" %}{{ linha.observacao_cozinha }}{% for erro in linha.observacao_cozinha.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+                {% else %}{{ linha.observacao_confirmacao }}{% for erro in linha.observacao_confirmacao.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}{% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="8" class="text-center text-muted py-4">Não existem linhas configuradas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header"><h5 class="mb-0">Observações gerais</h5></div>
+    <div class="card-body">
+      {% if observacoes_form.non_field_errors %}<div class="alert alert-danger">{% for erro in observacoes_form.non_field_errors %}<div>{{ erro }}</div>{% endfor %}</div>{% endif %}
+      {% if fase == "preparacao" or fase == "entrega" %}
+        <label for="{{ observacoes_form.observacoes_cozinha.id_for_label }}" class="form-label">Observações da Cozinha</label>
+        {{ observacoes_form.observacoes_cozinha }}
+        {% for erro in observacoes_form.observacoes_cozinha.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+      {% else %}
+        <label for="{{ observacoes_form.observacoes_confirmacao.id_for_label }}" class="form-label">{% if fase == "rececao" %}Observações da confirmação{% else %}Observações do consumo{% endif %}</label>
+        {{ observacoes_form.observacoes_confirmacao }}
+        {% for erro in observacoes_form.observacoes_confirmacao.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between flex-wrap gap-2">
+    <a href="{% url 'cozinha:detalhe_pedido' pedido.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+    <button class="btn btn-warning" type="submit">{{ texto_botao }}</button>
+  </div>
+</form>
+{% endblock cozinha_content %}

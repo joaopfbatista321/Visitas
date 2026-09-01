@@ -1,0 +1,26 @@
+{% extends "cozinha/base_cozinha.html" %}
+
+{% block cozinha_content %}
+<div class="row justify-content-center">
+  <div class="col-xl-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header"><h5 class="mb-1">Reabrir pedido</h5><p class="text-muted mb-0">{{ pedido.get_tipo_display }} · {{ pedido.unidade.nome }} · {{ pedido.data_servico|date:"d/m/Y" }}</p></div>
+      <div class="card-body">
+        <div class="alert alert-warning">A reabertura permite à Enfermagem corrigir as quantidades antes de a Cozinha iniciar a preparação.</div>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if formulario.non_field_errors %}<div class="alert alert-danger">{% for erro in formulario.non_field_errors %}<div>{{ erro }}</div>{% endfor %}</div>{% endif %}
+          <label for="{{ formulario.motivo.id_for_label }}" class="form-label">{{ formulario.motivo.label }}</label>
+          {{ formulario.motivo }}
+          {% for erro in formulario.motivo.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+          <hr class="my-4">
+          <div class="d-flex justify-content-between">
+            <a href="{% url 'cozinha:detalhe_pedido' pedido.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-warning">Confirmar reabertura</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock cozinha_content %}

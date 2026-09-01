@@ -1,0 +1,97 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}{% if ausencia %}Editar ausência{% else %}Registar ausência{% endif %}{% endblock title %}
+
+{% block enfermagem_content %}
+<div class="row justify-content-center">
+  <div class="col-xl-9">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+        <div>
+          <h5 class="mb-1">
+            {% if ausencia %}Editar ausência / transferência{% else %}Nova ausência / transferência{% endif %}
+          </h5>
+          <p class="text-muted mb-0">
+            <strong>{{ utente.nome }}</strong> · Processo {{ utente.numero_processo }}
+          </p>
+        </div>
+        {% if ausencia and ausencia.estado == "ATIVA" %}<span class="badge bg-danger">Utente ausente</span>{% endif %}
+      </div>
+
+      <div class="card-body">
+        <div class="alert alert-info d-flex align-items-start gap-2">
+          <i data-feather="calendar"></i>
+          <div>
+            <strong>Atualização automática da Reabilitação</strong>
+            <div class="small mt-1">
+              As marcações agendadas durante este período serão assinaladas como canceladas por ausência.
+              Se alterar o período, as marcações futuras são recalculadas.
+            </div>
+          </div>
+        </div>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if formulario.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for erro in formulario.non_field_errors %}<div>{{ erro }}</div>{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ formulario.tipo.id_for_label }}" class="form-label">{{ formulario.tipo.label }}</label>
+              {{ formulario.tipo }}
+              {% for erro in formulario.tipo.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label for="{{ formulario.destino.id_for_label }}" class="form-label">{{ formulario.destino.label }}</label>
+              {{ formulario.destino }}
+              {% for erro in formulario.destino.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label for="{{ formulario.data_hora_inicio.id_for_label }}" class="form-label">{{ formulario.data_hora_inicio.label }}</label>
+              {{ formulario.data_hora_inicio }}
+              {% for erro in formulario.data_hora_inicio.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
+
+            <div class="col-md-6">
+              <label for="{{ formulario.data_hora_fim_prevista.id_for_label }}" class="form-label">{{ formulario.data_hora_fim_prevista.label }}</label>
+              {{ formulario.data_hora_fim_prevista }}
+              {% for erro in formulario.data_hora_fim_prevista.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+              <div class="form-text">Pode ficar em branco quando ainda não existe previsão de regresso.</div>
+            </div>
+
+            <div class="col-12">
+              <label for="{{ formulario.motivo.id_for_label }}" class="form-label">{{ formulario.motivo.label }}</label>
+              {{ formulario.motivo }}
+              {% for erro in formulario.motivo.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
+
+            <div class="col-12">
+              <label for="{{ formulario.observacoes.id_for_label }}" class="form-label">{{ formulario.observacoes.label }}</label>
+              {{ formulario.observacoes }}
+              {% for erro in formulario.observacoes.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <hr class="my-4">
+          <div class="d-flex justify-content-between gap-2">
+            {% if ausencia %}
+              <a href="{% url 'enfermagem:detalhe_ausencia' ausencia.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            {% else %}
+              <a href="{% url 'visitas:detalhe_utente' utente.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            {% endif %}
+            <button type="submit" class="btn btn-danger">
+              {% if ausencia %}Guardar alterações{% else %}Registar ausência{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock enfermagem_content %}

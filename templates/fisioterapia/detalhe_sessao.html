@@ -1,0 +1,693 @@
+{% extends "fisioterapia/base_fisioterapia.html" %}
+
+{% block fisioterapia_content %}
+
+<!-- CABEÇALHO -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+  <div>
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+      <h4 class="mb-0">
+        {{ sessao.titulo }}
+      </h4>
+
+      {% if sessao.estado == "AGENDADA" %}
+        <span class="badge bg-primary">
+          Agendada
+        </span>
+      {% elif sessao.estado == "REALIZADA" %}
+        <span class="badge bg-success">
+          Realizada
+        </span>
+      {% else %}
+        <span class="badge bg-secondary">
+          Cancelada
+        </span>
+      {% endif %}
+
+      {% if sessao.tipo == "GRUPO" %}
+        <span
+          class="badge"
+          style="background-color: #6f42c1;"
+        >
+          Grupo
+        </span>
+      {% else %}
+        <span class="badge bg-info text-dark">
+          Individual
+        </span>
+      {% endif %}
+    </div>
+
+    <p class="text-muted mb-0">
+      {{ sessao.inicio|date:"d/m/Y H:i" }}
+      até
+      {{ sessao.fim|date:"H:i" }}
+      ·
+      {{ sessao.local_exibicao }}
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    {% if pode_editar and sessao.estado == "AGENDADA" %}
+      <a
+        href="{% url 'fisioterapia:editar_sessao' sessao.pk %}"
+        class="btn btn-warning"
+      >
+        Editar sessão
+      </a>
+    {% endif %}
+
+    <a
+      href="{% url 'fisioterapia:calendario' %}"
+      class="btn btn-outline-secondary"
+    >
+      Voltar ao calendário
+    </a>
+  </div>
+</div>
+
+
+<!-- PROFISSIONAL RESPONSÁVEL -->
+<div class="alert alert-primary border-0 shadow-sm">
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+      <strong>Fisioterapeuta responsável</strong>
+
+      <div class="fs-5 mt-1">
+        {{ sessao.profissional.get_full_name|default:sessao.profissional.username }}
+      </div>
+
+      <div class="small mt-1">
+        Este é o profissional responsável pela realização,
+        validação e conclusão desta sessão.
+      </div>
+    </div>
+
+    {% if pode_editar %}
+      <span class="badge bg-primary">
+        Sessão atribuída a si
+      </span>
+    {% else %}
+      <span class="badge bg-light text-dark">
+        Apenas consulta
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+
+<div class="row">
+
+  <!-- COLUNA PRINCIPAL -->
+  <div class="col-xl-8">
+
+    <!-- INFORMAÇÃO DA SESSÃO -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Informação da sessão
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <div class="row">
+
+          <div class="col-md-6">
+            <p>
+              <strong>Formato:</strong><br>
+              {{ sessao.get_tipo_display }}
+            </p>
+
+            <p>
+              <strong>Início:</strong><br>
+              {{ sessao.inicio|date:"d/m/Y H:i" }}
+            </p>
+
+            <p>
+              <strong>Fim:</strong><br>
+              {{ sessao.fim|date:"d/m/Y H:i" }}
+            </p>
+
+            <p class="mb-md-0">
+              <strong>Duração:</strong><br>
+              {{ sessao.duracao_minutos }} minutos
+            </p>
+          </div>
+
+          <div class="col-md-6">
+            <p>
+              <strong>Fisioterapeuta responsável:</strong><br>
+              {{ sessao.profissional.get_full_name|default:sessao.profissional.username }}
+            </p>
+
+            <p>
+              <strong>Local de realização:</strong><br>
+              {{ sessao.local_exibicao }}
+            </p>
+
+            <p>
+              <strong>Estado:</strong><br>
+              {{ sessao.get_estado_display }}
+            </p>
+          </div>
+
+        </div>
+
+        <hr>
+
+        <div class="mb-3">
+          <strong>Tipos de intervenção</strong>
+
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            {% for intervencao in sessao.tipos_intervencao.all %}
+              <span class="badge bg-light-primary text-primary">
+                {{ intervencao.nome }}
+              </span>
+            {% empty %}
+              <span class="text-muted">
+                Sem intervenção especificada.
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="row">
+          <div class="col-md-7">
+            <strong>Trabalho e objetivos planeados</strong>
+
+            <div class="mt-2">
+              {% if sessao.trabalho_planeado %}
+                {{ sessao.trabalho_planeado|linebreaksbr }}
+              {% else %}
+                <span class="text-muted">
+                  Não indicado.
+                </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-5">
+            <strong>Observações de organização</strong>
+
+            <div class="mt-2">
+              {% if sessao.observacoes %}
+                {{ sessao.observacoes|linebreaksbr }}
+              {% else %}
+                <span class="text-muted">
+                  Sem observações.
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- PARTICIPANTES -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h5 class="mb-1">
+            Utentes
+          </h5>
+
+          <small class="text-muted">
+            A presença pode ser validada individualmente.
+            Quando não existirem utentes agendados,
+            a sessão passa automaticamente para realizada.
+          </small>
+        </div>
+
+        <div class="d-flex align-items-center flex-wrap gap-2">
+          <span class="badge bg-light-primary text-primary">
+            {{ participacoes|length }}
+            participante{{ participacoes|length|pluralize }}
+          </span>
+
+          {% if pode_validar and sessao.estado == "AGENDADA" %}
+            <form
+              method="post"
+              action="{% url 'fisioterapia:marcar_todos_realizados' sessao.pk %}"
+              onsubmit="return confirm('Confirmar todos os utentes agendados como realizados?');"
+            >
+              {% csrf_token %}
+
+              <button
+                type="submit"
+                class="btn btn-sm btn-success"
+              >
+                {% if sessao.tipo == "GRUPO" %}
+                  Marcar todos como realizados
+                {% else %}
+                  Marcar como realizada
+                {% endif %}
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+
+        {% for participacao in participacoes %}
+          <div
+            class="p-3 border-bottom
+            {% if participacao.estado == 'CANCELADO' or participacao.estado == 'CANCELADO_ALTA' %}
+              fisio-participante-cancelado
+            {% endif %}"
+          >
+
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+              <!-- IDENTIFICAÇÃO DO UTENTE -->
+              <div>
+                <h6 class="mb-1">
+                  {{ participacao.utente.nome }}
+                </h6>
+
+                <div class="text-muted small mb-2">
+                  Processo:
+                  {{ participacao.utente.numero_processo }}
+
+                  {% if participacao.utente.quarto %}
+                    · Quarto:
+                    {{ participacao.utente.quarto }}
+                  {% endif %}
+                </div>
+
+                {% if participacao.estado == "AGENDADO" %}
+                  <span class="badge bg-primary fisio-status">
+                    Agendado
+                  </span>
+                {% elif participacao.estado == "REALIZADO" %}
+                  <span class="badge bg-success fisio-status">
+                    Realizou
+                  </span>
+                {% elif participacao.estado == "FALTOU" %}
+                  <span class="badge bg-danger fisio-status">
+                    Faltou
+                  </span>
+                {% elif participacao.estado == "CANCELADO_ALTA" %}
+                  <span class="badge bg-dark fisio-status">
+                    Cancelado por alta
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary fisio-status">
+                    Cancelado
+                  </span>
+                {% endif %}
+
+                {% if participacao.motivo_estado %}
+                  <div class="small text-muted mt-2">
+                    {{ participacao.motivo_estado }}
+                  </div>
+                {% endif %}
+
+                {% if participacao.estado_atualizado_em %}
+                  <div class="small text-muted mt-2">
+                    Validado em
+                    {{ participacao.estado_atualizado_em|date:"d/m/Y H:i" }}
+
+                    por
+
+                    {% if participacao.estado_atualizado_por %}
+                      {{ participacao.estado_atualizado_por.get_full_name|default:participacao.estado_atualizado_por.username }}
+                    {% else %}
+                      Sistema
+                    {% endif %}
+                  </div>
+                {% endif %}
+              </div>
+
+
+              <!-- AÇÕES RÁPIDAS -->
+              <div class="d-flex flex-wrap justify-content-end gap-2">
+
+                {% if pode_validar %}
+                  {% if participacao.estado == "AGENDADO" %}
+
+                    <form
+                      method="post"
+                      action="{% url 'fisioterapia:acao_participacao' participacao.pk 'realizado' %}"
+                    >
+                      {% csrf_token %}
+
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-success"
+                      >
+                        <i data-feather="check"></i>
+                        Realizou
+                      </button>
+                    </form>
+
+                    <form
+                      method="post"
+                      action="{% url 'fisioterapia:acao_participacao' participacao.pk 'faltou' %}"
+                      onsubmit="return confirm('Confirmar que o utente faltou?');"
+                    >
+                      {% csrf_token %}
+
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-outline-danger"
+                      >
+                        Faltou
+                      </button>
+                    </form>
+
+                    <form
+                      method="post"
+                      action="{% url 'fisioterapia:acao_participacao' participacao.pk 'cancelar' %}"
+                      onsubmit="return confirm('Cancelar a participação deste utente?');"
+                    >
+                      {% csrf_token %}
+
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-outline-secondary"
+                      >
+                        Cancelar
+                      </button>
+                    </form>
+
+                  {% elif participacao.estado == "CANCELADO" and participacao.utente.ativo %}
+
+                    <form
+                      method="post"
+                      action="{% url 'fisioterapia:acao_participacao' participacao.pk 'reativar' %}"
+                    >
+                      {% csrf_token %}
+
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-outline-primary"
+                      >
+                        Reativar
+                      </button>
+                    </form>
+
+                  {% endif %}
+                {% endif %}
+
+                {% if participacao.estado == "REALIZADO" and pode_editar %}
+                  <a
+                    href="{% url 'fisioterapia:criar_registo_participacao' participacao.utente.pk participacao.pk %}"
+                    class="btn btn-sm btn-primary"
+                  >
+                    Criar registo
+                  </a>
+                {% endif %}
+
+                <a
+                  href="{% url 'fisioterapia:registos_utente' participacao.utente.pk %}"
+                  class="btn btn-sm btn-outline-info"
+                >
+                  Histórico clínico
+                </a>
+
+              </div>
+            </div>
+
+
+            <!-- REGISTOS CLÍNICOS VISÍVEIS -->
+            {% if participacao.registos_visiveis %}
+              <div class="mt-3">
+                <strong class="small">
+                  Registos desta sessão
+                </strong>
+
+                <div class="list-group list-group-flush mt-2">
+                  {% for registo in participacao.registos_visiveis %}
+                    <div class="list-group-item px-0">
+                      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+                        <div>
+                          <strong>
+                            {{ registo.intervencoes_exibicao }}
+                          </strong>
+
+                          {% if registo.tipo_trabalho %}
+                            <div class="small">
+                              {{ registo.tipo_trabalho }}
+                            </div>
+                          {% endif %}
+
+                          <div class="small text-muted">
+                            {{ registo.data_registo|date:"d/m/Y H:i" }}
+                            ·
+                            {{ registo.profissional.get_full_name|default:registo.profissional.username }}
+                            ·
+                            {{ registo.get_visibilidade_display }}
+                          </div>
+                        </div>
+
+                        <div class="d-flex gap-1">
+                          <a
+                            href="{% url 'fisioterapia:detalhe_registo' registo.pk %}"
+                            class="btn btn-sm btn-outline-primary"
+                          >
+                            Ver
+                          </a>
+
+                          {% if registo.profissional_id == request.user.id %}
+                            <a
+                              href="{% url 'fisioterapia:editar_registo' registo.pk %}"
+                              class="btn btn-sm btn-outline-warning"
+                            >
+                              Editar
+                            </a>
+                          {% endif %}
+                        </div>
+
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+
+            <!-- HISTÓRICO DOS ESTADOS -->
+            <details class="mt-3">
+              <summary class="small text-muted">
+                Ver histórico da presença
+              </summary>
+
+              <div class="table-responsive mt-2">
+                <table class="table table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Estado anterior</th>
+                      <th>Novo estado</th>
+                      <th>Alterado por</th>
+                      <th>Motivo</th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {% for historico in participacao.historico.all %}
+                      <tr>
+                        <td>
+                          {{ historico.alterado_em|date:"d/m/Y H:i" }}
+                        </td>
+
+                        <td>
+                          {{ historico.get_estado_anterior_display|default:"-" }}
+                        </td>
+
+                        <td>
+                          {{ historico.get_estado_novo_display }}
+                        </td>
+
+                        <td>
+                          {% if historico.alterado_por %}
+                            {{ historico.alterado_por.get_full_name|default:historico.alterado_por.username }}
+                          {% else %}
+                            Sistema
+                          {% endif %}
+                        </td>
+
+                        <td>
+                          {{ historico.motivo|default:"-" }}
+                        </td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="5" class="text-muted">
+                          Ainda não existem alterações.
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+          </div>
+
+        {% empty %}
+          <div class="text-center text-muted py-5">
+            Esta sessão não tem participantes.
+          </div>
+        {% endfor %}
+
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- COLUNA LATERAL -->
+  <div class="col-xl-4">
+
+    <!-- RESUMO E AUDITORIA -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Resumo e auditoria
+        </h5>
+      </div>
+
+      <div class="card-body">
+        <p>
+          <strong>Profissional responsável:</strong><br>
+          {{ sessao.profissional.get_full_name|default:sessao.profissional.username }}
+        </p>
+
+        <p>
+          <strong>Criada por:</strong><br>
+
+          {% if sessao.criado_por %}
+            {{ sessao.criado_por.get_full_name|default:sessao.criado_por.username }}
+          {% else %}
+            Registo anterior
+          {% endif %}
+        </p>
+
+        <p>
+          <strong>Criada em:</strong><br>
+          {{ sessao.criado_em|date:"d/m/Y H:i" }}
+        </p>
+
+        <p>
+          <strong>Última alteração:</strong><br>
+          {{ sessao.atualizado_em|date:"d/m/Y H:i" }}
+        </p>
+
+        {% if sessao.estado_atualizado_em %}
+          <hr>
+
+          <p>
+            <strong>Estado atualizado em:</strong><br>
+            {{ sessao.estado_atualizado_em|date:"d/m/Y H:i" }}
+          </p>
+
+          <p class="mb-0">
+            <strong>Estado atualizado por:</strong><br>
+
+            {% if sessao.estado_atualizado_por %}
+              {{ sessao.estado_atualizado_por.get_full_name|default:sessao.estado_atualizado_por.username }}
+            {% else %}
+              Sistema
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+
+    <!-- INFORMAÇÃO DE PERMISSÕES -->
+    {% if not pode_editar %}
+      <div class="alert alert-info">
+        Pode consultar esta sessão, mas apenas
+        <strong>
+          {{ sessao.profissional.get_full_name|default:sessao.profissional.username }}
+        </strong>
+        pode alterá-la ou validar as presenças.
+      </div>
+    {% endif %}
+
+
+    <!-- EXPLICAÇÃO DO ESTADO -->
+    {% if sessao.estado == "AGENDADA" %}
+      <div class="alert alert-primary">
+        <strong>Sessão pendente</strong>
+
+        <div class="small mt-1">
+          A sessão ficará realizada quando todos os utentes
+          forem marcados como realizados, faltaram ou cancelados.
+        </div>
+      </div>
+    {% elif sessao.estado == "REALIZADA" %}
+      <div class="alert alert-success">
+        <strong>Sessão concluída</strong>
+
+        <div class="small mt-1">
+          Todos os utentes foram validados e já não existem
+          presenças pendentes.
+        </div>
+      </div>
+    {% else %}
+      <div class="alert alert-secondary">
+        <strong>Sessão cancelada</strong>
+
+        <div class="small mt-1">
+          A marcação permanece guardada para efeitos de histórico.
+        </div>
+      </div>
+    {% endif %}
+
+
+    <!-- CANCELAR SESSÃO -->
+    {% if pode_editar and sessao.estado == "AGENDADA" %}
+      <div class="card border-danger shadow-sm">
+        <div class="card-header">
+          <h5 class="mb-0 text-danger">
+            Cancelar sessão
+          </h5>
+        </div>
+
+        <div class="card-body">
+          <form
+            method="post"
+            action="{% url 'fisioterapia:cancelar_sessao' sessao.pk %}"
+            onsubmit="return confirm('Tem a certeza de que pretende cancelar esta sessão?');"
+          >
+            {% csrf_token %}
+
+            <label
+              for="motivo-cancelamento"
+              class="form-label"
+            >
+              Motivo
+            </label>
+
+            <textarea
+              id="motivo-cancelamento"
+              name="motivo"
+              class="form-control mb-3"
+              rows="3"
+              required
+              placeholder="Indique o motivo do cancelamento..."
+            ></textarea>
+
+            <button
+              type="submit"
+              class="btn btn-outline-danger w-100"
+            >
+              Cancelar sessão
+            </button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock fisioterapia_content %}

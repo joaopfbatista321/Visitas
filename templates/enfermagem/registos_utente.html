@@ -1,0 +1,344 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}
+  Histórico de Enfermagem
+{% endblock title %}
+
+{% block enfermagem_content %}
+
+<!-- Cabeçalho -->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+
+  <div>
+    <h4 class="mb-1">Histórico de Enfermagem</h4>
+
+    <p class="text-muted mb-0">
+      <strong>{{ utente.nome }}</strong>
+      · Processo {{ utente.numero_processo }}
+
+      {% if utente.quarto %}
+        · {{ utente.quarto }}
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+
+    {% if pode_criar %}
+      <a
+        href="{% url 'enfermagem:criar_registo' utente.pk %}"
+        class="btn btn-danger"
+      >
+        <i data-feather="plus-circle" class="me-1"></i>
+        Novo registo
+      </a>
+
+      <a
+        href="{% url 'enfermagem:criar_queda' utente.pk %}"
+        class="btn btn-outline-danger"
+      >
+        <i data-feather="alert-triangle" class="me-1"></i>
+        Registar queda
+      </a>
+    {% endif %}
+
+    <a
+      href="{% url 'visitas:detalhe_utente' utente.pk %}"
+      class="btn btn-outline-secondary"
+    >
+      Voltar à ficha
+    </a>
+
+  </div>
+</div>
+
+{% if utente.data_saida %}
+  <div class="alert alert-secondary">
+    <div class="d-flex align-items-start gap-2">
+      <i data-feather="archive"></i>
+
+      <div>
+        <strong>Utente com alta</strong>
+
+        <div class="small mt-1">
+          O histórico permanece disponível para consulta,
+          mas já não podem ser criados novos registos.
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<!-- Confidencialidade -->
+<div class="alert alert-info">
+  <div class="d-flex align-items-start gap-2">
+    <i data-feather="shield"></i>
+
+    <div>
+      <strong>Registos apresentados conforme a visibilidade</strong>
+
+      <div class="small mt-1">
+        Os registos confidenciais aparecem apenas ao autor.
+        Os registos de grupo aparecem à Enfermagem.
+        Os registos gerais aparecem às equipas clínicas
+        autorizadas no Django Admin.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Histórico -->
+<div class="row g-3">
+
+  {% for registo in registos %}
+
+    <div class="col-12">
+      <div
+        class="card border-0 shadow-sm h-100
+          {% if registo.tem_registo_queda %}
+            border-start border-danger border-4
+          {% endif %}
+        "
+      >
+        <div class="card-body">
+
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+            <div class="flex-grow-1">
+
+              <!-- Tipo e visibilidade -->
+              <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+
+                {% if registo.tem_registo_queda %}
+                  <div class="avtar bg-light-danger text-danger">
+                    <i data-feather="alert-triangle"></i>
+                  </div>
+                {% else %}
+                  <div class="avtar bg-light-primary text-primary">
+                    <i data-feather="clipboard"></i>
+                  </div>
+                {% endif %}
+
+                <h5 class="mb-0">
+                  {{ registo.tipo_registo.nome }}
+                </h5>
+
+                {% if registo.tem_registo_queda %}
+                  <span class="badge bg-danger">
+                    Queda
+                  </span>
+
+                  <span
+                    class="badge
+                      {% if registo.queda.gravidade == 'SEM_LESAO' %}
+                        bg-success
+                      {% elif registo.queda.gravidade == 'MINOR' %}
+                        bg-info
+                      {% elif registo.queda.gravidade == 'MODERADA' %}
+                        bg-warning text-dark
+                      {% else %}
+                        bg-danger
+                      {% endif %}
+                    "
+                  >
+                    {{ registo.queda.get_gravidade_display }}
+                  </span>
+                {% endif %}
+
+                {% if registo.visibilidade == "CONFIDENCIAL" %}
+                  <span class="badge bg-danger">
+                    Apenas eu
+                  </span>
+                {% elif registo.visibilidade == "GRUPO" %}
+                  <span class="badge bg-warning text-dark">
+                    Grupo profissional
+                  </span>
+                {% else %}
+                  <span class="badge bg-success">
+                    Todos
+                  </span>
+                {% endif %}
+
+              </div>
+
+              <!-- Metadados -->
+              <div class="text-muted small mb-3">
+                <i data-feather="calendar" class="me-1"></i>
+                {{ registo.data_registo|date:"d/m/Y H:i" }}
+
+                {% if registo.turno %}
+                  · {{ registo.get_turno_display }}
+                {% endif %}
+
+                ·
+
+                <i data-feather="user" class="mx-1"></i>
+                {{ registo.profissional.get_full_name|default:registo.profissional.username }}
+              </div>
+
+              {% if registo.tem_registo_queda %}
+
+                <!-- Resumo da queda -->
+                <div class="row g-3">
+
+                  <div class="col-md-4">
+                    <small class="text-muted d-block">
+                      Data e hora da queda
+                    </small>
+
+                    <strong>
+                      {{ registo.queda.data_hora_queda|date:"d/m/Y H:i" }}
+                    </strong>
+                  </div>
+
+                  <div class="col-md-4">
+                    <small class="text-muted d-block">
+                      Local
+                    </small>
+
+                    <strong>
+                      {{ registo.queda.get_local_queda_display }}
+                    </strong>
+
+                    {% if registo.queda.local_detalhe %}
+                      <div class="small">
+                        {{ registo.queda.local_detalhe }}
+                      </div>
+                    {% endif %}
+                  </div>
+
+                  <div class="col-md-4">
+                    <small class="text-muted d-block">
+                      Tipo
+                    </small>
+
+                    <strong>
+                      {{ registo.queda.get_tipo_queda_display }}
+                    </strong>
+                  </div>
+
+                  <div class="col-12">
+                    <small class="text-muted d-block">
+                      Descrição
+                    </small>
+
+                    <div>
+                      {{ registo.queda.descricao_ocorrencia|truncatechars:350|linebreaksbr }}
+                    </div>
+                  </div>
+
+                </div>
+
+              {% else %}
+
+                <!-- Resumo do registo -->
+                <div class="mb-3">
+                  <strong>Observação e evolução</strong>
+
+                  <div class="mt-1">
+                    {{ registo.observacao|truncatechars:400|linebreaksbr }}
+                  </div>
+                </div>
+
+                {% if registo.cuidados_realizados %}
+                  <div class="alert alert-light border mb-0 py-2">
+                    <strong>Cuidados realizados</strong>
+
+                    <div class="small mt-1">
+                      {{ registo.cuidados_realizados|truncatechars:250|linebreaksbr }}
+                    </div>
+                  </div>
+                {% endif %}
+
+              {% endif %}
+
+            </div>
+
+            <!-- Ações -->
+            <div class="d-flex flex-column gap-2">
+
+              {% if registo.tem_registo_queda %}
+                <a
+                  href="{% url 'enfermagem:detalhe_queda' registo.queda.pk %}"
+                  class="btn btn-sm btn-outline-danger"
+                >
+                  Ver ficha de queda
+                </a>
+              {% else %}
+                <a
+                  href="{% url 'enfermagem:detalhe_registo' registo.pk %}"
+                  class="btn btn-sm btn-outline-primary"
+                >
+                  Ver detalhe
+                </a>
+              {% endif %}
+
+              {% if registo.profissional_id == request.user.id %}
+                {% if registo.tem_registo_queda %}
+                  <a
+                    href="{% url 'enfermagem:editar_queda' registo.queda.pk %}"
+                    class="btn btn-sm btn-outline-warning"
+                  >
+                    Editar
+                  </a>
+                {% else %}
+                  <a
+                    href="{% url 'enfermagem:editar_registo' registo.pk %}"
+                    class="btn btn-sm btn-outline-warning"
+                  >
+                    Editar
+                  </a>
+                {% endif %}
+              {% endif %}
+
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  {% empty %}
+
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+
+          <div class="avtar avtar-xl bg-light-danger text-danger mb-3">
+            <i data-feather="clipboard"></i>
+          </div>
+
+          <h4>Sem registos visíveis</h4>
+
+          <p class="text-muted mb-3">
+            Ainda não existem registos de Enfermagem
+            que possa consultar para este utente.
+          </p>
+
+          {% if pode_criar %}
+            <div class="d-flex justify-content-center flex-wrap gap-2">
+              <a
+                href="{% url 'enfermagem:criar_registo' utente.pk %}"
+                class="btn btn-danger"
+              >
+                Criar primeiro registo
+              </a>
+
+              <a
+                href="{% url 'enfermagem:criar_queda' utente.pk %}"
+                class="btn btn-outline-danger"
+              >
+                Registar queda
+              </a>
+            </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+  {% endfor %}
+
+</div>
+
+{% endblock enfermagem_content %}

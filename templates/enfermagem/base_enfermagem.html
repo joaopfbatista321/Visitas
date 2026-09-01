@@ -1,0 +1,71 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Enfermagem{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <div class="page-header mb-3">
+      <div class="page-block">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avtar avtar-xl bg-light-danger text-danger">
+                <i data-feather="heart"></i>
+              </div>
+              <div>
+                <h3 class="mb-1">Enfermagem</h3>
+                <p class="text-muted mb-0">
+                  Registos, quedas, ausências e acompanhamento da Reabilitação.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">Voltar às áreas</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body py-2">
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{% url 'visitas:lista_utentes' %}" class="btn btn-outline-danger">
+            <i data-feather="users" class="me-1"></i>Utentes
+          </a>
+          <a
+            href="{% url 'enfermagem:lista_quedas' %}"
+            class="btn {% if request.resolver_match.url_name == 'lista_quedas' or request.resolver_match.url_name == 'criar_queda' or request.resolver_match.url_name == 'detalhe_queda' or request.resolver_match.url_name == 'editar_queda' %}btn-danger{% else %}btn-outline-danger{% endif %}"
+          >
+            <i data-feather="alert-triangle" class="me-1"></i>Registo de quedas
+          </a>
+          <a
+            href="{% url 'enfermagem:lista_ausencias' %}"
+            class="btn {% if request.resolver_match.url_name == 'lista_ausencias' or request.resolver_match.url_name == 'criar_ausencia' or request.resolver_match.url_name == 'detalhe_ausencia' or request.resolver_match.url_name == 'editar_ausencia' or request.resolver_match.url_name == 'registar_regresso_ausencia' %}btn-danger{% else %}btn-outline-danger{% endif %}"
+          >
+            <i data-feather="log-out" class="me-1"></i>Ausências / Transferências
+          </a>
+          <a
+            href="{% url 'enfermagem:calendario_reabilitacao' %}"
+            class="btn {% if request.resolver_match.url_name == 'calendario_reabilitacao' %}btn-danger{% else %}btn-outline-danger{% endif %}"
+          >
+            <i data-feather="calendar" class="me-1"></i>Calendário da Reabilitação
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block enfermagem_content %}{% endblock enfermagem_content %}
+  </div>
+</div>
+{% endblock content %}

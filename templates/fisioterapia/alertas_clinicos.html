@@ -1,0 +1,450 @@
+{% extends "fisioterapia/base_fisioterapia.html" %}
+
+{% block title %}
+  Alertas clínicos
+{% endblock title %}
+
+{% block extrastyle %}
+{{ block.super }}
+
+<style>
+  .alerta-clinico-item {
+    border: 1px solid #e9ecef;
+    border-left-width: 4px;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: #fff;
+  }
+
+  .alerta-queda {
+    border-left-color: #dc3545;
+  }
+
+  .alerta-isolamento {
+    border-left-color: #fd7e14;
+  }
+
+  .alerta-clinico-item + .alerta-clinico-item {
+    margin-top: 0.75rem;
+  }
+
+  .alerta-descricao {
+    white-space: pre-line;
+  }
+</style>
+{% endblock extrastyle %}
+
+{% block fisioterapia_content %}
+
+<!-- Cabeçalho -->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+  <div>
+    <h4 class="mb-1">
+      Alertas clínicos
+    </h4>
+
+    <p class="text-muted mb-0">
+      Quedas recentes e isolamentos ativos com relevância
+      para a intervenção da Fisioterapia.
+    </p>
+  </div>
+
+  <a
+    href="{% url 'fisioterapia:calendario' %}"
+    class="btn btn-outline-secondary"
+  >
+    <i data-feather="calendar" class="me-1"></i>
+    Voltar ao calendário
+  </a>
+</div>
+
+<!-- Aviso -->
+<div class="alert alert-info">
+  <div class="d-flex align-items-start gap-2">
+    <i data-feather="info"></i>
+
+    <div>
+      <strong>Informação clínica para consulta</strong>
+
+      <div class="small mt-1">
+        As quedas permanecem nesta página durante as
+        24 horas seguintes à ocorrência. Os isolamentos
+        permanecem enquanto estiverem ativos.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Indicadores -->
+<div class="row g-3 mb-3">
+
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">
+            Quedas nas últimas 24 horas
+          </p>
+
+          <h3 class="mb-0 text-danger">
+            {{ total_quedas_recentes }}
+          </h3>
+        </div>
+
+        <div class="avtar bg-light-danger text-danger">
+          <i data-feather="alert-triangle"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">
+            Isolamentos ativos
+          </p>
+
+          <h3 class="mb-0 text-warning">
+            {{ total_isolamentos_ativos }}
+          </h3>
+        </div>
+
+        <div class="avtar bg-light-warning text-warning">
+          <i data-feather="shield"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Pesquisa -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <form
+      method="get"
+      class="row g-2 align-items-end"
+    >
+      <div class="col-md-10">
+        <label
+          for="pesquisa-alertas"
+          class="form-label"
+        >
+          Pesquisar utente
+        </label>
+
+        <div class="input-group">
+          <span class="input-group-text">
+            <i data-feather="search"></i>
+          </span>
+
+          <input
+            type="search"
+            id="pesquisa-alertas"
+            name="q"
+            value="{{ pesquisa }}"
+            class="form-control"
+            placeholder="Nome, número de processo ou quarto"
+          >
+        </div>
+      </div>
+
+      <div class="col-md-2">
+        <div class="d-flex gap-2">
+          <button
+            type="submit"
+            class="btn btn-primary w-100"
+          >
+            Pesquisar
+          </button>
+
+          {% if pesquisa %}
+            <a
+              href="{% url 'fisioterapia:alertas_clinicos' %}"
+              class="btn btn-outline-secondary"
+              title="Limpar pesquisa"
+            >
+              <i data-feather="x"></i>
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Quedas -->
+  <div class="col-xl-6">
+    <div class="card border-0 shadow-sm h-100">
+
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-1">
+            <i
+              data-feather="alert-triangle"
+              class="text-danger me-1"
+            ></i>
+
+            Quedas recentes
+          </h5>
+
+          <small class="text-muted">
+            Ocorrências registadas nas últimas 24 horas
+          </small>
+        </div>
+
+        <span class="badge bg-danger">
+          {{ total_quedas_recentes }}
+        </span>
+      </div>
+
+      <div class="card-body">
+
+        {% for queda in quedas_recentes %}
+
+          <div class="alerta-clinico-item alerta-queda">
+
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+
+              <div>
+                <h6 class="mb-1">
+                  {{ queda.registo_enfermagem.utente.nome }}
+                </h6>
+
+                <div class="text-muted small">
+                  Processo
+                  {{ queda.registo_enfermagem.utente.numero_processo }}
+
+                  {% if queda.registo_enfermagem.utente.quarto %}
+                    ·
+                    {{ queda.registo_enfermagem.utente.quarto }}
+                  {% endif %}
+                </div>
+              </div>
+
+              {% if queda.gravidade == "SEM_LESAO" %}
+                <span class="badge bg-success">
+                  {{ queda.get_gravidade_display }}
+                </span>
+
+              {% elif queda.gravidade == "MINOR" %}
+                <span class="badge bg-warning text-dark">
+                  {{ queda.get_gravidade_display }}
+                </span>
+
+              {% elif queda.gravidade == "MODERADA" %}
+                <span class="badge bg-orange text-white">
+                  {{ queda.get_gravidade_display }}
+                </span>
+
+              {% else %}
+                <span class="badge bg-danger">
+                  {{ queda.get_gravidade_display }}
+                </span>
+              {% endif %}
+
+            </div>
+
+            <div class="small mb-2">
+              <div>
+                <strong>Data e hora:</strong>
+                {{ queda.data_hora_queda|date:"d/m/Y H:i" }}
+              </div>
+
+              <div>
+                <strong>Tipo:</strong>
+                {{ queda.get_tipo_queda_display }}
+              </div>
+
+              <div>
+                <strong>Local:</strong>
+                {{ queda.get_local_queda_display }}
+
+                {% if queda.local_detalhe %}
+                  · {{ queda.local_detalhe }}
+                {% endif %}
+              </div>
+            </div>
+
+            {% if queda.descricao_ocorrencia %}
+              <div class="alert alert-light border py-2 px-3 mb-2">
+                <strong class="small">
+                  Descrição
+                </strong>
+
+                <div class="small alerta-descricao mt-1">
+                  {{ queda.descricao_ocorrencia|truncatechars:220 }}
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+              <small class="text-danger">
+                <i data-feather="clock" class="me-1"></i>
+                Há {{ queda.data_hora_queda|timesince }}
+              </small>
+
+              <div class="d-flex gap-2">
+                <a
+                  href="{% url 'visitas:detalhe_utente' queda.registo_enfermagem.utente.pk %}"
+                  class="btn btn-sm btn-outline-secondary"
+                >
+                  Ficha do utente
+                </a>
+
+                <a
+                  href="{% url 'enfermagem:detalhe_queda' queda.pk %}"
+                  class="btn btn-sm btn-outline-danger"
+                >
+                  Consultar queda
+                </a>
+              </div>
+
+            </div>
+          </div>
+
+        {% empty %}
+
+          <div class="text-center py-5">
+            <div class="avtar avtar-xl bg-light-success text-success mb-3">
+              <i data-feather="check-circle"></i>
+            </div>
+
+            <h5>
+              Sem quedas recentes
+            </h5>
+
+            <p class="text-muted mb-0">
+              Não existem quedas visíveis registadas
+              nas últimas 24 horas.
+            </p>
+          </div>
+
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Isolamentos -->
+  <div class="col-xl-6">
+    <div class="card border-0 shadow-sm h-100">
+
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-1">
+            <i
+              data-feather="shield"
+              class="text-warning me-1"
+            ></i>
+
+            Isolamentos ativos
+          </h5>
+
+          <small class="text-muted">
+            Precauções em vigor
+          </small>
+        </div>
+
+        <span class="badge bg-warning text-dark">
+          {{ total_isolamentos_ativos }}
+        </span>
+      </div>
+
+      <div class="card-body">
+
+        {% for isolamento in isolamentos_ativos %}
+
+          <div class="alerta-clinico-item alerta-isolamento">
+
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+
+              <div>
+                <h6 class="mb-1">
+                  {{ isolamento.utente.nome }}
+                </h6>
+
+                <div class="text-muted small">
+                  Processo
+                  {{ isolamento.utente.numero_processo }}
+
+                  {% if isolamento.utente.quarto %}
+                    · {{ isolamento.utente.quarto }}
+                  {% endif %}
+                </div>
+              </div>
+
+              <span class="badge bg-warning text-dark">
+                {{ isolamento.get_tipo_display }}
+              </span>
+
+            </div>
+
+            <div class="small mb-2">
+              <div>
+                <strong>Início:</strong>
+                {{ isolamento.data_inicio|date:"d/m/Y H:i" }}
+              </div>
+
+              {% if isolamento.motivo %}
+                <div>
+                  <strong>Motivo:</strong>
+                  {{ isolamento.motivo }}
+                </div>
+              {% endif %}
+            </div>
+
+            {% if isolamento.observacoes %}
+              <div class="alert alert-warning py-2 px-3 mb-2">
+                <strong class="small">
+                  Precauções/observações
+                </strong>
+
+                <div class="small alerta-descricao mt-1">
+                  {{ isolamento.observacoes|truncatechars:250 }}
+                </div>
+              </div>
+            {% endif %}
+
+            <div class="text-end">
+              <a
+                href="{% url 'visitas:detalhe_utente' isolamento.utente.pk %}"
+                class="btn btn-sm btn-outline-warning"
+              >
+                Consultar ficha
+              </a>
+            </div>
+
+          </div>
+
+        {% empty %}
+
+          <div class="text-center py-5">
+            <div class="avtar avtar-xl bg-light-success text-success mb-3">
+              <i data-feather="check-circle"></i>
+            </div>
+
+            <h5>
+              Sem isolamentos ativos
+            </h5>
+
+            <p class="text-muted mb-0">
+              Não existem isolamentos ativos
+              para apresentar.
+            </p>
+          </div>
+
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock fisioterapia_content %}

@@ -56,20 +56,30 @@
         <h2 class="mb-1">Transportes de utentes</h2>
         <p class="text-muted mb-0">Deslocações temporárias para fora da UCCI</p>
       </div>
-      <a href="{% url 'visitas:criar_transporte' %}" class="btn btn-primary">
-        <i data-feather="plus" class="me-1"></i> Nova marcação
-      </a>
+      {% if pode_pedir_transporte %}
+        <a href="{% url 'visitas:criar_pedido_transporte' %}" class="btn btn-primary">
+          <i data-feather="plus" class="me-1"></i> Novo pedido
+        </a>
+      {% endif %}
     </div>
 
     <div class="card mb-3 transport-no-print">
       <div class="card-body py-2">
         <div class="d-flex flex-wrap gap-2 transport-toolbar">
-          <a href="{% url 'visitas:calendario_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'calendario_transportes' %}btn-primary{% else %}btn-outline-primary{% endif %}">Calendário</a>
-          <a href="{% url 'visitas:lista_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_transportes' %}btn-primary{% else %}btn-outline-primary{% endif %}">Lista</a>
-          <a href="{% url 'visitas:lista_viaturas' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_viaturas' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Viaturas</a>
-          <a href="{% url 'visitas:lista_condutores' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_condutores' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Condutores</a>
-          <a href="{% url 'visitas:lista_indisponibilidades' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_indisponibilidades' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Indisponibilidades</a>
-          <a href="{% url 'visitas:relatorio_diario_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'relatorio_diario_transportes' %}btn-dark{% else %}btn-outline-dark{% endif %}">Folha diária</a>
+          {% if pode_ver_pedidos_transporte %}
+            <a href="{% url 'visitas:lista_pedidos_transporte' %}" class="btn btn-sm btn-outline-success">Pedidos</a>
+          {% endif %}
+          {% if pode_validar_pedidos_transporte %}
+            <a href="{% url 'visitas:lista_pedidos_transporte' %}?estado=POR_VALIDAR" class="btn btn-sm btn-outline-danger">Pedidos por validar</a>
+          {% endif %}
+          {% if pode_ver_transportes %}
+            <a href="{% url 'visitas:calendario_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'calendario_transportes' %}btn-primary{% else %}btn-outline-primary{% endif %}">Calendário</a>
+            <a href="{% url 'visitas:lista_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_transportes' %}btn-primary{% else %}btn-outline-primary{% endif %}">Lista</a>
+            <a href="{% url 'visitas:lista_viaturas' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_viaturas' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Viaturas</a>
+            <a href="{% url 'visitas:lista_condutores' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_condutores' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Condutores</a>
+            <a href="{% url 'visitas:lista_indisponibilidades' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'lista_indisponibilidades' %}btn-primary{% else %}btn-outline-secondary{% endif %}">Indisponibilidades</a>
+            <a href="{% url 'visitas:relatorio_diario_transportes' %}" class="btn btn-sm {% if request.resolver_match.url_name == 'relatorio_diario_transportes' %}btn-dark{% else %}btn-outline-dark{% endif %}">Folha diária</a>
+          {% endif %}
         </div>
       </div>
     </div>

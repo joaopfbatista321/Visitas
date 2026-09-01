@@ -1,0 +1,156 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}Ausências e transferências{% endblock title %}
+
+{% block enfermagem_content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+  <div>
+    <h4 class="mb-1">Ausências e transferências</h4>
+    <p class="text-muted mb-0">
+      Utentes temporariamente ausentes por agudização, transferência ou outro motivo.
+    </p>
+  </div>
+
+  <a href="{% url 'visitas:lista_utentes' %}" class="btn btn-danger">
+    <i data-feather="user-check" class="me-1"></i>
+    Escolher utente
+  </a>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">Ausências ativas</p>
+          <h3 class="mb-0 text-danger">{{ total_ativas }}</h3>
+        </div>
+        <div class="avtar bg-light-danger text-danger"><i data-feather="log-out"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">Regressos registados</p>
+          <h3 class="mb-0 text-success">{{ total_terminadas }}</h3>
+        </div>
+        <div class="avtar bg-light-success text-success"><i data-feather="log-in"></i></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">Transferências</p>
+          <h3 class="mb-0 text-primary">{{ total_transferencias }}</h3>
+        </div>
+        <div class="avtar bg-light-primary text-primary"><i data-feather="repeat"></i></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header"><h5 class="mb-0">Filtros</h5></div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-lg-4">
+        <label for="{{ formulario.q.id_for_label }}" class="form-label">{{ formulario.q.label }}</label>
+        {{ formulario.q }}
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label for="{{ formulario.estado.id_for_label }}" class="form-label">{{ formulario.estado.label }}</label>
+        {{ formulario.estado }}
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label for="{{ formulario.tipo.id_for_label }}" class="form-label">{{ formulario.tipo.label }}</label>
+        {{ formulario.tipo }}
+      </div>
+      <div class="col-md-4 col-lg-2">
+        <label for="{{ formulario.piso.id_for_label }}" class="form-label">{{ formulario.piso.label }}</label>
+        {{ formulario.piso }}
+      </div>
+      <div class="col-lg-2 d-flex gap-2">
+        <button class="btn btn-danger flex-grow-1" type="submit">Aplicar</button>
+        <a href="{% url 'enfermagem:lista_ausencias' %}" class="btn btn-light">Limpar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h5 class="mb-0">Registos encontrados</h5>
+    <small class="text-muted">O regresso deve ser registado assim que o utente voltar.</small>
+  </div>
+
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th>Utente</th>
+          <th>Piso / quarto</th>
+          <th>Motivo</th>
+          <th>Início</th>
+          <th>Regresso</th>
+          <th>Destino</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ausencia in ausencias %}
+          <tr>
+            <td>
+              {% if ausencia.estado == "ATIVA" %}
+                <span class="badge bg-danger">Ausente</span>
+              {% elif ausencia.estado == "TERMINADA" %}
+                <span class="badge bg-success">Regressou</span>
+              {% else %}
+                <span class="badge bg-secondary">Cancelada</span>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ ausencia.utente.nome }}</strong>
+              <div class="small text-muted">Processo {{ ausencia.utente.numero_processo }}</div>
+            </td>
+            <td>
+              {% if ausencia.utente.quarto %}
+                {% if ausencia.utente.quarto.get_piso_display %}{{ ausencia.utente.quarto.get_piso_display }} · {% endif %}{{ ausencia.utente.quarto }}
+              {% else %}
+                <span class="text-muted">Sem quarto</span>
+              {% endif %}
+            </td>
+            <td>{{ ausencia.get_tipo_display }}</td>
+            <td class="text-nowrap">{{ ausencia.data_hora_inicio|date:"d/m/Y H:i" }}</td>
+            <td class="text-nowrap">
+              {% if ausencia.data_hora_regresso %}
+                {{ ausencia.data_hora_regresso|date:"d/m/Y H:i" }}
+              {% elif ausencia.data_hora_fim_prevista %}
+                <span class="text-muted">Previsto: {{ ausencia.data_hora_fim_prevista|date:"d/m/Y H:i" }}</span>
+              {% else %}
+                <span class="text-muted">Sem previsão</span>
+              {% endif %}
+            </td>
+            <td>{{ ausencia.destino|default:"-" }}</td>
+            <td class="text-end">
+              <a href="{% url 'enfermagem:detalhe_ausencia' ausencia.pk %}" class="btn btn-sm btn-outline-danger">Abrir</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="8" class="text-center text-muted py-5">
+              Não foram encontradas ausências ou transferências.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock enfermagem_content %}

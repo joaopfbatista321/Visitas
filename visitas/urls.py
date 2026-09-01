@@ -12,9 +12,37 @@ urlpatterns = [
     # ========================================================
     path("", views.dashboard_visitas, name="dashboard_visitas"),
 
+
+    
+    # ========================================================
+    # PEDIDOS DE TRANSPORTE
+    # ========================================================
+    path(
+        "transportes/pedidos/",
+        views.lista_pedidos_transporte,
+        name="lista_pedidos_transporte",
+    ),
+    path(
+        "transportes/pedidos/novo/",
+        views.criar_pedido_transporte,
+        name="criar_pedido_transporte",
+    ),
+    path(
+    "transportes/pedidos/<int:pk>/",
+    views.detalhe_pedido_transporte,
+    name="detalhe_pedido_transporte",
+    ),
+
+    path(
+    "transportes/pedidos/<int:pk>/validar/",
+    views.validar_pedido_transporte,
+    name="validar_pedido_transporte",
+    ),
+
     # ========================================================
     # TRANSPORTES DE UTENTES
     # ========================================================
+    
     path(
         "transportes/",
         views.calendario_transportes,
@@ -197,6 +225,11 @@ urlpatterns = [
     # ========================================================
     # FINANCEIRO
     # ========================================================
+    path(
+        "financeiro/",
+        views.lista_financeira_utentes,
+        name="lista_financeira_utentes",
+    ),
     path(
         "utente/<int:pk>/financeiro/",
         views.financeiro_utente,

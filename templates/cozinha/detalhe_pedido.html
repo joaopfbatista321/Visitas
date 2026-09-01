@@ -1,0 +1,144 @@
+{% extends "cozinha/base_cozinha.html" %}
+
+{% block cozinha_content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+  <div>
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+      <h4 class="mb-0">{{ pedido.get_tipo_display }}</h4>
+      {% if pedido.tipo == "REFEICOES" %}<span class="badge bg-warning text-dark">Refeições</span>
+      {% else %}<span class="badge bg-info">Suplementos</span>{% endif %}
+      {% if pedido.estado == "DIVERGENCIA" %}<span class="badge bg-danger">{{ pedido.get_estado_display }}</span>
+      {% elif pedido.estado == "CONFIRMADO" %}<span class="badge bg-success">{{ pedido.get_estado_display }}</span>
+      {% elif pedido.estado == "ENTREGUE" %}<span class="badge bg-info">{{ pedido.get_estado_display }}</span>
+      {% elif pedido.estado == "EM_PREPARACAO" %}<span class="badge bg-warning text-dark">{{ pedido.get_estado_display }}</span>
+      {% elif pedido.estado == "ENVIADO" %}<span class="badge bg-primary">{{ pedido.get_estado_display }}</span>
+      {% else %}<span class="badge bg-secondary">{{ pedido.get_estado_display }}</span>{% endif %}
+    </div>
+    <p class="text-muted mb-0">{{ pedido.unidade.nome }} · {{ pedido.data_servico|date:"d/m/Y" }}</p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    {% if pode_editar %}<a href="{% url 'cozinha:editar_pedido' pedido.pk %}" class="btn btn-outline-warning">Editar quantidades</a>{% endif %}
+
+    {% if pode_enviar %}
+      <form method="post" action="{% url 'cozinha:enviar_pedido' pedido.pk %}">
+        {% csrf_token %}<button type="submit" class="btn btn-warning">Enviar à Cozinha</button>
+      </form>
+    {% endif %}
+
+    {% if pode_iniciar %}
+      <form method="post" action="{% url 'cozinha:iniciar_preparacao' pedido.pk %}">
+        {% csrf_token %}<button type="submit" class="btn btn-warning">Iniciar preparação</button>
+      </form>
+    {% endif %}
+
+    {% if pode_preparar %}<a href="{% url 'cozinha:preparar_pedido' pedido.pk %}" class="btn btn-outline-warning">Alterar preparação</a>{% endif %}
+    {% if pode_entregar %}<a href="{% url 'cozinha:entregar_pedido' pedido.pk %}" class="btn btn-warning">Registar entrega</a>{% endif %}
+    {% if pode_confirmar %}<a href="{% url 'cozinha:confirmar_pedido' pedido.pk %}" class="btn btn-info">Confirmar receção</a>{% endif %}
+    {% if pode_consumo %}<a href="{% url 'cozinha:consumo_pedido' pedido.pk %}" class="btn btn-success">Registar consumo</a>{% endif %}
+    {% if pode_reabrir %}<a href="{% url 'cozinha:reabrir_pedido' pedido.pk %}" class="btn btn-outline-danger">Reabrir</a>{% endif %}
+  </div>
+</div>
+
+{% if pedido.tipo == "REFEICOES" and pedido.estado == "ENTREGUE" %}
+  <div class="alert alert-success"><strong>Pedido concluído.</strong> A Cozinha registou a entrega das refeições. Não é necessária confirmação da Enfermagem.</div>
+{% elif pedido.tipo == "SUPLEMENTOS" and pedido.estado == "ENTREGUE" %}
+  <div class="alert alert-info"><strong>Suplementos entregues.</strong> A Enfermagem já pode criar outro pedido para este piso e deve confirmar as quantidades recebidas.</div>
+{% elif pedido.estado == "DIVERGENCIA" %}
+  <div class="alert alert-danger"><strong>Existem divergências.</strong> As quantidades entregues e recebidas não coincidem.</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-8">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header"><h5 class="mb-0">Quantidades</h5></div>
+      <div class="card-body table-responsive">
+        {% if pedido.tipo == "REFEICOES" %}
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead><tr><th>Refeição</th><th>Dieta</th><th class="text-center">Solicitada</th><th class="text-center">Preparada</th><th class="text-center">Entregue</th><th>Observações</th></tr></thead>
+            <tbody>
+              {% for linha in pedido.linhas_refeicoes.all %}
+                {% if linha.quantidade_solicitada or linha.quantidade_preparada or linha.quantidade_entregue %}
+                  <tr>
+                    <td><strong>{{ linha.tipo_refeicao.nome }}</strong></td><td>{{ linha.tipo_dieta.nome }}</td>
+                    <td class="text-center">{{ linha.quantidade_solicitada }}</td>
+                    <td class="text-center">{{ linha.quantidade_preparada|default_if_none:"—" }}</td>
+                    <td class="text-center">{{ linha.quantidade_entregue|default_if_none:"—" }}</td>
+                    <td><small>{{ linha.observacao_enfermagem|default:"" }}{% if linha.observacao_enfermagem and linha.observacao_cozinha %}<br>{% endif %}{{ linha.observacao_cozinha|default:"" }}</small></td>
+                  </tr>
+                {% endif %}
+              {% empty %}
+                <tr><td colspan="6" class="text-center text-muted py-4">Sem linhas de refeições.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <table class="table table-sm table-hover align-middle mb-0">
+            <thead><tr><th>Produto</th><th>Unidade</th><th class="text-center">Solicitada</th><th class="text-center">Preparada</th><th class="text-center">Entregue</th><th class="text-center">Recebida</th><th class="text-center">Consumida</th></tr></thead>
+            <tbody>
+              {% for linha in pedido.linhas_produtos.all %}
+                {% if linha.quantidade_solicitada or linha.quantidade_preparada or linha.quantidade_entregue or linha.quantidade_recebida or linha.quantidade_consumida %}
+                  <tr {% if linha.tem_divergencia %}class="table-danger"{% endif %}>
+                    <td><strong>{{ linha.produto.nome }}</strong>{% if linha.tem_divergencia %}<br><small class="text-danger">Divergência</small>{% endif %}</td>
+                    <td>{{ linha.produto.get_unidade_medida_display }}</td>
+                    <td class="text-center">{{ linha.quantidade_solicitada }}</td>
+                    <td class="text-center">{{ linha.quantidade_preparada|default_if_none:"—" }}</td>
+                    <td class="text-center">{{ linha.quantidade_entregue|default_if_none:"—" }}</td>
+                    <td class="text-center">{{ linha.quantidade_recebida|default_if_none:"—" }}</td>
+                    <td class="text-center">{{ linha.quantidade_consumida|default_if_none:"—" }}</td>
+                  </tr>
+                {% endif %}
+              {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">Sem linhas de suplementos.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header"><h5 class="mb-0">Histórico</h5></div>
+      <div class="card-body table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead><tr><th>Data</th><th>Ação</th><th>Profissional</th><th>Estado</th><th>Observação</th></tr></thead>
+          <tbody>
+            {% for item in pedido.historico.all %}
+              <tr>
+                <td>{{ item.criado_em|date:"d/m/Y H:i" }}</td><td>{{ item.get_acao_display }}</td>
+                <td>{{ item.profissional.get_full_name|default:item.profissional.username }}</td>
+                <td>{{ item.get_estado_novo_display|default:"—" }}</td><td>{{ item.observacao|default:"—" }}</td>
+              </tr>
+            {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">Sem histórico.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-4">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header"><h5 class="mb-0">Informação do pedido</h5></div>
+      <div class="card-body">
+        <p><strong>Unidade/piso:</strong><br>{{ pedido.unidade.nome }}</p>
+        <p><strong>Data:</strong><br>{{ pedido.data_servico|date:"d/m/Y" }}</p>
+        <p><strong>Criado por:</strong><br>{{ pedido.criado_por.get_full_name|default:pedido.criado_por.username }}<br><small class="text-muted">{{ pedido.criado_em|date:"d/m/Y H:i" }}</small></p>
+        <p><strong>Enviado por:</strong><br>{% if pedido.enviado_por %}{{ pedido.enviado_por.get_full_name|default:pedido.enviado_por.username }}<br><small class="text-muted">{{ pedido.enviado_em|date:"d/m/Y H:i" }}</small>{% else %}<span class="text-muted">Ainda não enviado</span>{% endif %}</p>
+        <p><strong>Preparação:</strong><br>{% if pedido.preparacao_por %}{{ pedido.preparacao_por.get_full_name|default:pedido.preparacao_por.username }}<br><small class="text-muted">{{ pedido.preparacao_em|date:"d/m/Y H:i" }}</small>{% else %}<span class="text-muted">Não iniciada</span>{% endif %}</p>
+        <p class="mb-0"><strong>Entrega:</strong><br>{% if pedido.entregue_por %}{{ pedido.entregue_por.get_full_name|default:pedido.entregue_por.username }}<br><small class="text-muted">{{ pedido.entregue_em|date:"d/m/Y H:i" }}</small>{% else %}<span class="text-muted">Não registada</span>{% endif %}</p>
+      </div>
+    </div>
+
+    {% if pedido.observacoes_enfermagem or pedido.observacoes_cozinha or pedido.observacoes_confirmacao %}
+      <div class="card border-0 shadow-sm">
+        <div class="card-header"><h5 class="mb-0">Observações</h5></div>
+        <div class="card-body">
+          {% if pedido.observacoes_enfermagem %}<p><strong>Enfermagem</strong><br>{{ pedido.observacoes_enfermagem|linebreaksbr }}</p>{% endif %}
+          {% if pedido.observacoes_cozinha %}<p><strong>Cozinha</strong><br>{{ pedido.observacoes_cozinha|linebreaksbr }}</p>{% endif %}
+          {% if pedido.observacoes_confirmacao %}<p class="mb-0"><strong>Confirmação</strong><br>{{ pedido.observacoes_confirmacao|linebreaksbr }}</p>{% endif %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock cozinha_content %}

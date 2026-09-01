@@ -1,0 +1,102 @@
+{% extends "cozinha/base_cozinha.html" %}
+
+{% block cozinha_content %}
+<div class="row g-3 mb-3">
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100"><div class="card-body">
+      <small class="text-muted">Pedidos hoje</small><h3 class="mb-0">{{ total_hoje }}</h3>
+    </div></div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100"><div class="card-body">
+      <small class="text-muted">Aguardam preparação</small><h3 class="mb-0">{{ total_enviados }}</h3>
+    </div></div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100"><div class="card-body">
+      <small class="text-muted">Em preparação</small><h3 class="mb-0">{{ total_preparacao }}</h3>
+    </div></div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100"><div class="card-body">
+      <small class="text-muted">Com divergência</small><h3 class="mb-0 text-danger">{{ total_divergencias }}</h3>
+    </div></div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header"><h5 class="mb-0">Pesquisar pedidos</h5></div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-6 col-xl-3">
+        <label for="pesquisa-pedidos" class="form-label">Pesquisa</label>
+        <input id="pesquisa-pedidos" type="search" name="q" value="{{ pesquisa }}" class="form-control" placeholder="Unidade ou observação">
+      </div>
+      <div class="col-md-6 col-xl">{{ formulario_filtros.tipo.label_tag }}{{ formulario_filtros.tipo }}</div>
+      <div class="col-md-6 col-xl">{{ formulario_filtros.data_inicio.label_tag }}{{ formulario_filtros.data_inicio }}</div>
+      <div class="col-md-6 col-xl">{{ formulario_filtros.data_fim.label_tag }}{{ formulario_filtros.data_fim }}</div>
+      <div class="col-md-6 col-xl">{{ formulario_filtros.unidade.label_tag }}{{ formulario_filtros.unidade }}</div>
+      <div class="col-md-6 col-xl">{{ formulario_filtros.estado.label_tag }}{{ formulario_filtros.estado }}</div>
+      <div class="col-md-12 col-xl-auto">
+        <div class="d-flex gap-2">
+          <button class="btn btn-warning" type="submit">Aplicar</button>
+          <a href="{% url 'cozinha:lista_pedidos' %}" class="btn btn-light">Limpar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h5 class="mb-0">Pedidos à Cozinha</h5>
+    {% if pode_criar %}
+      <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'cozinha:criar_pedido_refeicoes' %}" class="btn btn-sm btn-warning">
+          <i data-feather="coffee" class="me-1"></i>Pedido de refeições
+        </a>
+        <a href="{% url 'cozinha:criar_pedido_suplementos' %}" class="btn btn-sm btn-outline-warning">
+          <i data-feather="package" class="me-1"></i>Pedido de suplementos
+        </a>
+      </div>
+    {% endif %}
+  </div>
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead><tr><th>Data</th><th>Tipo</th><th>Unidade/piso</th><th>Estado</th><th>Enviado por</th><th>Atualização</th><th></th></tr></thead>
+      <tbody>
+        {% for pedido in pedidos %}
+          <tr>
+            <td>
+              <strong>{{ pedido.data_servico|date:"d/m/Y" }}</strong>
+              {% if pedido.tipo == "REFEICOES" %}<br><small class="text-muted">Limite do pedido: 12:00</small>{% endif %}
+            </td>
+            <td>
+              {% if pedido.tipo == "REFEICOES" %}<span class="badge bg-warning text-dark">Refeições</span>
+              {% else %}<span class="badge bg-info">Suplementos</span>{% endif %}
+            </td>
+            <td>{{ pedido.unidade.nome }}</td>
+            <td>
+              {% if pedido.estado == "DIVERGENCIA" %}<span class="badge bg-danger">{{ pedido.get_estado_display }}</span>
+              {% elif pedido.estado == "CONFIRMADO" %}<span class="badge bg-success">{{ pedido.get_estado_display }}</span>
+              {% elif pedido.estado == "EM_PREPARACAO" %}<span class="badge bg-warning text-dark">{{ pedido.get_estado_display }}</span>
+              {% elif pedido.estado == "ENTREGUE" %}<span class="badge bg-info">{{ pedido.get_estado_display }}</span>
+              {% elif pedido.estado == "ENVIADO" %}<span class="badge bg-primary">{{ pedido.get_estado_display }}</span>
+              {% elif pedido.estado == "CANCELADO" %}<span class="badge bg-dark">{{ pedido.get_estado_display }}</span>
+              {% else %}<span class="badge bg-secondary">{{ pedido.get_estado_display }}</span>{% endif %}
+            </td>
+            <td>
+              {% if pedido.enviado_por %}{{ pedido.enviado_por.get_full_name|default:pedido.enviado_por.username }}
+              {% else %}<span class="text-muted">Ainda não enviado</span>{% endif %}
+            </td>
+            <td>{{ pedido.atualizado_em|date:"d/m/Y H:i" }}</td>
+            <td class="text-end"><a href="{% url 'cozinha:detalhe_pedido' pedido.pk %}" class="btn btn-sm btn-outline-warning">Abrir</a></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="7" class="text-center text-muted py-5">Não foram encontrados pedidos.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock cozinha_content %}

@@ -1,0 +1,49 @@
+{% extends "cozinha/base_cozinha.html" %}
+
+{% block cozinha_content %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div><h5 class="mb-1">Relatório mensal</h5><p class="text-muted mb-0">{{ total_pedidos }} pedidos contabilizados entre {{ data_inicio|date:"d/m/Y" }} e {{ data_fim|date:"d/m/Y" }}.</p></div>
+    <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i data-feather="printer" class="me-1"></i>Imprimir</button>
+  </div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4">{{ formulario.mes.label_tag }}{{ formulario.mes }}{% for erro in formulario.mes.errors %}<div class="text-danger small">{{ erro }}</div>{% endfor %}</div>
+      <div class="col-md-3">{{ formulario.tipo.label_tag }}{{ formulario.tipo }}</div>
+      <div class="col-md-3">{{ formulario.unidade.label_tag }}{{ formulario.unidade }}</div>
+      <div class="col-md-2"><button type="submit" class="btn btn-warning w-100">Gerar relatório</button></div>
+    </form>
+  </div>
+</div>
+
+{% if not tipo_pedido or tipo_pedido == "REFEICOES" %}
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header"><h5 class="mb-0">Refeições</h5></div>
+    <div class="card-body table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Refeição</th><th>Dieta</th><th class="text-end">Solicitadas</th><th class="text-end">Entregues/consumidas</th></tr></thead>
+        <tbody>
+          {% for linha in refeicoes %}<tr><td>{{ linha.tipo_refeicao__nome }}</td><td>{{ linha.tipo_dieta__nome }}</td><td class="text-end">{{ linha.solicitada|default:0 }}</td><td class="text-end"><strong>{{ linha.entregue|default:0 }}</strong></td></tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-muted py-4">Sem refeições neste período.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+      <div class="form-text mt-3">Nas refeições, a quantidade entregue pela Cozinha corresponde à quantidade consumida para o relatório mensal.</div>
+    </div>
+  </div>
+{% endif %}
+
+{% if not tipo_pedido or tipo_pedido == "SUPLEMENTOS" %}
+  <div class="card border-0 shadow-sm">
+    <div class="card-header"><h5 class="mb-0">Suplementos</h5></div>
+    <div class="card-body table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Produto</th><th>Unidade</th><th class="text-end">Solicitados</th><th class="text-end">Recebidos</th><th class="text-end">Consumidos</th></tr></thead>
+        <tbody>
+          {% for linha in produtos %}<tr><td>{{ linha.produto__nome }}</td><td>{{ linha.produto__unidade_medida }}</td><td class="text-end">{{ linha.solicitada|default:0 }}</td><td class="text-end">{{ linha.recebida|default:0 }}</td><td class="text-end"><strong>{{ linha.consumida|default:0 }}</strong></td></tr>
+          {% empty %}<tr><td colspan="5" class="text-center text-muted py-4">Sem suplementos neste período.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+{% endblock cozinha_content %}

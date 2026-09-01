@@ -1,0 +1,781 @@
+{% extends "fisioterapia/base_fisioterapia.html" %}
+{% load static %}
+
+{% block extrastyle %}
+{{ block.super }}
+
+<link
+  href="{% static 'visitas/transportes/fullcalendar/skeleton.css' %}"
+  rel="stylesheet"
+>
+<link
+  href="{% static 'visitas/transportes/fullcalendar/classic.theme.css' %}"
+  rel="stylesheet"
+>
+<link
+  href="{% static 'visitas/transportes/fullcalendar/classic.palette.css' %}"
+  rel="stylesheet"
+>
+{% endblock extrastyle %}
+
+
+{% block fisioterapia_content %}
+
+<!-- INDICADORES -->
+<div class="row g-3 mb-4">
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">
+            Sessões hoje
+          </p>
+
+          <h3 class="mb-0">
+            {{ total_sessoes_hoje }}
+          </h3>
+        </div>
+
+        <div class="avtar bg-light-primary text-primary">
+          <i data-feather="calendar"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">
+            Individuais hoje
+          </p>
+
+          <h3 class="mb-0">
+            {{ total_individuais_hoje }}
+          </h3>
+        </div>
+
+        <div class="avtar bg-light-info text-info">
+          <i data-feather="user"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">
+            Grupos hoje
+          </p>
+
+          <h3 class="mb-0">
+            {{ total_grupo_hoje }}
+          </h3>
+        </div>
+
+        <div class="avtar bg-light-secondary text-secondary">
+          <i data-feather="users"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-muted mb-1">
+            Presenças por validar
+          </p>
+
+          <h3 class="mb-0">
+            {{ total_por_validar }}
+          </h3>
+        </div>
+
+        <div class="avtar bg-light-warning text-warning">
+          <i data-feather="check-square"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+
+<!-- FILTROS -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h5 class="mb-0">
+      Filtros do calendário
+    </h5>
+
+    <button
+      type="button"
+      id="limpar-filtros"
+      class="btn btn-sm btn-outline-secondary"
+    >
+      Limpar filtros
+    </button>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <!-- Estado -->
+      <div class="col-xl-2 col-md-4">
+        <label
+          for="filtro-estado"
+          class="form-label"
+        >
+          Estado
+        </label>
+
+        <select
+          id="filtro-estado"
+          class="form-select filtro-calendario"
+        >
+          <option value="">
+            Todos os estados
+          </option>
+
+          {% for valor, nome in estados %}
+            <option value="{{ valor }}">
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Formato -->
+      <div class="col-xl-2 col-md-4">
+        <label
+          for="filtro-tipo"
+          class="form-label"
+        >
+          Formato
+        </label>
+
+        <select
+          id="filtro-tipo"
+          class="form-select filtro-calendario"
+        >
+          <option value="">
+            Todos os formatos
+          </option>
+
+          {% for valor, nome in tipos %}
+            <option value="{{ valor }}">
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Piso -->
+      <div class="col-xl-2 col-md-4">
+        <label
+          for="filtro-piso"
+          class="form-label"
+        >
+          Piso
+        </label>
+
+        <select
+          id="filtro-piso"
+          class="form-select filtro-calendario"
+        >
+          <option value="">
+            Todos os pisos
+          </option>
+
+          {% for valor, nome in pisos %}
+            <option value="{{ valor }}">
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Profissional -->
+      <div class="col-xl-3 col-md-6">
+        <label
+          for="filtro-profissional"
+          class="form-label"
+        >
+          Profissional responsável
+        </label>
+
+        <select
+          id="filtro-profissional"
+          class="form-select filtro-calendario"
+        >
+          <option value="">
+            Todos os profissionais
+          </option>
+
+          {% for profissional in profissionais %}
+            <option value="{{ profissional.pk }}">
+              {{ profissional.get_full_name|default:profissional.username }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Local -->
+      <div class="col-xl-3 col-md-6">
+        <label
+          for="filtro-local"
+          class="form-label"
+        >
+          Local
+        </label>
+
+        <select
+          id="filtro-local"
+          class="form-select filtro-calendario"
+        >
+          <option value="">
+            Todos os locais
+          </option>
+
+          {% for valor, nome in locais %}
+            <option value="{{ valor }}">
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Intervenção -->
+      <div class="col-12">
+        <label
+          for="filtro-intervencao"
+          class="form-label"
+        >
+          Tipo de intervenção
+        </label>
+
+        <select
+          id="filtro-intervencao"
+          class="form-select filtro-calendario"
+        >
+          <option value="">
+            Todas as intervenções
+          </option>
+
+          {% for intervencao in tipos_intervencao %}
+            <option value="{{ intervencao.pk }}">
+              {{ intervencao.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- LEGENDA -->
+<div class="mb-3 small">
+  <span class="badge bg-primary me-1">
+    Individual
+  </span>
+
+  <span
+    class="badge me-1"
+    style="background-color: #6f42c1;"
+  >
+    Grupo
+  </span>
+
+  <span class="badge bg-success me-1">
+    Realizada
+  </span>
+
+  <span class="badge bg-secondary me-2">
+    Cancelada
+  </span>
+
+  <span class="text-muted">
+    Clique num horário para criar uma sessão.
+    Clique numa sessão para consultar os detalhes.
+  </span>
+</div>
+
+
+<!-- CALENDÁRIO -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+    <div>
+      <h5 class="mb-1">
+        Calendário de Fisioterapia
+      </h5>
+
+      <small
+        id="estado-atualizacao"
+        class="text-muted"
+      >
+        Atualização automática ativa
+      </small>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <button
+        type="button"
+        id="atualizar-calendario"
+        class="btn btn-sm btn-outline-primary"
+      >
+        <i data-feather="refresh-cw" class="me-1"></i>
+        Atualizar
+      </button>
+
+      <a
+        href="{% url 'fisioterapia:lista_sessoes' %}"
+        class="btn btn-sm btn-outline-secondary"
+      >
+        Ver em lista
+      </a>
+    </div>
+
+  </div>
+
+  <div class="card-body">
+    <div id="calendario-fisioterapia"></div>
+  </div>
+</div>
+
+{% endblock fisioterapia_content %}
+
+
+{% block extra_js %}
+{{ block.super }}
+
+<script src="{% static 'visitas/transportes/fullcalendar/fullcalendar.global.js' %}"></script>
+<script src="{% static 'visitas/transportes/fullcalendar/classic.global.js' %}"></script>
+<script src="{% static 'visitas/transportes/fullcalendar/pt.global.js' %}"></script>
+
+<script>
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+    const elemento = document.getElementById(
+      "calendario-fisioterapia"
+    );
+
+    if (!elemento) {
+      return;
+    }
+
+    const estadoAtualizacao =
+      document.getElementById(
+        "estado-atualizacao"
+      );
+
+    const idsFiltros = [
+      "filtro-estado",
+      "filtro-tipo",
+      "filtro-piso",
+      "filtro-profissional",
+      "filtro-local",
+      "filtro-intervencao"
+    ];
+
+    function valorFiltro(id) {
+      const elementoFiltro =
+        document.getElementById(id);
+
+      return elementoFiltro
+        ? elementoFiltro.value
+        : "";
+    }
+
+    function indicarAtualizacao() {
+      if (!estadoAtualizacao) {
+        return;
+      }
+
+      estadoAtualizacao.textContent =
+        "A atualizar...";
+    }
+
+    function indicarAtualizado() {
+      if (!estadoAtualizacao) {
+        return;
+      }
+
+      const agora = new Date();
+
+      estadoAtualizacao.textContent =
+        "Atualizado às "
+        + agora.toLocaleTimeString(
+          "pt-PT",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit"
+          }
+        );
+    }
+
+    const calendario = new FullCalendar.Calendar(
+      elemento,
+      {
+        themeSystem: "classic",
+        locale: "pt",
+        firstDay: 1,
+
+        initialView:
+          window.innerWidth < 768
+            ? "listWeek"
+            : "timeGridWeek",
+
+        height: "auto",
+        nowIndicator: true,
+        navLinks: true,
+        selectable: true,
+        selectMirror: true,
+        dayMaxEvents: true,
+        displayEventEnd: true,
+
+        slotMinTime: "07:00:00",
+        slotMaxTime: "20:00:00",
+        slotDuration: "00:30:00",
+
+        slotLabelFormat: {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        },
+
+        eventTimeFormat: {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false
+        },
+
+        headerToolbar: {
+          left: "prev,next today",
+          center: "title",
+          right:
+            "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
+        },
+
+        buttonText: {
+          today: "Hoje",
+          month: "Mês",
+          week: "Semana",
+          day: "Dia",
+          list: "Agenda"
+        },
+
+        events: {
+          url: "{% url 'fisioterapia:eventos' %}",
+
+          extraParams: function () {
+            return {
+              estado: valorFiltro(
+                "filtro-estado"
+              ),
+              tipo: valorFiltro(
+                "filtro-tipo"
+              ),
+              piso: valorFiltro(
+                "filtro-piso"
+              ),
+              profissional: valorFiltro(
+                "filtro-profissional"
+              ),
+              local_realizacao: valorFiltro(
+                "filtro-local"
+              ),
+              intervencao: valorFiltro(
+                "filtro-intervencao"
+              ),
+
+              /*
+               * Impede que o navegador reutilize uma
+               * resposta antiga do calendário.
+               */
+              _atualizacao: Date.now()
+            };
+          },
+
+          success: function () {
+            indicarAtualizado();
+          },
+
+          failure: function () {
+            if (estadoAtualizacao) {
+              estadoAtualizacao.textContent =
+                "Erro ao atualizar o calendário";
+            }
+
+            alert(
+              "Não foi possível carregar as sessões."
+            );
+          }
+        },
+
+        loading: function (estaCarregando) {
+          if (estaCarregando) {
+            indicarAtualizacao();
+          }
+        },
+
+        dateClick: function (info) {
+          let inicio = info.dateStr;
+
+          if (!inicio.includes("T")) {
+            inicio += "T09:00:00";
+          }
+
+          window.location.href =
+            "{% url 'fisioterapia:criar_sessao' %}"
+            + "?inicio="
+            + encodeURIComponent(inicio);
+        },
+
+        select: function (info) {
+          window.location.href =
+            "{% url 'fisioterapia:criar_sessao' %}"
+            + "?inicio="
+            + encodeURIComponent(info.startStr);
+        },
+
+        eventClick: function (info) {
+          if (info.event.url) {
+            info.jsEvent.preventDefault();
+            window.location.href = info.event.url;
+          }
+        },
+
+        eventDidMount: function (info) {
+          const dados = info.event.extendedProps;
+
+          let corEvento = "#0d6efd";
+
+            if (dados.estado === "Realizada") {
+            corEvento = "#198754";
+            } else if (dados.estado === "Cancelada") {
+            corEvento = "#6c757d";
+            } else if (dados.tipo === "Grupo") {
+            corEvento = "#6f42c1";
+            }
+
+            info.el.style.setProperty(
+            "--fc-event-bg-color",
+            corEvento
+            );
+
+            info.el.style.setProperty(
+            "--fc-event-border-color",
+            corEvento
+            );
+
+            info.el.style.setProperty(
+            "background",
+            corEvento,
+            "important"
+            );
+
+            info.el.style.setProperty(
+            "background-color",
+            corEvento,
+            "important"
+            );
+
+            info.el.style.setProperty(
+            "border-color",
+            corEvento,
+            "important"
+            );
+
+            info.el.style.setProperty(
+            "color",
+            "#ffffff",
+            "important"
+            );
+
+            const conteudoEvento = info.el.querySelector(
+            ".fc-event-main"
+            );
+
+            if (conteudoEvento) {
+            conteudoEvento.style.setProperty(
+                "background",
+                corEvento,
+                "important"
+            );
+
+            conteudoEvento.style.setProperty(
+                "color",
+                "#ffffff",
+                "important"
+            );
+            }
+
+            const pontoEvento = info.el.querySelector(
+            ".fc-list-event-dot, .fc-daygrid-event-dot"
+            );
+
+            if (pontoEvento) {
+            pontoEvento.style.setProperty(
+                "border-color",
+                corEvento,
+                "important"
+            );
+            }
+
+          const intervencoes = Array.isArray(
+            dados.intervencoes
+          )
+            ? dados.intervencoes.join(", ")
+            : "";
+
+          const participantes = Array.isArray(
+            dados.participantes
+          )
+            ? dados.participantes.join(", ")
+            : "";
+
+          const localizacoes = Array.isArray(
+            dados.localizacoes_utentes
+          )
+            ? dados.localizacoes_utentes.join(" | ")
+            : "";
+
+          const informacao = [
+            "Formato: " + dados.tipo,
+            "Estado: " + dados.estado,
+            "Profissional: " + dados.profissional,
+            "Intervenções: " + intervencoes,
+            "Local: " + dados.local,
+            "Utentes: " + participantes,
+            "Quarto/Piso: " + localizacoes
+          ]
+          .filter(
+            function (valor) {
+              return (
+                valor
+                && !valor.endsWith(": ")
+                && !valor.endsWith(": undefined")
+              );
+            }
+          )
+          .join("\n");
+
+          info.el.title = informacao;
+        }
+      }
+    );
+
+    calendario.render();
+
+    /*
+     * Atualiza os eventos quando o utilizador regressa
+     * do detalhe da sessão através do botão Voltar
+     * ou do histórico do navegador.
+     */
+    window.addEventListener(
+      "pageshow",
+      function () {
+        calendario.refetchEvents();
+      }
+    );
+
+    /*
+     * Atualiza quando o utilizador regressa ao separador.
+     */
+    document.addEventListener(
+      "visibilitychange",
+      function () {
+        if (!document.hidden) {
+          calendario.refetchEvents();
+        }
+      }
+    );
+
+    /*
+     * Atualização automática a cada minuto.
+     */
+    const intervaloAtualizacao = window.setInterval(
+      function () {
+        calendario.refetchEvents();
+      },
+      60000
+    );
+
+    window.addEventListener(
+      "beforeunload",
+      function () {
+        window.clearInterval(
+          intervaloAtualizacao
+        );
+      }
+    );
+
+    idsFiltros.forEach(
+      function (id) {
+        const filtro =
+          document.getElementById(id);
+
+        if (filtro) {
+          filtro.addEventListener(
+            "change",
+            function () {
+              calendario.refetchEvents();
+            }
+          );
+        }
+      }
+    );
+
+    const botaoLimpar =
+      document.getElementById(
+        "limpar-filtros"
+      );
+
+    if (botaoLimpar) {
+      botaoLimpar.addEventListener(
+        "click",
+        function () {
+          idsFiltros.forEach(
+            function (id) {
+              const filtro =
+                document.getElementById(id);
+
+              if (filtro) {
+                filtro.value = "";
+              }
+            }
+          );
+
+          calendario.refetchEvents();
+        }
+      );
+    }
+
+    const botaoAtualizar =
+      document.getElementById(
+        "atualizar-calendario"
+      );
+
+    if (botaoAtualizar) {
+      botaoAtualizar.addEventListener(
+        "click",
+        function () {
+          calendario.refetchEvents();
+        }
+      );
+    }
+  }
+);
+</script>
+{% endblock extra_js %}

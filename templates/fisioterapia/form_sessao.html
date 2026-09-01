@@ -1,0 +1,825 @@
+{% extends "fisioterapia/base_fisioterapia.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+
+<style>
+  .lista-utentes,
+  .lista-intervencoes {
+    width: 100%;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    background-color: #fff;
+  }
+
+  .lista-utentes {
+    max-height: 380px;
+    min-height: 90px;
+  }
+
+  .lista-intervencoes {
+    max-height: 280px;
+    min-height: 80px;
+  }
+
+  /*
+   * Contentor criado pelo CheckboxSelectMultiple.
+   */
+  .lista-utentes > div,
+  .lista-intervencoes > div {
+    display: grid;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .lista-utentes > div {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(280px, 1fr)
+    );
+    gap: 0.65rem;
+  }
+
+  .lista-intervencoes > div {
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(220px, 1fr)
+    );
+    gap: 0.65rem;
+  }
+
+  .lista-utentes > div > div,
+  .lista-intervencoes > div > div {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .lista-utentes label,
+  .lista-intervencoes label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    min-height: 52px;
+    margin: 0;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid #e4e7eb;
+    border-radius: 0.45rem;
+    background-color: #f8f9fa;
+    color: #212529;
+    line-height: 1.35;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+
+  .lista-utentes label:hover,
+  .lista-intervencoes label:hover {
+    background-color: #eef6ff;
+    border-color: #86b7fe;
+  }
+
+  .lista-utentes label:has(
+    input[type="checkbox"]:checked
+  ),
+  .lista-intervencoes label:has(
+    input[type="checkbox"]:checked
+  ) {
+    background-color: #e7f1ff;
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 1px rgba(
+      13,
+      110,
+      253,
+      0.15
+    );
+  }
+
+  .lista-utentes input[type="checkbox"],
+  .lista-intervencoes input[type="checkbox"] {
+    position: static;
+    float: none;
+    flex: 0 0 auto;
+    width: 1.35rem;
+    height: 1.35rem;
+    margin: 0;
+    padding: 0;
+    accent-color: #0d6efd;
+    cursor: pointer;
+  }
+
+  .utente-oculto {
+    display: none !important;
+  }
+
+  .bloco-formulario {
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: #fbfcfd;
+  }
+
+  .bloco-formulario-titulo {
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .profissional-responsavel-info {
+    border-left: 4px solid #0d6efd;
+  }
+
+  @media (max-width: 767.98px) {
+    .lista-utentes > div,
+    .lista-intervencoes > div {
+      grid-template-columns: 1fr;
+    }
+
+    .lista-utentes label,
+    .lista-intervencoes label {
+      min-height: 48px;
+    }
+  }
+</style>
+{% endblock extrastyle %}
+
+
+{% block fisioterapia_content %}
+
+<div class="row justify-content-center">
+  <div class="col-xl-11">
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-1">
+          {% if sessao %}
+            Editar sessão de fisioterapia
+          {% else %}
+            Nova sessão de fisioterapia
+          {% endif %}
+        </h5>
+
+        <p class="text-muted mb-0">
+          Defina o profissional responsável, os utentes,
+          as intervenções, o horário e o local.
+        </p>
+      </div>
+
+      <div class="card-body">
+
+        <form
+          method="post"
+          id="form-sessao"
+          novalidate
+        >
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for erro in form.non_field_errors %}
+                <div>{{ erro }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <!-- RESPONSÁVEL E FORMATO -->
+          <div class="bloco-formulario mb-3">
+            <div class="bloco-formulario-titulo">
+              Responsabilidade e formato
+            </div>
+
+            <div class="row g-3">
+
+              <!-- Profissional responsável -->
+              <div class="col-md-8">
+                <label
+                  for="{{ form.profissional.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.profissional.label }}
+                </label>
+
+                {{ form.profissional }}
+
+                {% if form.profissional.help_text %}
+                  <div class="form-text">
+                    {{ form.profissional.help_text }}
+                  </div>
+                {% endif %}
+
+                {% for erro in form.profissional.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Formato -->
+              <div class="col-md-4">
+                <label
+                  for="{{ form.tipo.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.tipo.label }}
+                </label>
+
+                {{ form.tipo }}
+
+                {% for erro in form.tipo.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <div class="col-12">
+                <div class="alert alert-primary profissional-responsavel-info mb-0">
+                  <strong>Profissional responsável:</strong>
+
+                  <span id="nome-profissional-responsavel">
+                    Selecione o fisioterapeuta.
+                  </span>
+
+                  <div class="small mt-1">
+                    Este será o profissional autorizado a editar
+                    a sessão, validar presenças e concluir o atendimento.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- HORÁRIO E LOCAL -->
+          <div class="bloco-formulario mb-3">
+            <div class="bloco-formulario-titulo">
+              Horário e local
+            </div>
+
+            <div class="row g-3">
+
+              <!-- Início -->
+              <div class="col-md-6">
+                <label
+                  for="{{ form.inicio.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.inicio.label }}
+                </label>
+
+                {{ form.inicio }}
+
+                {% for erro in form.inicio.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Fim -->
+              <div class="col-md-6">
+                <label
+                  for="{{ form.fim.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.fim.label }}
+                </label>
+
+                {{ form.fim }}
+
+                {% for erro in form.fim.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Local de realização -->
+              <div class="col-md-6">
+                <label
+                  for="{{ form.local_realizacao.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.local_realizacao.label }}
+                </label>
+
+                {{ form.local_realizacao }}
+
+                {% for erro in form.local_realizacao.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Especificação do local -->
+              <div
+                class="col-md-6"
+                id="bloco-especificacao-local"
+              >
+                <label
+                  for="{{ form.local.id_for_label }}"
+                  class="form-label"
+                  id="label-especificacao-local"
+                >
+                  {{ form.local.label }}
+                </label>
+
+                {{ form.local }}
+
+                {% if form.local.help_text %}
+                  <div class="form-text">
+                    {{ form.local.help_text }}
+                  </div>
+                {% endif %}
+
+                {% for erro in form.local.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+            </div>
+          </div>
+
+          <!-- INTERVENÇÕES -->
+          <div class="bloco-formulario mb-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+              <div>
+                <div class="bloco-formulario-titulo mb-1">
+                  {{ form.tipos_intervencao.label }}
+                </div>
+
+                {% if form.tipos_intervencao.help_text %}
+                  <div class="text-muted small">
+                    {{ form.tipos_intervencao.help_text }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <span
+                id="contador-intervencoes"
+                class="badge bg-light-primary text-primary"
+              >
+                0 selecionadas
+              </span>
+            </div>
+
+            <div class="lista-intervencoes">
+              {{ form.tipos_intervencao }}
+            </div>
+
+            {% for erro in form.tipos_intervencao.errors %}
+              <div class="text-danger small mt-1">
+                {{ erro }}
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- UTENTES -->
+          <div class="bloco-formulario mb-3">
+            <div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-2">
+              <div>
+                <div class="bloco-formulario-titulo mb-1">
+                  {{ form.utentes.label }}
+                </div>
+
+                <div class="text-muted small">
+                  <span id="regra-selecao">
+                    Selecione um utente.
+                  </span>
+                </div>
+              </div>
+
+              <span
+                id="contador-utentes"
+                class="badge bg-light-primary text-primary"
+              >
+                0 selecionados
+              </span>
+            </div>
+
+            <div class="input-group mb-2">
+              <span class="input-group-text">
+                <i data-feather="search"></i>
+              </span>
+
+              <input
+                type="search"
+                id="pesquisa-utentes"
+                class="form-control"
+                placeholder="Pesquisar pelo nome ou número de processo..."
+                autocomplete="off"
+              >
+
+              <button
+                type="button"
+                id="limpar-pesquisa"
+                class="btn btn-outline-secondary"
+              >
+                Limpar
+              </button>
+            </div>
+
+            <div class="lista-utentes">
+              {{ form.utentes }}
+            </div>
+
+            {% if form.utentes.help_text %}
+              <div class="form-text">
+                {{ form.utentes.help_text }}
+              </div>
+            {% endif %}
+
+            {% for erro in form.utentes.errors %}
+              <div class="text-danger small mt-1">
+                {{ erro }}
+              </div>
+            {% endfor %}
+          </div>
+
+          <!-- PLANEAMENTO -->
+          <div class="bloco-formulario">
+            <div class="bloco-formulario-titulo">
+              Planeamento da sessão
+            </div>
+
+            <div class="row g-3">
+
+              <!-- Trabalho planeado -->
+              <div class="col-md-7">
+                <label
+                  for="{{ form.trabalho_planeado.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.trabalho_planeado.label }}
+                </label>
+
+                {{ form.trabalho_planeado }}
+
+                {% for erro in form.trabalho_planeado.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Observações -->
+              <div class="col-md-5">
+                <label
+                  for="{{ form.observacoes.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.observacoes.label }}
+                </label>
+
+                {{ form.observacoes }}
+
+                {% for erro in form.observacoes.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+            </div>
+          </div>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+            {% if sessao %}
+              <a
+                href="{% url 'fisioterapia:detalhe_sessao' sessao.pk %}"
+                class="btn btn-outline-secondary"
+              >
+                Cancelar
+              </a>
+            {% else %}
+              <a
+                href="{% url 'fisioterapia:calendario' %}"
+                class="btn btn-outline-secondary"
+              >
+                Cancelar
+              </a>
+            {% endif %}
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+            >
+              {% if sessao %}
+                Guardar alterações
+              {% else %}
+                Criar sessão
+              {% endif %}
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock fisioterapia_content %}
+
+
+{% block extra_js %}
+{{ block.super }}
+
+<script>
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+    const tipo = document.getElementById(
+      "id_tipo"
+    );
+
+    const profissional = document.getElementById(
+      "id_profissional"
+    );
+
+    const nomeProfissional = document.getElementById(
+      "nome-profissional-responsavel"
+    );
+
+    const localRealizacao = document.getElementById(
+      "id_local_realizacao"
+    );
+
+    const local = document.getElementById(
+      "id_local"
+    );
+
+    const blocoLocal = document.getElementById(
+      "bloco-especificacao-local"
+    );
+
+    const labelLocal = document.getElementById(
+      "label-especificacao-local"
+    );
+
+    const pesquisa = document.getElementById(
+      "pesquisa-utentes"
+    );
+
+    const limparPesquisa = document.getElementById(
+      "limpar-pesquisa"
+    );
+
+    const contadorUtentes = document.getElementById(
+      "contador-utentes"
+    );
+
+    const contadorIntervencoes = document.getElementById(
+      "contador-intervencoes"
+    );
+
+    const regra = document.getElementById(
+      "regra-selecao"
+    );
+
+    const caixasUtentes = Array.from(
+      document.querySelectorAll(
+        "#id_utentes input[type='checkbox']"
+      )
+    );
+
+    const caixasIntervencoes = Array.from(
+      document.querySelectorAll(
+        "#id_tipos_intervencao input[type='checkbox']"
+      )
+    );
+
+    function obterLinha(caixa) {
+      const etiqueta = caixa.closest("label");
+
+      if (etiqueta && etiqueta.parentElement) {
+        return etiqueta.parentElement;
+      }
+
+      return caixa.parentElement;
+    }
+
+    function atualizarProfissional() {
+      if (!profissional || !nomeProfissional) {
+        return;
+      }
+
+      const opcao = profissional.options[
+        profissional.selectedIndex
+      ];
+
+      if (opcao && opcao.value) {
+        nomeProfissional.textContent = opcao.text;
+      } else {
+        nomeProfissional.textContent =
+          "Selecione o fisioterapeuta.";
+      }
+    }
+
+    function atualizarLocal() {
+      if (
+        !localRealizacao
+        || !local
+        || !blocoLocal
+        || !labelLocal
+      ) {
+        return;
+      }
+
+      if (
+        localRealizacao.value
+        === "SALA_REABILITACAO"
+      ) {
+        blocoLocal.classList.add("d-none");
+        local.required = false;
+      } else if (
+        localRealizacao.value === "LEITO"
+      ) {
+        blocoLocal.classList.remove("d-none");
+        labelLocal.textContent =
+          "Quarto ou leito (opcional)";
+        local.placeholder =
+          "Ex.: Quarto 12, cama A";
+        local.required = false;
+      } else {
+        blocoLocal.classList.remove("d-none");
+        labelLocal.textContent =
+          "Indique o local";
+        local.placeholder =
+          "Ex.: ginásio, exterior ou outra sala";
+        local.required = true;
+      }
+    }
+
+    function atualizarContadorUtentes() {
+      const total = caixasUtentes.filter(
+        function (caixa) {
+          return caixa.checked;
+        }
+      ).length;
+
+      contadorUtentes.textContent =
+        total === 1
+          ? "1 selecionado"
+          : total + " selecionados";
+    }
+
+    function atualizarContadorIntervencoes() {
+      const total = caixasIntervencoes.filter(
+        function (caixa) {
+          return caixa.checked;
+        }
+      ).length;
+
+      contadorIntervencoes.textContent =
+        total === 1
+          ? "1 selecionada"
+          : total + " selecionadas";
+    }
+
+    function atualizarRegra() {
+      if (tipo.value === "INDIVIDUAL") {
+        regra.textContent =
+          "A sessão individual permite apenas um utente.";
+      } else {
+        regra.textContent =
+          "A sessão de grupo exige pelo menos dois utentes.";
+      }
+    }
+
+    function limitarIndividual(caixaAlterada) {
+      if (
+        tipo.value === "INDIVIDUAL"
+        && caixaAlterada.checked
+      ) {
+        caixasUtentes.forEach(
+          function (caixa) {
+            if (caixa !== caixaAlterada) {
+              caixa.checked = false;
+            }
+          }
+        );
+      }
+
+      atualizarContadorUtentes();
+    }
+
+    caixasUtentes.forEach(
+      function (caixa) {
+        caixa.addEventListener(
+          "change",
+          function () {
+            limitarIndividual(caixa);
+          }
+        );
+      }
+    );
+
+    caixasIntervencoes.forEach(
+      function (caixa) {
+        caixa.addEventListener(
+          "change",
+          atualizarContadorIntervencoes
+        );
+      }
+    );
+
+    tipo.addEventListener(
+      "change",
+      function () {
+        atualizarRegra();
+
+        if (tipo.value === "INDIVIDUAL") {
+          const selecionadas = caixasUtentes.filter(
+            function (caixa) {
+              return caixa.checked;
+            }
+          );
+
+          selecionadas.slice(1).forEach(
+            function (caixa) {
+              caixa.checked = false;
+            }
+          );
+        }
+
+        atualizarContadorUtentes();
+      }
+    );
+
+    profissional.addEventListener(
+      "change",
+      atualizarProfissional
+    );
+
+    localRealizacao.addEventListener(
+      "change",
+      atualizarLocal
+    );
+
+    pesquisa.addEventListener(
+      "input",
+      function () {
+        const termo = pesquisa.value
+          .trim()
+          .toLowerCase();
+
+        caixasUtentes.forEach(
+          function (caixa) {
+            const linha = obterLinha(caixa);
+
+            const texto = linha.textContent
+              .trim()
+              .toLowerCase();
+
+            linha.classList.toggle(
+              "utente-oculto",
+              termo && !texto.includes(termo)
+            );
+          }
+        );
+      }
+    );
+
+    limparPesquisa.addEventListener(
+      "click",
+      function () {
+        pesquisa.value = "";
+
+        caixasUtentes.forEach(
+          function (caixa) {
+            obterLinha(caixa).classList.remove(
+              "utente-oculto"
+            );
+          }
+        );
+
+        pesquisa.focus();
+      }
+    );
+
+    atualizarProfissional();
+    atualizarLocal();
+    atualizarRegra();
+    atualizarContadorUtentes();
+    atualizarContadorIntervencoes();
+  }
+);
+</script>
+{% endblock extra_js %}

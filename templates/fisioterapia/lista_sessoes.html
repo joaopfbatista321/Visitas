@@ -1,0 +1,533 @@
+{% extends "fisioterapia/base_fisioterapia.html" %}
+
+{% block fisioterapia_content %}
+
+{% if por_validar %}
+  <div class="alert alert-warning">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <strong>Presenças por validar</strong>
+
+        <div class="small mt-1">
+          Estão a ser apresentadas apenas as suas sessões que já começaram
+          e ainda têm utentes com presença por validar.
+        </div>
+      </div>
+
+      <a
+        href="{% url 'fisioterapia:lista_sessoes' %}"
+        class="btn btn-sm btn-outline-dark"
+      >
+        Ver todas as sessões
+      </a>
+    </div>
+  </div>
+{% endif %}
+
+
+<!-- FILTROS -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <h5 class="mb-0">
+      Pesquisar sessões
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <form
+      method="get"
+      class="row g-3 align-items-end"
+    >
+
+      {% if por_validar %}
+        <input
+          type="hidden"
+          name="por_validar"
+          value="1"
+        >
+      {% endif %}
+
+      <!-- Pesquisa -->
+      <div class="col-lg-4 col-md-6">
+        <label
+          for="filtro-pesquisa"
+          class="form-label"
+        >
+          Pesquisa
+        </label>
+
+        <input
+          type="search"
+          id="filtro-pesquisa"
+          name="q"
+          value="{{ q }}"
+          class="form-control"
+          placeholder="Utente, processo, quarto, intervenção ou profissional"
+        >
+      </div>
+
+      <!-- Data -->
+      <div class="col-lg-2 col-md-3">
+        <label
+          for="filtro-data"
+          class="form-label"
+        >
+          Data
+        </label>
+
+        <input
+          type="date"
+          id="filtro-data"
+          name="data"
+          value="{{ data|date:'Y-m-d' }}"
+          class="form-control"
+        >
+      </div>
+
+      <!-- Estado -->
+      <div class="col-lg-2 col-md-3">
+        <label
+          for="filtro-estado"
+          class="form-label"
+        >
+          Estado
+        </label>
+
+        <select
+          id="filtro-estado"
+          name="estado"
+          class="form-select"
+        >
+          <option value="">
+            Todos
+          </option>
+
+          {% for valor, nome in estados %}
+            <option
+              value="{{ valor }}"
+              {% if estado == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Formato -->
+      <div class="col-lg-2 col-md-3">
+        <label
+          for="filtro-tipo"
+          class="form-label"
+        >
+          Formato
+        </label>
+
+        <select
+          id="filtro-tipo"
+          name="tipo"
+          class="form-select"
+        >
+          <option value="">
+            Todos
+          </option>
+
+          {% for valor, nome in tipos %}
+            <option
+              value="{{ valor }}"
+              {% if tipo == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Piso -->
+      <div class="col-lg-2 col-md-3">
+        <label
+          for="filtro-piso"
+          class="form-label"
+        >
+          Piso
+        </label>
+
+        <select
+          id="filtro-piso"
+          name="piso"
+          class="form-select"
+        >
+          <option value="">
+            Todos os pisos
+          </option>
+
+          {% for valor, nome in pisos %}
+            <option
+              value="{{ valor }}"
+              {% if piso == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Profissional -->
+      <div class="col-lg-4 col-md-6">
+        <label
+          for="filtro-profissional"
+          class="form-label"
+        >
+          Profissional responsável
+        </label>
+
+        {% if por_validar %}
+          <input
+            type="text"
+            id="filtro-profissional"
+            class="form-control"
+            value="{{ request.user.get_full_name|default:request.user.username }}"
+            disabled
+          >
+
+          <div class="form-text">
+            Este atalho apresenta apenas as sessões atribuídas a si.
+          </div>
+        {% else %}
+          <select
+            id="filtro-profissional"
+            name="profissional"
+            class="form-select"
+          >
+            <option value="">
+              Todos os profissionais
+            </option>
+
+            {% for profissional in profissionais %}
+              <option
+                value="{{ profissional.pk }}"
+                {% if profissional_id == profissional.pk|stringformat:"s" %}selected{% endif %}
+              >
+                {{ profissional.get_full_name|default:profissional.username }}
+              </option>
+            {% endfor %}
+          </select>
+        {% endif %}
+      </div>
+
+      <!-- Intervenção -->
+      <div class="col-lg-4 col-md-6">
+        <label
+          for="filtro-intervencao"
+          class="form-label"
+        >
+          Tipo de intervenção
+        </label>
+
+        <select
+          id="filtro-intervencao"
+          name="intervencao"
+          class="form-select"
+        >
+          <option value="">
+            Todas as intervenções
+          </option>
+
+          {% for intervencao in tipos_intervencao %}
+            <option
+              value="{{ intervencao.pk }}"
+              {% if intervencao_id == intervencao.pk|stringformat:"s" %}selected{% endif %}
+            >
+              {{ intervencao.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Local -->
+      <div class="col-lg-2 col-md-3">
+        <label
+          for="filtro-local"
+          class="form-label"
+        >
+          Local
+        </label>
+
+        <select
+          id="filtro-local"
+          name="local_realizacao"
+          class="form-select"
+        >
+          <option value="">
+            Todos os locais
+          </option>
+
+          {% for valor, nome in locais %}
+            <option
+              value="{{ valor }}"
+              {% if local_realizacao == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Botões -->
+      <div class="col-lg-2 col-md-3">
+        <div class="d-flex gap-2">
+          <button
+            type="submit"
+            class="btn btn-primary w-100"
+          >
+            Aplicar
+          </button>
+
+          <a
+            href="{% url 'fisioterapia:lista_sessoes' %}{% if por_validar %}?por_validar=1{% endif %}"
+            class="btn btn-light w-100"
+          >
+            Limpar
+          </a>
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+
+<!-- LISTA -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h5 class="mb-1">
+        {% if por_validar %}
+          As minhas presenças por validar
+        {% else %}
+          Sessões de Fisioterapia
+        {% endif %}
+      </h5>
+
+      <small class="text-muted">
+        {% if sessoes|length == 1 %}
+          1 sessão encontrada
+        {% else %}
+          {{ sessoes|length }} sessões encontradas
+        {% endif %}
+      </small>
+    </div>
+
+    <a
+      href="{% url 'fisioterapia:criar_sessao' %}"
+      class="btn btn-sm btn-primary"
+    >
+      Nova sessão
+    </a>
+  </div>
+
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Data e hora</th>
+          <th>Utente / grupo</th>
+          <th>Intervenções</th>
+          <th>Local</th>
+          <th>Profissional responsável</th>
+          <th>Criada por</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for sessao in sessoes %}
+          <tr class="{% if sessao.estado == 'CANCELADA' %}table-light{% endif %}">
+
+            <!-- Data -->
+            <td class="text-nowrap">
+              <strong>
+                {{ sessao.inicio|date:"d/m/Y" }}
+              </strong>
+
+              <br>
+
+              <small class="text-muted">
+                {{ sessao.inicio|date:"H:i" }}
+                –
+                {{ sessao.fim|date:"H:i" }}
+              </small>
+            </td>
+
+            <!-- Utentes e piso -->
+            <td>
+              <div class="mb-1">
+                {% if sessao.tipo == "GRUPO" %}
+                  <span
+                    class="badge"
+                    style="background-color: #6f42c1;"
+                  >
+                    Grupo
+                  </span>
+                {% else %}
+                  <span class="badge bg-info text-dark">
+                    Individual
+                  </span>
+                {% endif %}
+              </div>
+
+              {% for participacao in sessao.participacoes.all %}
+                <div
+                  class="mb-1
+                  {% if participacao.estado == 'CANCELADO' or participacao.estado == 'CANCELADO_ALTA' %}
+                    text-muted text-decoration-line-through
+                  {% endif %}"
+                >
+                  <strong class="small">
+                    {{ participacao.utente.nome }}
+                  </strong>
+
+                  <div class="small text-muted">
+                    Processo:
+                    {{ participacao.utente.numero_processo }}
+
+                    {% if participacao.utente.quarto %}
+                      · Quarto
+                      {{ participacao.utente.quarto.codigo }}
+                      ·
+                      {{ participacao.utente.quarto.get_piso_display }}
+                    {% else %}
+                      · Sem quarto/piso
+                    {% endif %}
+                  </div>
+
+                  {% if por_validar and participacao.estado == "AGENDADO" %}
+                    <div class="mt-1">
+                      <span class="badge bg-warning text-dark">
+                        Presença por validar
+                      </span>
+                    </div>
+                  {% endif %}
+                </div>
+              {% empty %}
+                <span class="text-muted">
+                  Sem participantes
+                </span>
+              {% endfor %}
+            </td>
+
+            <!-- Intervenções -->
+            <td>
+              <div class="d-flex flex-column align-items-start gap-1">
+                {% for intervencao in sessao.tipos_intervencao.all %}
+                  <span class="badge bg-light-primary text-primary">
+                    {{ intervencao.nome }}
+                  </span>
+                {% empty %}
+                  <span class="text-muted">
+                    Não especificadas
+                  </span>
+                {% endfor %}
+              </div>
+            </td>
+
+            <!-- Local -->
+            <td>
+              <strong class="small">
+                {{ sessao.get_local_realizacao_display }}
+              </strong>
+
+              {% if sessao.local %}
+                <div class="small text-muted">
+                  {{ sessao.local }}
+                </div>
+              {% endif %}
+            </td>
+
+            <!-- Responsável -->
+            <td>
+              <strong>
+                {{ sessao.profissional.get_full_name|default:sessao.profissional.username }}
+              </strong>
+
+              {% if sessao.profissional_id == request.user.id %}
+                <div class="mt-1">
+                  <span class="badge bg-primary">
+                    Atribuída a si
+                  </span>
+                </div>
+              {% endif %}
+            </td>
+
+            <!-- Criada por -->
+            <td>
+              {% if sessao.criado_por %}
+                {{ sessao.criado_por.get_full_name|default:sessao.criado_por.username }}
+              {% else %}
+                <span class="text-muted">
+                  Registo anterior
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Estado -->
+            <td>
+              {% if sessao.estado == "AGENDADA" %}
+                <span class="badge bg-primary fisio-status">
+                  Agendada
+                </span>
+              {% elif sessao.estado == "REALIZADA" %}
+                <span class="badge bg-success fisio-status">
+                  Realizada
+                </span>
+              {% else %}
+                <span class="badge bg-secondary fisio-status">
+                  Cancelada
+                </span>
+              {% endif %}
+            </td>
+
+            <!-- Ações -->
+            <td class="text-end text-nowrap">
+              <a
+                href="{% url 'fisioterapia:detalhe_sessao' sessao.pk %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                {% if por_validar %}
+                  Validar
+                {% else %}
+                  Abrir
+                {% endif %}
+              </a>
+
+              {% if sessao.profissional_id == request.user.id and sessao.estado == "AGENDADA" %}
+                <a
+                  href="{% url 'fisioterapia:editar_sessao' sessao.pk %}"
+                  class="btn btn-sm btn-outline-warning ms-1"
+                >
+                  Editar
+                </a>
+              {% endif %}
+            </td>
+
+          </tr>
+        {% empty %}
+          <tr>
+            <td
+              colspan="8"
+              class="text-center text-muted py-5"
+            >
+              {% if por_validar %}
+                Não existem presenças pendentes atribuídas a si.
+              {% else %}
+                Não foram encontradas sessões.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock fisioterapia_content %}

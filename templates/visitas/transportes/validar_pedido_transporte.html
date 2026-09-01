@@ -1,0 +1,217 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+
+{% block transportes_content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-1">
+      Validar pedido #{{ pedido.pk }}
+    </h4>
+
+    <p class="text-muted mb-0">
+      Pedido de {{ pedido.pedido_por|default:"utilizador não identificado" }}
+    </p>
+  </div>
+
+  <a
+    href="{% url 'visitas:detalhe_pedido_transporte' pedido.pk %}"
+    class="btn btn-sm btn-outline-secondary"
+  >
+    Voltar
+  </a>
+</div>
+
+
+<div class="alert alert-info">
+  Depois da validação será criado um transporte com o estado
+  <strong>A aguardar confirmação</strong>.
+</div>
+
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
+
+
+  <div class="card mb-3">
+    <div class="card-header">
+      <h5 class="mb-0">Informação do pedido</h5>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+
+        {% for field in form %}
+
+          {% if field.name == "data_hora_saida" %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">
+            <h5 class="mb-1">
+              Planeamento do transporte
+            </h5>
+
+            <p class="text-muted small mb-0">
+              Estes dados são obrigatórios para validar o pedido.
+            </p>
+          </div>
+
+          <div class="card-body">
+            <div class="row g-3">
+          {% endif %}
+
+
+          {% if field.name == "observacoes_recepcao" %}
+            </div>
+          </div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">
+            <h5 class="mb-0">
+              Validação da Receção
+            </h5>
+          </div>
+
+          <div class="card-body">
+            <div class="row g-3">
+          {% endif %}
+
+
+          <div
+            class="
+              {% if field.name == 'observacoes' or field.name == 'outras_necessidades' or field.name == 'observacoes_recepcao' %}
+                col-12
+              {% elif field.name == 'necessita_cadeira_rodas' or field.name == 'necessita_maca' or field.name == 'necessita_oxigenio' %}
+                col-md-4
+              {% else %}
+                col-md-6
+              {% endif %}
+
+              {% if field.name == 'viatura' or field.name == 'condutor' %}
+                transporte-interno
+              {% endif %}
+
+              {% if field.name == 'entidade_transporte' %}
+                transporte-externo
+              {% endif %}
+            "
+          >
+
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="form-check mt-4">
+                {{ field }}
+
+                <label
+                  class="form-check-label"
+                  for="{{ field.id_for_label }}"
+                >
+                  {{ field.label }}
+                </label>
+              </div>
+
+            {% else %}
+              <label
+                class="form-label"
+                for="{{ field.id_for_label }}"
+              >
+                {{ field.label }}
+
+                {% if field.field.required %}
+                  <span class="text-danger">*</span>
+                {% endif %}
+              </label>
+
+              {{ field }}
+            {% endif %}
+
+
+            {% if field.help_text %}
+              <div class="form-text">
+                {{ field.help_text }}
+              </div>
+            {% endif %}
+
+
+            {% for erro in field.errors %}
+              <div class="text-danger small mt-1">
+                {{ erro }}
+              </div>
+            {% endfor %}
+          </div>
+
+        {% endfor %}
+
+      </div>
+    </div>
+
+    <div class="card-footer d-flex gap-2">
+      <button type="submit" class="btn btn-success">
+        <i data-feather="check-circle" class="me-1"></i>
+        Validar e criar transporte
+      </button>
+
+      <a
+        href="{% url 'visitas:detalhe_pedido_transporte' pedido.pk %}"
+        class="btn btn-secondary"
+      >
+        Cancelar
+      </a>
+    </div>
+  </div>
+</form>
+{% endblock transportes_content %}
+
+
+{% block extra_js %}
+{{ block.super }}
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const meio = document.getElementById(
+    "{{ form.meio_transporte.id_for_label }}"
+  );
+
+  if (!meio) {
+    return;
+  }
+
+  function atualizarCamposTransporte() {
+    const interno = meio.value === "INSTITUICAO";
+    const externo = meio.value && !interno;
+
+    document
+      .querySelectorAll(".transporte-interno")
+      .forEach(function (elemento) {
+        elemento.classList.toggle(
+          "d-none",
+          !interno
+        );
+      });
+
+    document
+      .querySelectorAll(".transporte-externo")
+      .forEach(function (elemento) {
+        elemento.classList.toggle(
+          "d-none",
+          !externo
+        );
+      });
+  }
+
+  meio.addEventListener(
+    "change",
+    atualizarCamposTransporte
+  );
+
+  atualizarCamposTransporte();
+});
+</script>
+{% endblock extra_js %}

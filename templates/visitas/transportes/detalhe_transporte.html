@@ -11,7 +11,7 @@
     {% else %}<span class="badge bg-secondary">Cancelado</span>{% endif %}
   </div>
   <div class="d-flex gap-1 transport-no-print">
-    {% if transporte.estado != 'CONCLUIDO' and transporte.estado != 'CANCELADO' %}
+    {% if pode_editar and transporte.estado != 'CONCLUIDO' and transporte.estado != 'CANCELADO' %}
     <a href="{% url 'visitas:editar_transporte' transporte.pk %}" class="btn btn-sm btn-warning">Editar</a>
     {% endif %}
     <a href="{% url 'visitas:calendario_transportes' %}" class="btn btn-sm btn-secondary">Voltar</a>
@@ -75,8 +75,26 @@
     <div class="card mb-3 transport-no-print">
       <div class="card-header"><h5 class="mb-0">Ações</h5></div>
       <div class="card-body d-grid gap-2">
-        {% if transporte.estado == 'PENDENTE' %}
-        <form method="post" action="{% url 'visitas:acao_transporte' transporte.pk 'confirmar' %}">{% csrf_token %}<button class="btn btn-primary w-100" type="submit">Confirmar transporte</button></form>
+        {% if transporte.estado == 'PENDENTE' and pode_confirmar %}
+          <form
+            method="post"
+            action="{% url 'visitas:acao_transporte' transporte.pk 'confirmar' %}"
+          >
+            {% csrf_token %}
+
+            <button class="btn btn-primary w-100" type="submit">
+              Confirmar transporte
+            </button>
+          </form>
+
+        {% elif transporte.estado == 'PENDENTE' %}
+          <div class="alert alert-info mb-0">
+            {% if transporte.meio_transporte == "INSTITUICAO" %}
+              Este transporte aguarda confirmação da equipa de Transportes.
+            {% else %}
+              Este transporte aguarda confirmação da Receção.
+            {% endif %}
+          </div>
         {% endif %}
         {% if transporte.estado == 'PENDENTE' or transporte.estado == 'CONFIRMADO' %}
         <form method="post" action="{% url 'visitas:acao_transporte' transporte.pk 'iniciar' %}">{% csrf_token %}<button class="btn btn-warning w-100" type="submit">Registar saída da UCCI</button></form>
@@ -92,8 +110,25 @@
     <div class="card">
       <div class="card-header"><h5 class="mb-0">Registo</h5></div>
       <div class="card-body small">
-        <p><strong>Criado por:</strong><br>{{ transporte.criado_por|default:"-" }} — {{ transporte.criado_em|date:"d/m/Y H:i" }}</p>
-        <p class="mb-0"><strong>Última alteração:</strong><br>{{ transporte.atualizado_por|default:"-" }} — {{ transporte.atualizado_em|date:"d/m/Y H:i" }}</p>
+        <p>
+          <strong>Criado por:</strong><br>
+          {{ transporte.criado_por|default:"-" }} —
+          {{ transporte.criado_em|date:"d/m/Y H:i" }}
+        </p>
+
+        {% if transporte.confirmado_por %}
+          <p>
+            <strong>Confirmado por:</strong><br>
+            {{ transporte.confirmado_por }} —
+            {{ transporte.confirmado_em|date:"d/m/Y H:i" }}
+          </p>
+        {% endif %}
+
+        <p class="mb-0">
+          <strong>Última alteração:</strong><br>
+          {{ transporte.atualizado_por|default:"-" }} —
+          {{ transporte.atualizado_em|date:"d/m/Y H:i" }}
+        </p>
       </div>
     </div>
   </div>

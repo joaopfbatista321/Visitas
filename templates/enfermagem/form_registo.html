@@ -1,0 +1,266 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}
+  {% if registo %}
+    Editar registo de Enfermagem
+  {% else %}
+    Novo registo de Enfermagem
+  {% endif %}
+{% endblock title %}
+
+{% block enfermagem_content %}
+
+<div class="row justify-content-center">
+  <div class="col-xl-10">
+
+    <div class="card border-0 shadow-sm">
+
+      <div class="card-header">
+        <h5 class="mb-1">
+          {% if registo %}
+            Editar registo de Enfermagem
+          {% else %}
+            Novo registo de Enfermagem
+          {% endif %}
+        </h5>
+
+        <p class="text-muted mb-0">
+          Utente:
+          <strong>{{ utente.nome }}</strong>
+          · Processo {{ utente.numero_processo }}
+        </p>
+      </div>
+
+      <div class="card-body">
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for erro in form.non_field_errors %}
+                <div>{{ erro }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="row g-3">
+
+            <!-- Data -->
+            <div class="col-md-4">
+              <label
+                for="{{ form.data_registo.id_for_label }}"
+                class="form-label"
+              >
+                {{ form.data_registo.label }}
+              </label>
+
+              {{ form.data_registo }}
+
+              {% for erro in form.data_registo.errors %}
+                <div class="text-danger small mt-1">
+                  {{ erro }}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Turno -->
+            <div class="col-md-4">
+              <label
+                for="{{ form.turno.id_for_label }}"
+                class="form-label"
+              >
+                {{ form.turno.label }}
+              </label>
+
+              {{ form.turno }}
+
+              {% for erro in form.turno.errors %}
+                <div class="text-danger small mt-1">
+                  {{ erro }}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Tipo -->
+            <div class="col-md-4">
+              <label
+                for="{{ form.tipo_registo.id_for_label }}"
+                class="form-label"
+              >
+                {{ form.tipo_registo.label }}
+              </label>
+
+              {{ form.tipo_registo }}
+
+              {% for erro in form.tipo_registo.errors %}
+                <div class="text-danger small mt-1">
+                  {{ erro }}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Observação -->
+            <div class="col-12">
+              <label
+                for="{{ form.observacao.id_for_label }}"
+                class="form-label"
+              >
+                {{ form.observacao.label }}
+              </label>
+
+              {{ form.observacao }}
+
+              {% for erro in form.observacao.errors %}
+                <div class="text-danger small mt-1">
+                  {{ erro }}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Cuidados -->
+            <div class="col-md-6">
+              <label
+                for="{{ form.cuidados_realizados.id_for_label }}"
+                class="form-label"
+              >
+                {{ form.cuidados_realizados.label }}
+              </label>
+
+              {{ form.cuidados_realizados }}
+
+              {% for erro in form.cuidados_realizados.errors %}
+                <div class="text-danger small mt-1">
+                  {{ erro }}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Resposta -->
+            <div class="col-md-6">
+              <label
+                for="{{ form.resposta_utente.id_for_label }}"
+                class="form-label"
+              >
+                {{ form.resposta_utente.label }}
+              </label>
+
+              {{ form.resposta_utente }}
+
+              {% for erro in form.resposta_utente.errors %}
+                <div class="text-danger small mt-1">
+                  {{ erro }}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Plano -->
+            <div class="col-12">
+              <label
+                for="{{ form.plano_cuidados.id_for_label }}"
+                class="form-label"
+              >
+                {{ form.plano_cuidados.label }}
+              </label>
+
+              {{ form.plano_cuidados }}
+
+              {% for erro in form.plano_cuidados.errors %}
+                <div class="text-danger small mt-1">
+                  {{ erro }}
+                </div>
+              {% endfor %}
+            </div>
+
+            <!-- Visibilidade -->
+            <div class="col-12">
+              <label
+                for="{{ form.visibilidade.id_for_label }}"
+                class="form-label"
+              >
+                {{ form.visibilidade.label }}
+              </label>
+
+              {{ form.visibilidade }}
+
+              {% for erro in form.visibilidade.errors %}
+                <div class="text-danger small mt-1">
+                  {{ erro }}
+                </div>
+              {% endfor %}
+
+              <div class="row g-2 mt-2">
+
+                <div class="col-md-4">
+                  <div class="alert alert-danger h-100 mb-0 py-2">
+                    <strong>Apenas eu</strong>
+                    <div class="small mt-1">
+                      Apenas o autor consegue consultar o registo.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="alert alert-warning h-100 mb-0 py-2">
+                    <strong>Grupo profissional</strong>
+                    <div class="small mt-1">
+                      Visível para os profissionais de Enfermagem.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-md-4">
+                  <div class="alert alert-success h-100 mb-0 py-2">
+                    <strong>Todos</strong>
+                    <div class="small mt-1">
+                      Visível para as equipas clínicas autorizadas
+                      no administrador.
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="form-text mt-2">
+                Por defeito, o registo fica partilhado com os grupos
+                clínicos configurados no Django Admin.
+              </div>
+            </div>
+
+          </div>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+
+            <a
+              href="{% url 'enfermagem:registos_utente' utente.pk %}"
+              class="btn btn-outline-secondary"
+            >
+              Cancelar
+            </a>
+
+            <button
+              type="submit"
+              class="btn btn-danger"
+            >
+              <i data-feather="save" class="me-1"></i>
+
+              {% if registo %}
+                Guardar alterações
+              {% else %}
+                Criar registo
+              {% endif %}
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock enfermagem_content %}

@@ -1,0 +1,687 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}
+  {{ perfil.titulo }}
+{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <!-- CABEÇALHO -->
+    <div class="page-header">
+      <div class="page-block">
+        <div class="row align-items-center">
+
+          <div class="col-md-8 d-flex align-items-center">
+            <div class="avtar avtar-xl bg-light-{{ perfil.cor }} text-{{ perfil.cor }} me-3">
+              <i data-feather="{{ perfil.icone }}"></i>
+            </div>
+
+            <div>
+              <h3 class="mb-1">
+                {{ perfil.titulo }}
+              </h3>
+
+              <p class="text-muted mb-0">
+                {{ perfil.descricao }}
+              </p>
+            </div>
+          </div>
+
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a
+              href="{% url 'index' %}"
+              class="btn btn-outline-secondary"
+            >
+              Voltar às áreas
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+    <!-- MÉTRICAS -->
+    {% if metricas %}
+      <div class="row g-3 mb-4">
+        {% for metrica in metricas %}
+          <div class="col-md-6 {% if perfil.slug == 'fisioterapia' or perfil.slug == 'enfermagem' %}col-xl-3{% else %}col-xl-4{% endif %}">
+            <div class="card h-100 border-0 shadow-sm">
+              <div class="card-body d-flex justify-content-between align-items-center">
+
+                <div>
+                  <p class="text-muted mb-1">
+                    {{ metrica.titulo }}
+                  </p>
+
+                  <h3 class="mb-0">
+                    {{ metrica.valor }}
+                  </h3>
+                </div>
+
+                <div class="avtar bg-light-{{ perfil.cor }} text-{{ perfil.cor }}">
+                  <i data-feather="{{ metrica.icone }}"></i>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+
+    <!-- ACESSOS DO DEPARTAMENTO -->
+    {% if perfil.acessos %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header">
+          <h5 class="mb-0">
+            Acessos deste departamento
+          </h5>
+        </div>
+
+        <div class="card-body">
+          <div class="row g-3">
+
+            {% for acesso in perfil.acessos %}
+              <div class="col-md-6 col-xl-3">
+                <a
+                  href="{% url acesso.url %}{% if acesso.query %}?{{ acesso.query }}{% endif %}"
+                  class="card h-100 border text-decoration-none mb-0"
+                >
+                  <div class="card-body">
+                    <div class="avtar bg-light-{{ perfil.cor }} text-{{ perfil.cor }} mb-3">
+                      <i data-feather="{{ acesso.icone }}"></i>
+                    </div>
+
+                    <h6 class="text-dark mb-1">
+                      {{ acesso.titulo }}
+                    </h6>
+
+                    <p class="text-muted small mb-0">
+                      {{ acesso.descricao }}
+                    </p>
+                  </div>
+                </a>
+              </div>
+            {% endfor %}
+
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body text-center py-5">
+
+          <div class="avtar avtar-xl bg-light-{{ perfil.cor }} text-{{ perfil.cor }} mb-3">
+            <i data-feather="{{ perfil.icone }}"></i>
+          </div>
+
+          <h4>
+            Área preparada
+          </h4>
+
+          <p class="text-muted mb-0">
+            {{ perfil.mensagem_vazia|default:"Ainda não existem módulos disponíveis para este departamento." }}
+          </p>
+
+        </div>
+      </div>
+    {% endif %}
+
+
+    <!-- ÁREA ESPECÍFICA DA FISIOTERAPIA -->
+    {% if perfil.slug == "fisioterapia" %}
+
+      <div class="row g-3 mb-4">
+
+        <!-- SESSÕES DA EQUIPA HOJE -->
+        <div class="col-xl-7">
+          <div class="card border-0 shadow-sm h-100">
+
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <h5 class="mb-1">
+                  Sessões da equipa hoje
+                </h5>
+
+                <small class="text-muted">
+                  Planeamento diário da Fisioterapia
+                </small>
+              </div>
+
+              <a
+                href="{% url 'fisioterapia:calendario' %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                Abrir calendário
+              </a>
+            </div>
+
+            <div class="card-body table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Utente / grupo</th>
+                    <th>Intervenção</th>
+                    <th>Responsável</th>
+                    <th>Estado</th>
+                    <th></th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {% for sessao in sessoes_fisioterapia_hoje %}
+                    <tr>
+                      <td class="text-nowrap">
+                        <strong>
+                          {{ sessao.inicio|date:"H:i" }}
+                        </strong>
+
+                        <div class="small text-muted">
+                          até {{ sessao.fim|date:"H:i" }}
+                        </div>
+                      </td>
+
+                      <td>
+                        <div class="mb-1">
+                          {% if sessao.tipo == "GRUPO" %}
+                            <span
+                              class="badge"
+                              style="background-color: #6f42c1;"
+                            >
+                              Grupo
+                            </span>
+                          {% else %}
+                            <span class="badge bg-info text-dark">
+                              Individual
+                            </span>
+                          {% endif %}
+                        </div>
+
+                        {% for participacao in sessao.participacoes.all %}
+                          <div
+                            class="small
+                            {% if participacao.estado == 'CANCELADO' or participacao.estado == 'CANCELADO_ALTA' %}
+                              text-muted text-decoration-line-through
+                            {% endif %}"
+                          >
+                            {{ participacao.utente.nome }}
+                          </div>
+                        {% empty %}
+                          <span class="text-muted small">
+                            Sem participantes
+                          </span>
+                        {% endfor %}
+                      </td>
+
+                      <td>
+                        {% for intervencao in sessao.tipos_intervencao.all %}
+                          <span class="badge bg-light-primary text-primary mb-1">
+                            {{ intervencao.nome }}
+                          </span>
+                        {% empty %}
+                          <span class="text-muted small">
+                            Não especificada
+                          </span>
+                        {% endfor %}
+
+                        <div class="small text-muted mt-1">
+                          {{ sessao.get_local_realizacao_display }}
+
+                          {% if sessao.local %}
+                            · {{ sessao.local }}
+                          {% endif %}
+                        </div>
+                      </td>
+
+                      <td>
+                        {{ sessao.profissional.get_full_name|default:sessao.profissional.username }}
+
+                        {% if sessao.profissional_id == request.user.id %}
+                          <div class="mt-1">
+                            <span class="badge bg-primary">
+                              Atribuída a si
+                            </span>
+                          </div>
+                        {% endif %}
+                      </td>
+
+                      <td>
+                        {% if sessao.estado == "AGENDADA" %}
+                          <span class="badge bg-primary">
+                            Agendada
+                          </span>
+                        {% elif sessao.estado == "REALIZADA" %}
+                          <span class="badge bg-success">
+                            Realizada
+                          </span>
+                        {% else %}
+                          <span class="badge bg-secondary">
+                            Cancelada
+                          </span>
+                        {% endif %}
+                      </td>
+
+                      <td class="text-end">
+                        <a
+                          href="{% url 'fisioterapia:detalhe_sessao' sessao.pk %}"
+                          class="btn btn-sm btn-outline-primary"
+                        >
+                          Abrir
+                        </a>
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td
+                        colspan="6"
+                        class="text-center text-muted py-4"
+                      >
+                        Não existem sessões de Fisioterapia marcadas para hoje.
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+
+        <!-- PRÓXIMAS SESSÕES DO PROFISSIONAL -->
+        <div class="col-xl-5">
+          <div class="card border-0 shadow-sm h-100">
+
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div>
+                <h5 class="mb-1">
+                  As minhas próximas sessões
+                </h5>
+
+                <small class="text-muted">
+                  Sessões atribuídas a si
+                </small>
+              </div>
+
+              <a
+                href="{% url 'fisioterapia:lista_sessoes' %}?profissional={{ request.user.pk }}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                Ver todas
+              </a>
+            </div>
+
+            <div class="card-body">
+              <div class="list-group list-group-flush">
+
+                {% for sessao in minhas_proximas_sessoes %}
+                  <a
+                    href="{% url 'fisioterapia:detalhe_sessao' sessao.pk %}"
+                    class="list-group-item list-group-item-action px-0"
+                  >
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+
+                      <div>
+                        <strong>
+                          {{ sessao.inicio|date:"d/m/Y H:i" }}
+                        </strong>
+
+                        <div class="small text-muted mt-1">
+                          {% if sessao.tipo == "GRUPO" %}
+                            Sessão de grupo
+                          {% else %}
+                            Sessão individual
+                          {% endif %}
+
+                          · {{ sessao.get_local_realizacao_display }}
+                        </div>
+
+                        <div class="small mt-2">
+                          {% for participacao in sessao.participacoes.all %}
+                            {% if participacao.estado != "CANCELADO" and participacao.estado != "CANCELADO_ALTA" %}
+                              <span class="me-1">
+                                {{ participacao.utente.nome }}{% if not forloop.last %},{% endif %}
+                              </span>
+                            {% endif %}
+                          {% empty %}
+                            <span class="text-muted">
+                              Sem participantes
+                            </span>
+                          {% endfor %}
+                        </div>
+                      </div>
+
+                      <span class="badge bg-primary">
+                        Agendada
+                      </span>
+
+                    </div>
+                  </a>
+                {% empty %}
+                  <div class="text-center py-4">
+                    <div class="avtar bg-light-success text-success mb-3">
+                      <i data-feather="check-circle"></i>
+                    </div>
+
+                    <h6>
+                      Sem sessões futuras
+                    </h6>
+
+                    <p class="text-muted small mb-0">
+                      Não tem sessões futuras atribuídas.
+                    </p>
+                  </div>
+                {% endfor %}
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+
+      <!-- PRESENÇAS PENDENTES -->
+      <div class="alert alert-warning d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div class="d-flex align-items-start gap-2">
+          <i data-feather="check-square"></i>
+
+          <div>
+            <strong>
+              Tem sessões realizadas por validar?
+            </strong>
+
+            <div class="small mt-1">
+              Confirme facilmente se cada utente realizou ou faltou
+              à sessão de Fisioterapia.
+            </div>
+          </div>
+        </div>
+
+        <a
+          href="{% url 'fisioterapia:lista_sessoes' %}?por_validar=1"
+          class="btn btn-warning"
+        >
+          Validar presenças
+        </a>
+      </div>
+
+    {% endif %}
+
+
+    <!-- ÁREA ESPECÍFICA DA ENFERMAGEM -->
+    {% if perfil.slug == "enfermagem" %}
+      <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h5 class="mb-1">
+              Quedas recentes
+            </h5>
+
+            <small class="text-muted">
+              Últimas notificações que tem autorização para consultar
+            </small>
+          </div>
+
+          <a
+            href="{% url 'enfermagem:lista_quedas' %}"
+            class="btn btn-sm btn-outline-danger"
+          >
+            Ver todas
+          </a>
+        </div>
+
+        <div class="card-body table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Data e hora</th>
+                <th>Utente</th>
+                <th>Ocorrência</th>
+                <th>Gravidade</th>
+                <th>Notificação</th>
+                <th>Profissional</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for queda in quedas_recentes %}
+                <tr>
+                  <td class="text-nowrap">
+                    <strong>
+                      {{ queda.data_hora_queda|date:"d/m/Y" }}
+                    </strong>
+
+                    <div class="small text-muted">
+                      {{ queda.data_hora_queda|date:"H:i" }}
+                    </div>
+                  </td>
+
+                  <td>
+                    <strong>
+                      {{ queda.registo_enfermagem.utente.nome }}
+                    </strong>
+
+                    <div class="small text-muted">
+                      Processo
+                      {{ queda.registo_enfermagem.utente.numero_processo }}
+
+                      {% if queda.registo_enfermagem.utente.quarto %}
+                        · {{ queda.registo_enfermagem.utente.quarto }}
+                      {% endif %}
+                    </div>
+                  </td>
+
+                  <td>
+                    {{ queda.get_tipo_queda_display }}
+
+                    <div class="small text-muted">
+                      {{ queda.get_local_queda_display }}
+
+                      {% if queda.local_detalhe %}
+                        · {{ queda.local_detalhe }}
+                      {% endif %}
+                    </div>
+                  </td>
+
+                  <td>
+                    {% if queda.gravidade == "SEM_LESAO" %}
+                      <span class="badge bg-success">
+                        {{ queda.get_gravidade_display }}
+                      </span>
+                    {% elif queda.gravidade == "MINOR" %}
+                      <span class="badge bg-info">
+                        {{ queda.get_gravidade_display }}
+                      </span>
+                    {% elif queda.gravidade == "MODERADA" %}
+                      <span class="badge bg-warning text-dark">
+                        {{ queda.get_gravidade_display }}
+                      </span>
+                    {% else %}
+                      <span class="badge bg-danger">
+                        {{ queda.get_gravidade_display }}
+                      </span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if queda.notificacao_institucional_estado == "SIM" %}
+                      <span class="badge bg-success">
+                        Notificada
+                      </span>
+                    {% elif queda.notificacao_institucional_estado == "PENDENTE" %}
+                      <span class="badge bg-warning text-dark">
+                        Pendente
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary">
+                        Não notificada
+                      </span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {{ queda.registo_enfermagem.profissional.get_full_name|default:queda.registo_enfermagem.profissional.username }}
+                  </td>
+
+                  <td class="text-end">
+                    <a
+                      href="{% url 'enfermagem:detalhe_queda' queda.pk %}"
+                      class="btn btn-sm btn-outline-danger"
+                    >
+                      Abrir
+                    </a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td
+                    colspan="7"
+                    class="text-center text-muted py-4"
+                  >
+                    Não existem notificações de queda visíveis.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    {% endif %}
+
+
+    <!-- PEDIDOS DE TRANSPORTE -->
+    {% if pedidos_recentes %}
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            Pedidos de transporte recentes
+          </h5>
+
+          <a href="{% url 'visitas:lista_pedidos_transporte' %}">
+            Ver todos
+          </a>
+        </div>
+
+        <div class="card-body table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Utente</th>
+                <th>Destino</th>
+                <th>Pedido por</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for pedido in pedidos_recentes %}
+                <tr>
+                  <td>
+                    {{ pedido.utente.nome }}
+                  </td>
+
+                  <td>
+                    {{ pedido.destino|default:"Por preencher" }}
+                  </td>
+
+                  <td>
+                    {{ pedido.pedido_por|default:"-" }}
+                  </td>
+
+                  <td>
+                    <span class="badge bg-light-primary text-primary">
+                      {{ pedido.get_estado_display }}
+                    </span>
+                  </td>
+
+                  <td class="text-end">
+                    <a
+                      class="btn btn-sm btn-outline-primary"
+                      href="{% url 'visitas:detalhe_pedido_transporte' pedido.pk %}"
+                    >
+                      Ver
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+
+    <!-- TRANSPORTES PENDENTES -->
+    {% if transportes_pendentes %}
+      <div class="card border-0 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            Transportes internos por confirmar
+          </h5>
+
+          <a href="{% url 'visitas:lista_transportes' %}?estado=PENDENTE&amp;meio=INSTITUICAO">
+            Ver todos
+          </a>
+        </div>
+
+        <div class="card-body table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Saída</th>
+                <th>Utente</th>
+                <th>Destino</th>
+                <th>Viatura</th>
+                <th></th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for transporte in transportes_pendentes %}
+                <tr>
+                  <td>
+                    {{ transporte.data_hora_saida|date:"d/m/Y H:i" }}
+                  </td>
+
+                  <td>
+                    {{ transporte.utente.nome }}
+                  </td>
+
+                  <td>
+                    {{ transporte.destino }}
+                  </td>
+
+                  <td>
+                    {{ transporte.viatura|default:"-" }}
+                  </td>
+
+                  <td class="text-end">
+                    <a
+                      class="btn btn-sm btn-outline-success"
+                      href="{% url 'visitas:detalhe_transporte' transporte.pk %}"
+                    >
+                      Confirmar
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,327 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Receção UCCI{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="page-header">
+      <div class="page-block">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <h3 class="mb-1">Receção UCCI</h3>
+            <p class="text-muted mb-0">
+              Gestão operacional de utentes, visitas, externos e transportes.
+            </p>
+          </div>
+
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">
+              Voltar aos perfis
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="row g-3">
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card bg-light-primary border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="text-muted mb-1">Utentes ativos</p>
+                <h3 class="mb-0">{{ total_utentes_ativos }}</h3>
+              </div>
+              <div class="avtar bg-primary text-white">
+                <i data-feather="users"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card bg-light-success border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="text-muted mb-1">Visitas hoje</p>
+                <h3 class="mb-0">{{ total_visitas_hoje }}</h3>
+              </div>
+              <div class="avtar bg-success text-white">
+                <i data-feather="user-check"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card bg-light-danger border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="text-muted mb-1">Visitas em curso</p>
+                <h3 class="mb-0">{{ total_visitas_em_curso }}</h3>
+              </div>
+              <div class="avtar bg-danger text-white">
+                <i data-feather="clock"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card bg-light-warning border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="text-muted mb-1">Externos presentes</p>
+                <h3 class="mb-0">{{ total_externos_em_curso }}</h3>
+              </div>
+              <div class="avtar bg-warning text-white">
+                <i data-feather="briefcase"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card bg-light-info border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="text-muted mb-1">Transportes hoje</p>
+                <h3 class="mb-0">{{ total_transportes_hoje }}</h3>
+              </div>
+              <div class="avtar bg-info text-white">
+                <i data-feather="truck"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card bg-light-secondary border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="text-muted mb-1">Transportes pendentes</p>
+                <h3 class="mb-0">{{ total_transportes_pendentes }}</h3>
+              </div>
+              <div class="avtar bg-secondary text-white">
+                <i data-feather="alert-circle"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card bg-light-danger border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="text-muted mb-1">Pedidos por validar</p>
+                <h3 class="mb-0">{{ total_pedidos_por_validar }}</h3>
+              </div>
+              <div class="avtar bg-danger text-white">
+                <i data-feather="inbox"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="card bg-light-warning border-0">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p class="text-muted mb-1">Externos por confirmar</p>
+                <h3 class="mb-0">{{ total_externos_por_confirmar }}</h3>
+              </div>
+              <div class="avtar bg-warning text-white">
+                <i data-feather="check-circle"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Ações rápidas -->
+    <div class="card border-0 shadow-sm mt-4">
+      <div class="card-header">
+        <h5 class="mb-0">Ações rápidas</h5>
+      </div>
+
+      <div class="card-body">
+        <div class="row g-3">
+
+          <div class="col-md-6 col-xl-3">
+            <a href="{% url 'visitas:escolher_utente_para_visita' %}"
+               class="btn btn-primary w-100">
+              Nova visita
+            </a>
+          </div>
+
+          <div class="col-md-6 col-xl-3">
+            <a href="{% url 'visitas:visitas_ativas' %}"
+               class="btn btn-outline-danger w-100">
+              Registar saída
+            </a>
+          </div>
+
+          <div class="col-md-6 col-xl-3">
+            <a href="{% url 'visitas:lista_utentes' %}"
+               class="btn btn-outline-primary w-100">
+              Consultar utentes
+            </a>
+          </div>
+
+          <div class="col-md-6 col-xl-3">
+            <a href="{% url 'visitas:calendario_transportes' %}"
+               class="btn btn-outline-success w-100">
+              Transportes
+            </a>
+          </div>
+
+          <div class="col-md-6 col-xl-3">
+            <a href="{% url 'visitas:lista_pedidos_transporte' %}?estado=POR_VALIDAR"
+               class="btn btn-outline-danger w-100">
+              Pedidos por validar
+            </a>
+          </div>
+
+          <div class="col-md-6 col-xl-3">
+            <a href="{% url 'visitas:criar_pedido_transporte' %}"
+               class="btn btn-outline-info w-100">
+              Novo pedido de transporte
+            </a>
+          </div>
+
+          <div class="col-md-6 col-xl-3">
+            <a href="{% url 'visitas:lista_externos' %}"
+               class="btn btn-outline-warning w-100">
+              Entradas externas
+            </a>
+          </div>
+
+          <div class="col-md-6 col-xl-3">
+            <a href="{% url 'dashboard_geral' %}"
+               class="btn btn-outline-secondary w-100">
+              Dashboard geral
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Pedidos que aguardam validação -->
+    <div class="card border-0 shadow-sm mt-4">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Pedidos a aguardar validação</h5>
+        <a href="{% url 'visitas:lista_pedidos_transporte' %}?estado=POR_VALIDAR">
+          Ver todos
+        </a>
+      </div>
+      <div class="card-body table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Utente</th>
+              <th>Destino</th>
+              <th>Pedido por</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pedido in pedidos_por_validar %}
+              <tr>
+                <td>{{ pedido.criado_em|date:"d/m/Y H:i" }}</td>
+                <td>{{ pedido.utente.nome }}</td>
+                <td>{{ pedido.destino|default:"Por preencher" }}</td>
+                <td>{{ pedido.pedido_por|default:"-" }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-primary"
+                     href="{% url 'visitas:validar_pedido_transporte' pedido.pk %}">
+                    Validar
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted">
+                  Não existem pedidos por validar.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Visitas em curso -->
+    <div class="card border-0 shadow-sm mt-4">
+      <div class="card-header d-flex justify-content-between">
+        <h5 class="mb-0">Visitas em curso</h5>
+
+        <a href="{% url 'visitas:visitas_ativas' %}">
+          Ver todas
+        </a>
+      </div>
+
+      <div class="card-body table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Visitante</th>
+              <th>Utente</th>
+              <th>Quarto</th>
+              <th>Entrada</th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for visita in visitas_em_curso %}
+              <tr>
+                <td>{{ visita.nome_visitante }}</td>
+                <td>{{ visita.utente.nome }}</td>
+                <td>{{ visita.utente.quarto|default:"-" }}</td>
+                <td>{{ visita.data_hora_entrada|date:"d/m/Y H:i" }}</td>
+                <td class="text-end">
+                  <a
+                    href="{% url 'visitas:registar_saida_visita' visita.pk %}"
+                    class="btn btn-sm btn-outline-danger"
+                  >
+                    Registar saída
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center text-muted">
+                  Não existem visitas em curso.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock content %}

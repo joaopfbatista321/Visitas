@@ -1,0 +1,133 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Coordenação — {{ pagina.titulo|default:"Dashboards" }}{% endblock title %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .coord-nav {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .coord-nav .nav {
+    min-width: max-content;
+  }
+  .coord-kpi {
+    border: 0;
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .coord-kpi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .08) !important;
+  }
+  .coord-kpi-value {
+    font-size: clamp(1.45rem, 2.4vw, 2rem);
+    line-height: 1.1;
+  }
+  .coord-chart {
+    min-height: 320px;
+  }
+  .coord-filter .form-label {
+    font-size: .78rem;
+    font-weight: 600;
+    margin-bottom: .35rem;
+    color: var(--bs-secondary-color);
+  }
+  .coord-table td,
+  .coord-table th {
+    white-space: nowrap;
+  }
+</style>
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <div class="page-header mb-3">
+      <div class="page-block">
+        <div class="row align-items-center g-3">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avtar avtar-xl bg-light-{{ pagina.cor }} text-{{ pagina.cor }}">
+                <i data-feather="{{ pagina.icone }}"></i>
+              </div>
+              <div>
+                <h3 class="mb-1">{{ pagina.titulo }}</h3>
+                <p class="text-muted mb-0">{{ pagina.descricao }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 text-md-end">
+            <div class="d-inline-flex flex-wrap justify-content-md-end gap-2">
+              {% if pagina.pdf_url %}
+                <a
+                  href="{{ pagina.pdf_url }}"
+                  target="_blank"
+                  rel="noopener"
+                  class="btn btn-sm btn-danger"
+                >
+                  <i data-feather="file-text" class="me-1"></i>
+                  Exportar PDF
+                </a>
+              {% endif %}
+              <span class="badge bg-light-secondary text-secondary">
+                Atualizado {{ atualizado_em|date:"d/m/Y H:i:s" }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 coord-nav">
+      <div class="card-body py-2">
+        <ul class="nav nav-pills flex-nowrap gap-1">
+          <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'dashboard_geral' %} active{% endif %}"
+               href="{% url 'coordenacao:dashboard_geral' %}">Geral</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'dashboard_utentes' %} active{% endif %}"
+               href="{% url 'coordenacao:dashboard_utentes' %}">Utentes</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'dashboard_visitas' %} active{% endif %}"
+               href="{% url 'coordenacao:dashboard_visitas' %}">Visitas</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'dashboard_transportes' %} active{% endif %}"
+               href="{% url 'coordenacao:dashboard_transportes' %}">Transportes</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'dashboard_enfermagem' %} active{% endif %}"
+               href="{% url 'coordenacao:dashboard_enfermagem' %}">Enfermagem</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'dashboard_fisioterapia' %} active{% endif %}"
+               href="{% url 'coordenacao:dashboard_fisioterapia' %}">Fisioterapia</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'dashboard_cozinha' %} active{% endif %}"
+               href="{% url 'coordenacao:dashboard_cozinha' %}">Cozinha</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link{% if request.resolver_match.url_name == 'dashboard_financeiro' %} active{% endif %}"
+               href="{% url 'coordenacao:dashboard_financeiro' %}">Financeiro</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block coordenacao_content %}{% endblock coordenacao_content %}
+  </div>
+</div>
+{% endblock content %}

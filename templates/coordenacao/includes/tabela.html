@@ -1,0 +1,35 @@
+{% if tabela %}
+  <div class="card border-0 shadow-sm mb-0">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="mb-0">{{ tabela.titulo }}</h5>
+      <span class="badge bg-light-primary text-primary">{{ tabela.linhas|length }} registos</span>
+    </div>
+    <div class="card-body table-responsive">
+      <table class="table table-hover align-middle coord-table mb-0">
+        <thead>
+          <tr>
+            {% for cabecalho in tabela.cabecalhos %}<th>{{ cabecalho }}</th>{% endfor %}
+            <th class="text-end"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in tabela.linhas %}
+            <tr>
+              {% for celula in linha.celulas %}<td>{{ celula }}</td>{% endfor %}
+              <td class="text-end">
+                {% if linha.url %}
+                  <a href="{{ linha.url }}" class="btn btn-sm btn-outline-primary">Abrir</a>
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="20" class="text-center text-muted py-5">{{ tabela.vazio }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+

@@ -1,0 +1,38 @@
+<div class="card border-0 shadow-sm mb-4 coord-filter">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-1">Filtros</h5>
+      <small class="text-muted">Período apresentado: {{ inicio|date:"d/m/Y" }} a {{ fim|date:"d/m/Y" }}</small>
+    </div>
+    <i data-feather="filter" class="text-muted"></i>
+  </div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end" novalidate>
+      {% if filtro.non_field_errors %}
+        <div class="col-12">
+          <div class="alert alert-danger mb-0">{{ filtro.non_field_errors }}</div>
+        </div>
+      {% endif %}
+      {% for campo in filtro.visible_fields %}
+        <div class="col-sm-6 col-lg-3 col-xxl-2">
+          <label for="{{ campo.id_for_label }}" class="form-label">{{ campo.label }}</label>
+          {{ campo }}
+          {% for erro in campo.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+      <div class="col-sm-6 col-lg-3 col-xxl-2">
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1">
+            <i data-feather="filter" class="me-1"></i>Aplicar
+          </button>
+          <a href="{{ limpar_url }}" class="btn btn-light" title="Limpar filtros">
+            <i data-feather="x"></i>
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+

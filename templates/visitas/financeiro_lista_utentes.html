@@ -1,0 +1,124 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Financeiro{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <div class="page-header">
+      <div class="page-block">
+        <h3 class="mb-1">Contas dos utentes</h3>
+        <p class="text-muted mb-0">Consulta de saldos e registo de movimentos financeiros.</p>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label">Pesquisar</label>
+            <input type="search" name="q" value="{{ q }}" class="form-control"
+                   placeholder="Nome ou número de processo">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Estado do utente</label>
+            <select name="estado" class="form-select">
+              <option value="ativos" {% if estado == "ativos" %}selected{% endif %}>Ativos</option>
+              <option value="inativos" {% if estado == "inativos" %}selected{% endif %}>Com alta</option>
+              <option value="todos" {% if estado == "todos" %}selected{% endif %}>Todos</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button class="btn btn-primary w-100" type="submit">Pesquisar</button>
+            <a class="btn btn-light w-100" href="{% url 'visitas:lista_financeira_utentes' %}">Limpar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-body table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>
+                <a href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=nome&direcao={% if ordenar == 'nome' and direcao == 'asc' %}desc{% else %}asc{% endif %}">
+                  Nome {% if ordenar == "nome" %}{% if direcao == "asc" %}↑{% else %}↓{% endif %}{% endif %}
+                </a>
+              </th>
+              <th>
+                <a href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=numero_processo&direcao={% if ordenar == 'numero_processo' and direcao == 'asc' %}desc{% else %}asc{% endif %}">
+                  Processo {% if ordenar == "numero_processo" %}{% if direcao == "asc" %}↑{% else %}↓{% endif %}{% endif %}
+                </a>
+              </th>
+              <th>Estado</th>
+              <th>
+                <a href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=data_entrada&direcao={% if ordenar == 'data_entrada' and direcao == 'asc' %}desc{% else %}asc{% endif %}">
+                  Entrada {% if ordenar == "data_entrada" %}{% if direcao == "asc" %}↑{% else %}↓{% endif %}{% endif %}
+                </a>
+              </th>
+              <th class="text-end">
+                <a href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=saldo&direcao={% if ordenar == 'saldo' and direcao == 'asc' %}desc{% else %}asc{% endif %}">
+                  Saldo {% if ordenar == "saldo" %}{% if direcao == "asc" %}↑{% else %}↓{% endif %}{% endif %}
+                </a>
+              </th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for utente in page_obj %}
+              <tr>
+                <td><strong>{{ utente.nome }}</strong></td>
+                <td>{{ utente.numero_processo }}</td>
+                <td>
+                  {% if utente.ativo %}
+                    <span class="badge bg-light-success text-success">Ativo</span>
+                  {% else %}
+                    <span class="badge bg-light-secondary text-secondary">Alta</span>
+                  {% endif %}
+                </td>
+                <td>{{ utente.data_entrada|date:"d/m/Y" }}</td>
+                <td class="text-end fw-bold">{{ utente.saldo|floatformat:2 }} €</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-primary"
+                     href="{% url 'visitas:financeiro_utente' utente.pk %}">
+                    Abrir conta
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  Nenhum utente encontrado.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <span class="text-muted small">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+          </span>
+          <div class="btn-group">
+            {% if page_obj.has_previous %}
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="?{% if query_sem_pagina %}{{ query_sem_pagina }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                Anterior
+              </a>
+            {% endif %}
+            {% if page_obj.has_next %}
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="?{% if query_sem_pagina %}{{ query_sem_pagina }}&{% endif %}page={{ page_obj.next_page_number }}">
+                Seguinte
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

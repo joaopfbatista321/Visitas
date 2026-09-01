@@ -1,0 +1,98 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Cozinha e Alimentação{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="page-header mb-3">
+      <div class="page-block">
+        <div class="row align-items-center">
+          <div class="col-md-8">
+            <div class="d-flex align-items-center gap-3">
+              <div class="avtar avtar-xl bg-light-warning text-warning">
+                <i data-feather="coffee"></i>
+              </div>
+              <div>
+                <h3 class="mb-1">Cozinha e Alimentação</h3>
+                <p class="text-muted mb-0">
+                  Pedidos de refeições e suplementos por unidade.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'index' %}" class="btn btn-outline-secondary">
+              Voltar às áreas
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body py-2">
+        <div class="d-flex flex-wrap gap-2">
+          <a
+            href="{% url 'cozinha:lista_pedidos' %}"
+            class="btn {% if request.resolver_match.url_name == 'lista_pedidos' and not request.GET.tipo %}btn-warning{% else %}btn-outline-warning{% endif %}"
+          >
+            <i data-feather="list" class="me-1"></i>
+            Todos os pedidos
+          </a>
+
+          <a
+            href="{% url 'cozinha:lista_pedidos' %}?tipo=REFEICOES"
+            class="btn {% if request.GET.tipo == 'REFEICOES' or request.GET.tipo == 'refeicoes' %}btn-warning{% else %}btn-outline-warning{% endif %}"
+          >
+            <i data-feather="coffee" class="me-1"></i>
+            Refeições
+          </a>
+
+          <a
+            href="{% url 'cozinha:lista_pedidos' %}?tipo=SUPLEMENTOS"
+            class="btn {% if request.GET.tipo == 'SUPLEMENTOS' or request.GET.tipo == 'suplementos' %}btn-warning{% else %}btn-outline-warning{% endif %}"
+          >
+            <i data-feather="package" class="me-1"></i>
+            Suplementos
+          </a>
+
+          <a
+            href="{% url 'cozinha:mapa_diario' %}"
+            class="btn {% if request.resolver_match.url_name == 'mapa_diario' %}btn-warning{% else %}btn-outline-warning{% endif %}"
+          >
+            <i data-feather="calendar" class="me-1"></i>
+            Mapa diário
+          </a>
+
+          {% if pode_relatorios_cozinha or pode_relatorios %}
+            <a
+              href="{% url 'cozinha:relatorio_mensal' %}"
+              class="btn {% if request.resolver_match.url_name == 'relatorio_mensal' %}btn-warning{% else %}btn-outline-warning{% endif %}"
+            >
+              <i data-feather="bar-chart-2" class="me-1"></i>
+              Relatório mensal
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {% if messages %}
+      {% for message in messages %}
+        <div
+          class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show"
+          role="alert"
+        >
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block cozinha_content %}{% endblock cozinha_content %}
+
+  </div>
+</div>
+{% endblock content %}

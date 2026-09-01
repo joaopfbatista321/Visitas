@@ -1,0 +1,62 @@
+{% extends "coordenacao/base_coordenacao.html" %}
+{% load static %}
+
+{% block coordenacao_content %}
+  {% include "coordenacao/includes/filtros.html" %}
+
+  {% if alertas %}
+    <div class="row g-3 mb-4">
+      {% for alerta in alertas %}
+        <div class="col-md-6 col-xl-3">
+          <div class="alert alert-{{ alerta.cor }} h-100 mb-0 d-flex align-items-center gap-3">
+            <i data-feather="{{ alerta.icone }}" class="flex-shrink-0"></i>
+            <div>
+              <strong class="d-block">{{ alerta.valor }}</strong>
+              <span class="small">{{ alerta.titulo }}</span>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% include "coordenacao/includes/metricas.html" %}
+
+  <div class="row g-3 mb-4">
+    {% for grafico in graficos %}
+      <div class="{{ grafico.coluna }}">
+        <div class="card border-0 shadow-sm h-100 mb-0">
+          <div class="card-header">
+            <h5 class="mb-0">{{ grafico.titulo }}</h5>
+            {% if grafico.descricao %}
+              <small class="text-muted">{{ grafico.descricao }}</small>
+            {% endif %}
+          </div>
+          <div class="card-body">
+            <div id="{{ grafico.id }}" class="coord-chart"></div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% include "coordenacao/includes/tabela.html" %}
+{% endblock coordenacao_content %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'assets/js/plugins/apexcharts.min.js' %}"></script>
+{{ graficos|json_script:"coordenacao-graficos" }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const origem = document.getElementById("coordenacao-graficos");
+
+  if (origem && typeof ApexCharts !== "undefined") {
+    JSON.parse(origem.textContent).forEach(function (grafico) {
+      const elemento = document.getElementById(grafico.id);
+      if (elemento) new ApexCharts(elemento, grafico.opcoes).render();
+    });
+  }
+});
+</script>
+{% endblock extra_js %}

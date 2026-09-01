@@ -1,0 +1,425 @@
+{% extends "fisioterapia/base_fisioterapia.html" %}
+
+{% block fisioterapia_content %}
+
+<!-- CABEÇALHO -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+
+  <div>
+    <h4 class="mb-1">
+      Histórico de Fisioterapia
+    </h4>
+
+    <p class="text-muted mb-0">
+      <strong>{{ utente.nome }}</strong>
+      · Processo {{ utente.numero_processo }}
+
+      {% if utente.quarto %}
+        · Quarto {{ utente.quarto.codigo }}
+        · {{ utente.quarto.get_piso_display }}
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    {% if pode_criar %}
+      <a
+        href="{% url 'fisioterapia:criar_registo' utente.pk %}"
+        class="btn btn-primary"
+      >
+        <i data-feather="plus-circle" class="me-1"></i>
+        Novo registo
+      </a>
+    {% endif %}
+
+    <a
+      href="{% url 'visitas:detalhe_utente' utente.pk %}"
+      class="btn btn-outline-secondary"
+    >
+      Voltar à ficha
+    </a>
+  </div>
+</div>
+
+
+<!-- CONFIDENCIALIDADE -->
+<div class="alert alert-info">
+  <div class="d-flex align-items-start gap-2">
+    <i data-feather="shield"></i>
+
+    <div>
+      <strong>
+        Registos apresentados conforme a visibilidade definida
+      </strong>
+
+      <div class="small mt-1">
+        Os registos confidenciais são apresentados apenas ao autor.
+        Os registos de grupo são apresentados à Fisioterapia.
+        Os registos gerais são apresentados aos cinco grupos clínicos
+        autorizados.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- FILTROS -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <h5 class="mb-0">
+      Pesquisar no histórico
+    </h5>
+  </div>
+
+  <div class="card-body">
+    <form
+      method="get"
+      class="row g-3 align-items-end"
+    >
+
+      <!-- Pesquisa -->
+      <div class="col-lg-4 col-md-6">
+        <label
+          for="filtro-pesquisa"
+          class="form-label"
+        >
+          Pesquisa
+        </label>
+
+        <input
+          type="search"
+          id="filtro-pesquisa"
+          name="q"
+          value="{{ q }}"
+          class="form-control"
+          placeholder="Intervenção, trabalho, evolução ou plano"
+        >
+      </div>
+
+      <!-- Data -->
+      <div class="col-lg-2 col-md-3">
+        <label
+          for="filtro-data"
+          class="form-label"
+        >
+          Data
+        </label>
+
+        <input
+          type="date"
+          id="filtro-data"
+          name="data"
+          value="{{ data|date:'Y-m-d' }}"
+          class="form-control"
+        >
+      </div>
+
+      <!-- Visibilidade -->
+      <div class="col-lg-3 col-md-3">
+        <label
+          for="filtro-visibilidade"
+          class="form-label"
+        >
+          Visibilidade
+        </label>
+
+        <select
+          id="filtro-visibilidade"
+          name="visibilidade"
+          class="form-select"
+        >
+          <option value="">
+            Todas
+          </option>
+
+          {% for valor, nome in visibilidades %}
+            <option
+              value="{{ valor }}"
+              {% if visibilidade == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Profissional -->
+      <div class="col-lg-3 col-md-6">
+        <label
+          for="filtro-profissional"
+          class="form-label"
+        >
+          Fisioterapeuta
+        </label>
+
+        <select
+          id="filtro-profissional"
+          name="profissional"
+          class="form-select"
+        >
+          <option value="">
+            Todos os profissionais visíveis
+          </option>
+
+          {% for profissional in profissionais_registos %}
+            <option
+              value="{{ profissional.pk }}"
+              {% if profissional_id == profissional.pk|stringformat:"s" %}selected{% endif %}
+            >
+              {{ profissional.get_full_name|default:profissional.username }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Intervenção -->
+      <div class="col-lg-6 col-md-6">
+        <label
+          for="filtro-intervencao"
+          class="form-label"
+        >
+          Tipo de intervenção
+        </label>
+
+        <select
+          id="filtro-intervencao"
+          name="intervencao"
+          class="form-select"
+        >
+          <option value="">
+            Todas as intervenções visíveis
+          </option>
+
+          {% for intervencao in intervencoes_registos %}
+            <option
+              value="{{ intervencao.pk }}"
+              {% if intervencao_id == intervencao.pk|stringformat:"s" %}selected{% endif %}
+            >
+              {{ intervencao.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Botões -->
+      <div class="col-lg-3 col-md-3">
+        <button
+          type="submit"
+          class="btn btn-primary w-100"
+        >
+          Aplicar filtros
+        </button>
+      </div>
+
+      <div class="col-lg-3 col-md-3">
+        <a
+          href="{% url 'fisioterapia:registos_utente' utente.pk %}"
+          class="btn btn-light w-100"
+        >
+          Limpar filtros
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+
+<!-- CONTAGEM -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div class="text-muted">
+        {% if registos|length == 1 %}
+            1 registo visível
+        {% else %}
+            {{ registos|length }} registos visíveis
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- HISTÓRICO -->
+<div class="row g-3">
+
+  {% for registo in registos %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm mb-0">
+
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+            <div class="flex-grow-1">
+
+              <!-- Intervenções e visibilidade -->
+              <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+
+                {% for intervencao in registo.tipos_intervencao.all %}
+                  <span class="badge bg-light-primary text-primary">
+                    {{ intervencao.nome }}
+                  </span>
+                {% empty %}
+                  <strong>
+                    Fisioterapia/Reabilitação
+                  </strong>
+                {% endfor %}
+
+                {% if registo.visibilidade == "CONFIDENCIAL" %}
+                  <span class="badge bg-danger">
+                    Apenas eu
+                  </span>
+                {% elif registo.visibilidade == "GRUPO" %}
+                  <span class="badge bg-warning text-dark">
+                    Grupo profissional
+                  </span>
+                {% else %}
+                  <span class="badge bg-success">
+                    Todos os profissionais clínicos
+                  </span>
+                {% endif %}
+              </div>
+
+              {% if registo.tipo_trabalho %}
+                <div class="mb-2">
+                  <strong>Descrição complementar:</strong>
+                  {{ registo.tipo_trabalho }}
+                </div>
+              {% endif %}
+
+              <!-- Metadados -->
+              <div class="text-muted small mb-3">
+                {{ registo.data_registo|date:"d/m/Y H:i" }}
+
+                ·
+
+                {{ registo.profissional.get_full_name|default:registo.profissional.username }}
+
+                {% if registo.participacao %}
+                  · Sessão:
+                  {{ registo.participacao.sessao.titulo }}
+                {% endif %}
+              </div>
+
+              <!-- Conteúdo resumido -->
+              <div class="row">
+
+                <div class="col-md-6">
+                  <strong>Trabalho realizado</strong>
+
+                  <div class="mt-1 mb-3">
+                    {% if registo.trabalho_realizado %}
+                      {{ registo.trabalho_realizado|truncatechars:500|linebreaksbr }}
+                    {% else %}
+                      <span class="text-muted">
+                        Não indicado.
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <strong>Resposta/evolução</strong>
+
+                  <div class="mt-1 mb-3">
+                    {% if registo.resposta_utente %}
+                      {{ registo.resposta_utente|truncatechars:350|linebreaksbr }}
+                    {% else %}
+                      <span class="text-muted">
+                        Não indicada.
+                      </span>
+                    {% endif %}
+                  </div>
+                </div>
+
+              </div>
+
+              {% if registo.plano_seguinte %}
+                <div class="alert alert-light border mb-0">
+                  <strong>
+                    Plano para a próxima sessão
+                  </strong>
+
+                  <div class="mt-1">
+                    {{ registo.plano_seguinte|truncatechars:350|linebreaksbr }}
+                  </div>
+                </div>
+              {% endif %}
+
+            </div>
+
+            <!-- Ações -->
+            <div class="d-flex flex-column gap-2">
+              <a
+                href="{% url 'fisioterapia:detalhe_registo' registo.pk %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                Ver detalhe
+              </a>
+
+              {% if registo.profissional_id == request.user.id %}
+                <a
+                  href="{% url 'fisioterapia:editar_registo' registo.pk %}"
+                  class="btn btn-sm btn-outline-warning"
+                >
+                  Editar
+                </a>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  {% empty %}
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+
+          <div class="avtar avtar-xl bg-light-primary text-primary mb-3">
+            <i data-feather="activity"></i>
+          </div>
+
+          {% if tem_filtros %}
+            <h4>
+              Sem resultados
+            </h4>
+
+            <p class="text-muted mb-3">
+              Não existem registos visíveis que correspondam
+              aos filtros selecionados.
+            </p>
+
+            <a
+              href="{% url 'fisioterapia:registos_utente' utente.pk %}"
+              class="btn btn-outline-primary"
+            >
+              Limpar filtros
+            </a>
+          {% else %}
+            <h4>
+              Sem registos visíveis
+            </h4>
+
+            <p class="text-muted mb-3">
+              Não existem registos de Fisioterapia que possa
+              consultar para este utente.
+            </p>
+
+            {% if pode_criar %}
+              <a
+                href="{% url 'fisioterapia:criar_registo' utente.pk %}"
+                class="btn btn-primary"
+              >
+                Criar primeiro registo
+              </a>
+            {% endif %}
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
+</div>
+
+{% endblock fisioterapia_content %}

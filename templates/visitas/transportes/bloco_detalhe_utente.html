@@ -2,8 +2,8 @@
 <div class="card" style="margin-top:1rem;">
   <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
     <h5 style="margin:0;">Transportes do utente</h5>
-    {% if utente.ativo %}
-      <a class="btn btn-primary btn-sm" href="{% url 'visitas:criar_transporte' %}?utente={{ utente.pk }}">+ Marcar transporte</a>
+    {% if utente.ativo and pode_pedir_transporte %}
+      <a class="btn btn-primary btn-sm" href="{% url 'visitas:criar_pedido_transporte' %}?utente={{ utente.pk }}">+ Pedir transporte</a>
     {% endif %}
   </div>
   <div class="card-body" style="overflow-x:auto;">

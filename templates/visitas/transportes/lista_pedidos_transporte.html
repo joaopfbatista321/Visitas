@@ -1,0 +1,333 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+
+{% block transportes_content %}
+<div class="card mb-3">
+  <div class="card-header">
+    <h5 class="mb-0">Pesquisar e filtrar pedidos</h5>
+  </div>
+
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-lg-4 col-md-6">
+        <label class="form-label">Pesquisar</label>
+
+        <input
+          type="text"
+          name="q"
+          value="{{ q }}"
+          class="form-control"
+          placeholder="Utente, processo, destino, motivo ou profissional"
+        >
+      </div>
+
+      <div class="col-lg-2 col-md-3">
+        <label class="form-label">Estado</label>
+
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+
+          {% for valor, nome in estados %}
+            <option
+              value="{{ valor }}"
+              {% if estado == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-lg-2 col-md-3">
+        <label class="form-label">Tipo</label>
+
+        <select name="tipo" class="form-select">
+          <option value="">Todos</option>
+
+          {% for valor, nome in tipos_deslocacao %}
+            <option
+              value="{{ valor }}"
+              {% if tipo == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-lg-2 col-md-3">
+        <label class="form-label">Desde</label>
+
+        <input
+          type="date"
+          name="data_inicio"
+          value="{{ data_inicio }}"
+          class="form-control"
+        >
+      </div>
+
+      <div class="col-lg-2 col-md-3">
+        <label class="form-label">Até</label>
+
+        <input
+          type="date"
+          name="data_fim"
+          value="{{ data_fim }}"
+          class="form-control"
+        >
+      </div>
+
+      <div class="col-12 d-flex justify-content-end gap-2">
+        <a
+          href="{% url 'visitas:lista_pedidos_transporte' %}"
+          class="btn btn-light"
+        >
+          Limpar filtros
+        </a>
+
+        <button type="submit" class="btn btn-primary">
+          <i data-feather="search" class="me-1"></i>
+          Pesquisar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-1">Pedidos de transporte</h5>
+
+      <small class="text-muted">
+        {{ page_obj.paginator.count }} pedido{{ page_obj.paginator.count|pluralize }}
+      </small>
+    </div>
+
+    <a
+      href="{% url 'visitas:criar_pedido_transporte' %}"
+      class="btn btn-sm btn-primary"
+    >
+      <i data-feather="plus" class="me-1"></i>
+      Novo pedido
+    </a>
+  </div>
+
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>
+            <a
+              class="text-body text-decoration-none"
+              href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=criado_em&direcao={% if ordenar == 'criado_em' and direcao == 'asc' %}desc{% else %}asc{% endif %}"
+            >
+              Data do pedido
+
+              {% if ordenar == "criado_em" %}
+                {% if direcao == "asc" %}↑{% else %}↓{% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a
+              class="text-body text-decoration-none"
+              href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=utente&direcao={% if ordenar == 'utente' and direcao == 'asc' %}desc{% else %}asc{% endif %}"
+            >
+              Utente
+
+              {% if ordenar == "utente" %}
+                {% if direcao == "asc" %}↑{% else %}↓{% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a
+              class="text-body text-decoration-none"
+              href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=destino&direcao={% if ordenar == 'destino' and direcao == 'asc' %}desc{% else %}asc{% endif %}"
+            >
+              Destino
+
+              {% if ordenar == "destino" %}
+                {% if direcao == "asc" %}↑{% else %}↓{% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a
+              class="text-body text-decoration-none"
+              href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=consulta&direcao={% if ordenar == 'consulta' and direcao == 'asc' %}desc{% else %}asc{% endif %}"
+            >
+              Consulta/exame
+
+              {% if ordenar == "consulta" %}
+                {% if direcao == "asc" %}↑{% else %}↓{% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a
+              class="text-body text-decoration-none"
+              href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=pedido_por&direcao={% if ordenar == 'pedido_por' and direcao == 'asc' %}desc{% else %}asc{% endif %}"
+            >
+              Pedido por
+
+              {% if ordenar == "pedido_por" %}
+                {% if direcao == "asc" %}↑{% else %}↓{% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th>
+            <a
+              class="text-body text-decoration-none"
+              href="?{% if query_filtros %}{{ query_filtros }}&{% endif %}ordenar=estado&direcao={% if ordenar == 'estado' and direcao == 'asc' %}desc{% else %}asc{% endif %}"
+            >
+              Estado
+
+              {% if ordenar == "estado" %}
+                {% if direcao == "asc" %}↑{% else %}↓{% endif %}
+              {% endif %}
+            </a>
+          </th>
+
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for pedido in page_obj %}
+          <tr>
+            <td>
+              {{ pedido.criado_em|date:"d/m/Y H:i" }}
+            </td>
+
+            <td>
+              <strong>{{ pedido.utente.nome }}</strong>
+
+              <br>
+
+              <small class="text-muted">
+                Proc. {{ pedido.utente.numero_processo }}
+              </small>
+            </td>
+
+            <td>
+              {{ pedido.destino|default:"Por indicar" }}
+
+              <br>
+
+              <small class="text-muted">
+                {{ pedido.get_tipo_deslocacao_display }}
+              </small>
+
+              {% if pedido.motivo %}
+                <br>
+
+                <small class="text-muted">
+                  {{ pedido.motivo|truncatechars:45 }}
+                </small>
+              {% endif %}
+            </td>
+
+            <td>
+              {{ pedido.data_hora_consulta|date:"d/m/Y H:i"|default:"Por indicar" }}
+            </td>
+
+            <td>
+              {{ pedido.pedido_por|default:"-" }}
+            </td>
+
+            <td>
+              {% if pedido.estado == "POR_VALIDAR" %}
+                <span class="badge bg-warning text-dark">
+                  A validar pela Receção
+                </span>
+
+              {% elif pedido.estado == "DEVOLVIDO" %}
+                <span class="badge bg-info text-dark">
+                  Devolvido
+                </span>
+
+              {% elif pedido.estado == "VALIDADO" %}
+                <span class="badge bg-success">
+                  Validado
+                </span>
+
+              {% elif pedido.estado == "REJEITADO" %}
+                <span class="badge bg-danger">
+                  Rejeitado
+                </span>
+
+              {% else %}
+                <span class="badge bg-secondary">
+                  Cancelado
+                </span>
+              {% endif %}
+            </td>
+
+            <td class="text-end">
+              <a
+                href="{% url 'visitas:detalhe_pedido_transporte' pedido.pk %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                Ver
+              </a>
+            </td>
+          </tr>
+
+        {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4">
+              Não existem pedidos com os filtros selecionados.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+
+  {% if page_obj.paginator.num_pages > 1 %}
+    <div class="card-footer">
+      <nav>
+        <ul class="pagination justify-content-center mb-0">
+
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a
+                class="page-link"
+                href="?{% if query_sem_pagina %}{{ query_sem_pagina }}&{% endif %}page={{ page_obj.previous_page_number }}"
+              >
+                Anterior
+              </a>
+            </li>
+          {% endif %}
+
+          <li class="page-item active">
+            <span class="page-link">
+              {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </span>
+          </li>
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a
+                class="page-link"
+                href="?{% if query_sem_pagina %}{{ query_sem_pagina }}&{% endif %}page={{ page_obj.next_page_number }}"
+              >
+                Seguinte
+              </a>
+            </li>
+          {% endif %}
+
+        </ul>
+      </nav>
+    </div>
+  {% endif %}
+</div>
+{% endblock transportes_content %}

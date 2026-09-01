@@ -1,0 +1,70 @@
+{% extends "cozinha/base_cozinha.html" %}
+
+{% block cozinha_content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <div class="d-flex align-items-center gap-3">
+          <div class="avtar bg-light-warning text-warning">
+            {% if tipo_pedido == "REFEICOES" %}<i data-feather="coffee"></i>{% else %}<i data-feather="package"></i>{% endif %}
+          </div>
+          <div>
+            <h5 class="mb-1">{{ titulo_formulario }}</h5>
+            <p class="text-muted mb-0">
+              {% if tipo_pedido == "REFEICOES" %}Registe as refeições necessárias para uma unidade e data.
+              {% else %}Registe os suplementos necessários para uma unidade.{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        {% if tipo_pedido == "REFEICOES" %}
+          <div class="alert alert-warning">
+            <strong>Pedido diário de refeições.</strong>
+            <div class="small mt-1">Só pode existir um por piso e dia. É editável até às 12:00 enquanto a preparação não tiver começado.</div>
+          </div>
+        {% else %}
+          <div class="alert alert-info">
+            <strong>Pedido de suplementos.</strong>
+            <div class="small mt-1">Não existe limite das 12:00. Depois da entrega pode ser criado outro pedido para o mesmo piso.</div>
+          </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if formulario.non_field_errors %}
+            <div class="alert alert-danger">{% for erro in formulario.non_field_errors %}<div>{{ erro }}</div>{% endfor %}</div>
+          {% endif %}
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="{{ formulario.unidade.id_for_label }}" class="form-label">{{ formulario.unidade.label }}</label>
+              {{ formulario.unidade }}
+              {% for erro in formulario.unidade.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
+            <div class="col-md-6">
+              <label for="{{ formulario.data_servico.id_for_label }}" class="form-label">
+                {% if tipo_pedido == "REFEICOES" %}Data das refeições{% else %}Data do pedido{% endif %}
+              </label>
+              {{ formulario.data_servico }}
+              {% for erro in formulario.data_servico.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
+            <div class="col-12">
+              <label for="{{ formulario.observacoes_enfermagem.id_for_label }}" class="form-label">{{ formulario.observacoes_enfermagem.label }}</label>
+              {{ formulario.observacoes_enfermagem }}
+              {% for erro in formulario.observacoes_enfermagem.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+            </div>
+          </div>
+          <hr class="my-4">
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+            <a href="{% url 'cozinha:lista_pedidos' %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button class="btn btn-warning" type="submit">
+              {% if tipo_pedido == "REFEICOES" %}Criar e preencher refeições{% else %}Criar e preencher suplementos{% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock cozinha_content %}

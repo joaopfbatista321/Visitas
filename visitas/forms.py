@@ -8,13 +8,13 @@ from .models import (
     Isolamento,
     MeioTransporte,
     MovimentoFinanceiro,
+    PedidoTransporte,
     TipoAlta,
     Transporte,
     Utente,
     Viatura,
     Visita,
 )
-
 
 # ============================================================
 # WIDGETS E FORMULÁRIO BASE
@@ -215,6 +215,245 @@ class MovimentoFinanceiroForm(forms.ModelForm):
 # TRANSPORTES DE UTENTES
 # ============================================================
 
+class PedidoTransporteForm(BaseStyledModelForm):
+    class Meta:
+        model = PedidoTransporte
+        fields = [
+            "utente",
+            "tipo_deslocacao",
+            "motivo",
+            "destino",
+            "data_hora_consulta",
+            "acompanhante_nome",
+            "acompanhante_contacto",
+            "necessita_cadeira_rodas",
+            "necessita_maca",
+            "necessita_oxigenio",
+            "outras_necessidades",
+            "observacoes",
+
+            # Informação opcional
+            "data_hora_saida",
+            "data_hora_regresso_previsto",
+            "meio_transporte",
+            "viatura",
+            "condutor",
+            "entidade_transporte",
+        ]
+
+        widgets = {
+            "data_hora_consulta": DateTimeInput(
+                format="%Y-%m-%dT%H:%M"
+            ),
+            "data_hora_saida": DateTimeInput(
+                format="%Y-%m-%dT%H:%M"
+            ),
+            "data_hora_regresso_previsto": DateTimeInput(
+                format="%Y-%m-%dT%H:%M"
+            ),
+            "observacoes": forms.Textarea(
+                attrs={"rows": 4}
+            ),
+        }
+
+        help_texts = {
+            "data_hora_saida": (
+                "Opcional. Preencha apenas se já souber a hora prevista."
+            ),
+            "data_hora_regresso_previsto": (
+                "Opcional. A Receção poderá completar este campo."
+            ),
+            "meio_transporte": (
+                "Opcional. A Receção poderá definir o meio de transporte."
+            ),
+            "viatura": (
+                "Opcional. Selecione apenas se a viatura já estiver definida."
+            ),
+            "condutor": (
+                "Opcional. Selecione apenas se o condutor já estiver definido."
+            ),
+            "entidade_transporte": (
+                "Ex.: Bombeiros, táxi, familiar ou outra entidade."
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        utente_atual = getattr(self.instance, "utente_id", None)
+        viatura_atual = getattr(self.instance, "viatura_id", None)
+        condutor_atual = getattr(self.instance, "condutor_id", None)
+
+        self.fields["utente"].queryset = Utente.objects.filter(
+            Q(data_saida__isnull=True) | Q(pk=utente_atual)
+        ).order_by("nome")
+
+        self.fields["viatura"].queryset = Viatura.objects.filter(
+            Q(ativo=True) | Q(pk=viatura_atual)
+        ).order_by("matricula")
+
+        self.fields["condutor"].queryset = Condutor.objects.filter(
+            Q(ativo=True) | Q(pk=condutor_atual)
+        ).order_by("nome")
+
+        for nome in (
+            "data_hora_consulta",
+            "data_hora_saida",
+            "data_hora_regresso_previsto",
+        ):
+            self.fields[nome].input_formats = (
+                "%Y-%m-%dT%H:%M",
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        meio_transporte = cleaned_data.get("meio_transporte")
+
+        if not meio_transporte:
+            cleaned_data["viatura"] = None
+            cleaned_data["condutor"] = None
+            cleaned_data["entidade_transporte"] = ""
+
+        elif meio_transporte != MeioTransporte.INSTITUICAO:
+            cleaned_data["viatura"] = None
+            cleaned_data["condutor"] = None
+
+        else:
+            cleaned_data["entidade_transporte"] = ""
+
+        return cleaned_data
+
+class ValidarPedidoTransporteForm(PedidoTransporteForm):
+    class Meta(PedidoTransporteForm.Meta):
+        fields = PedidoTransporteForm.Meta.fields + [
+            "observacoes_recepcao",
+        ]
+
+        widgets = {
+            **PedidoTransporteForm.Meta.widgets,
+            "observacoes_recepcao": forms.Textarea(
+                attrs={"rows": 3}
+            ),
+        }
+
+        help_texts = {
+            **PedidoTransporteForm.Meta.help_texts,
+            "observacoes_recepcao": (
+                "Informação interna sobre a validação do pedido."
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Estes campos passam a ser obrigatórios
+        # quando a Receção valida o pedido.
+        for nome in (
+            "motivo",
+            "destino",
+            "data_hora_saida",
+            "data_hora_regresso_previsto",
+            "meio_transporte",
+        ):
+            self.fields[nome].required = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        meio_transporte = cleaned_data.get(
+            "meio_transporte"
+        )
+
+        viatura = cleaned_data.get(
+            "viatura"
+        )
+
+        condutor = cleaned_data.get(
+            "condutor"
+        )
+
+        entidade_transporte = cleaned_data.get(
+            "entidade_transporte"
+        )
+
+        data_hora_saida = cleaned_data.get(
+            "data_hora_saida"
+        )
+
+        data_hora_consulta = cleaned_data.get(
+            "data_hora_consulta"
+        )
+
+        data_hora_regresso = cleaned_data.get(
+            "data_hora_regresso_previsto"
+        )
+
+        # Transporte interno
+        if meio_transporte == MeioTransporte.INSTITUICAO:
+            if not viatura:
+                self.add_error(
+                    "viatura",
+                    "Selecione a viatura da instituição.",
+                )
+
+            if not condutor:
+                self.add_error(
+                    "condutor",
+                    "Selecione o condutor.",
+                )
+
+        # Transporte externo
+        elif meio_transporte:
+            if not entidade_transporte:
+                self.add_error(
+                    "entidade_transporte",
+                    (
+                        "Indique a entidade ou pessoa responsável "
+                        "pelo transporte."
+                    ),
+                )
+
+        # Validação dos horários
+        if (
+            data_hora_saida
+            and data_hora_regresso
+            and data_hora_regresso <= data_hora_saida
+        ):
+            self.add_error(
+                "data_hora_regresso_previsto",
+                (
+                    "O regresso previsto tem de ser posterior "
+                    "à saída."
+                ),
+            )
+
+        if (
+            data_hora_consulta
+            and data_hora_saida
+            and data_hora_consulta < data_hora_saida
+        ):
+            self.add_error(
+                "data_hora_consulta",
+                (
+                    "A consulta/exame não pode ser anterior "
+                    "à saída prevista."
+                ),
+            )
+
+        if (
+            data_hora_consulta
+            and data_hora_regresso
+            and data_hora_consulta > data_hora_regresso
+        ):
+            self.add_error(
+                "data_hora_consulta",
+                (
+                    "A consulta/exame não pode ser posterior "
+                    "ao regresso previsto."
+                ),
+            )
+
+        return cleaned_data
 
 class TransporteForm(BaseStyledModelForm):
     class Meta:

@@ -1,0 +1,466 @@
+{% extends "fisioterapia/base_fisioterapia.html" %}
+
+{% block extrastyle %}
+{{ block.super }}
+
+<style>
+  .lista-intervencoes {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    background-color: #fff;
+  }
+
+  .lista-intervencoes > div > div {
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid #f1f3f5;
+  }
+
+  .lista-intervencoes > div > div:last-child {
+    border-bottom: 0;
+  }
+
+  .lista-intervencoes label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .lista-intervencoes .form-check-input {
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .bloco-registo {
+    border: 1px solid #e9ecef;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background-color: #fbfcfd;
+  }
+
+  .visibilidade-opcao {
+    transition: opacity 0.2s, box-shadow 0.2s;
+    opacity: 0.65;
+  }
+
+  .visibilidade-opcao.ativa {
+    opacity: 1;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.2);
+  }
+</style>
+{% endblock extrastyle %}
+
+
+{% block fisioterapia_content %}
+
+<div class="row justify-content-center">
+  <div class="col-xl-10">
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-1">
+          {% if registo %}
+            Editar registo de Fisioterapia
+          {% else %}
+            Novo registo de Fisioterapia
+          {% endif %}
+        </h5>
+
+        <p class="text-muted mb-0">
+          Utente:
+          <strong>{{ utente.nome }}</strong>
+
+          · Processo:
+          {{ utente.numero_processo }}
+
+          {% if utente.quarto %}
+            · Quarto:
+            {{ utente.quarto.codigo }}
+
+            ·
+            {{ utente.quarto.get_piso_display }}
+          {% endif %}
+        </p>
+
+        {% if participacao %}
+          <div class="mt-2">
+            <span class="badge bg-light-primary text-primary">
+              Sessão:
+              {{ participacao.sessao.titulo }}
+              ·
+              {{ participacao.sessao.inicio|date:"d/m/Y H:i" }}
+            </span>
+          </div>
+
+          <div class="small text-muted mt-2">
+            As intervenções planeadas para a sessão são
+            selecionadas automaticamente, podendo ser alteradas
+            conforme o trabalho efetivamente realizado.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="card-body">
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+
+          {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+              {% for erro in form.non_field_errors %}
+                <div>{{ erro }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <!-- ATENDIMENTO -->
+          <div class="bloco-registo mb-3">
+            <h6 class="mb-3">
+              Informação do atendimento
+            </h6>
+
+            <div class="row g-3">
+
+              <!-- Data -->
+              <div class="col-md-5">
+                <label
+                  for="{{ form.data_registo.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.data_registo.label }}
+                </label>
+
+                {{ form.data_registo }}
+
+                {% for erro in form.data_registo.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Descrição complementar -->
+              <div class="col-md-7">
+                <label
+                  for="{{ form.tipo_trabalho.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.tipo_trabalho.label }}
+                </label>
+
+                {{ form.tipo_trabalho }}
+
+                <div class="form-text">
+                  Campo opcional para indicar uma técnica,
+                  equipamento ou informação adicional.
+                </div>
+
+                {% for erro in form.tipo_trabalho.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+            </div>
+          </div>
+
+
+          <!-- INTERVENÇÕES -->
+          <div class="bloco-registo mb-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+              <div>
+                <h6 class="mb-1">
+                  {{ form.tipos_intervencao.label }}
+                </h6>
+
+                {% if form.tipos_intervencao.help_text %}
+                  <div class="text-muted small">
+                    {{ form.tipos_intervencao.help_text }}
+                  </div>
+                {% endif %}
+              </div>
+
+              <span
+                id="contador-intervencoes"
+                class="badge bg-light-primary text-primary"
+              >
+                0 selecionadas
+              </span>
+            </div>
+
+            <div class="lista-intervencoes">
+              {{ form.tipos_intervencao }}
+            </div>
+
+            {% for erro in form.tipos_intervencao.errors %}
+              <div class="text-danger small mt-1">
+                {{ erro }}
+              </div>
+            {% endfor %}
+          </div>
+
+
+          <!-- REGISTO CLÍNICO -->
+          <div class="bloco-registo mb-3">
+            <h6 class="mb-3">
+              Registo clínico
+            </h6>
+
+            <div class="row g-3">
+
+              <!-- Trabalho realizado -->
+              <div class="col-12">
+                <label
+                  for="{{ form.trabalho_realizado.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.trabalho_realizado.label }}
+                </label>
+
+                {{ form.trabalho_realizado }}
+
+                {% for erro in form.trabalho_realizado.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Evolução -->
+              <div class="col-md-6">
+                <label
+                  for="{{ form.resposta_utente.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.resposta_utente.label }}
+                </label>
+
+                {{ form.resposta_utente }}
+
+                {% for erro in form.resposta_utente.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+              <!-- Plano seguinte -->
+              <div class="col-md-6">
+                <label
+                  for="{{ form.plano_seguinte.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.plano_seguinte.label }}
+                </label>
+
+                {{ form.plano_seguinte }}
+
+                {% for erro in form.plano_seguinte.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
+            </div>
+          </div>
+
+
+          <!-- VISIBILIDADE -->
+          <div class="bloco-registo">
+            <label
+              for="{{ form.visibilidade.id_for_label }}"
+              class="form-label"
+            >
+              {{ form.visibilidade.label }}
+            </label>
+
+            {{ form.visibilidade }}
+
+            {% for erro in form.visibilidade.errors %}
+              <div class="text-danger small mt-1">
+                {{ erro }}
+              </div>
+            {% endfor %}
+
+            <div class="row g-2 mt-2">
+
+              <div class="col-md-4">
+                <div
+                  class="alert alert-danger h-100 mb-0 py-2 visibilidade-opcao"
+                  data-visibilidade="CONFIDENCIAL"
+                >
+                  <strong>Apenas eu</strong>
+
+                  <div class="small mt-1">
+                    Apenas o autor consegue consultar
+                    e editar este registo.
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div
+                  class="alert alert-warning h-100 mb-0 py-2 visibilidade-opcao"
+                  data-visibilidade="GRUPO"
+                >
+                  <strong>Grupo profissional</strong>
+
+                  <div class="small mt-1">
+                    Todos os fisioterapeutas podem consultar,
+                    mas apenas o autor pode editar.
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div
+                  class="alert alert-success h-100 mb-0 py-2 visibilidade-opcao"
+                  data-visibilidade="TODOS"
+                >
+                  <strong>Todos os profissionais clínicos</strong>
+
+                  <div class="small mt-1">
+                    Visível para Enfermagem, Médicos, Psicologia,
+                    Fisioterapia e Serviço Social. Apenas o autor
+                    pode editar.
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="form-text mt-2">
+              Por defeito, o registo fica disponível para os
+              cinco grupos profissionais clínicos autorizados.
+            </div>
+          </div>
+
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between flex-wrap gap-2">
+
+            {% if participacao %}
+              <a
+                href="{% url 'fisioterapia:detalhe_sessao' participacao.sessao.pk %}"
+                class="btn btn-outline-secondary"
+              >
+                Cancelar
+              </a>
+            {% else %}
+              <a
+                href="{% url 'fisioterapia:registos_utente' utente.pk %}"
+                class="btn btn-outline-secondary"
+              >
+                Cancelar
+              </a>
+            {% endif %}
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+            >
+              {% if registo %}
+                Guardar alterações
+              {% else %}
+                Criar registo
+              {% endif %}
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock fisioterapia_content %}
+
+
+{% block extra_js %}
+{{ block.super }}
+
+<script>
+document.addEventListener(
+  "DOMContentLoaded",
+  function () {
+    const caixasIntervencoes = Array.from(
+      document.querySelectorAll(
+        "#id_tipos_intervencao input[type='checkbox']"
+      )
+    );
+
+    const contadorIntervencoes =
+      document.getElementById(
+        "contador-intervencoes"
+      );
+
+    const visibilidade =
+      document.getElementById(
+        "id_visibilidade"
+      );
+
+    const opcoesVisibilidade = Array.from(
+      document.querySelectorAll(
+        ".visibilidade-opcao"
+      )
+    );
+
+    function atualizarContadorIntervencoes() {
+      const total = caixasIntervencoes.filter(
+        function (caixa) {
+          return caixa.checked;
+        }
+      ).length;
+
+      contadorIntervencoes.textContent =
+        total === 1
+          ? "1 selecionada"
+          : total + " selecionadas";
+    }
+
+    function atualizarVisibilidade() {
+      if (!visibilidade) {
+        return;
+      }
+
+      opcoesVisibilidade.forEach(
+        function (opcao) {
+          opcao.classList.toggle(
+            "ativa",
+            opcao.dataset.visibilidade
+              === visibilidade.value
+          );
+        }
+      );
+    }
+
+    caixasIntervencoes.forEach(
+      function (caixa) {
+        caixa.addEventListener(
+          "change",
+          atualizarContadorIntervencoes
+        );
+      }
+    );
+
+    if (visibilidade) {
+      visibilidade.addEventListener(
+        "change",
+        atualizarVisibilidade
+      );
+    }
+
+    atualizarContadorIntervencoes();
+    atualizarVisibilidade();
+  }
+);
+</script>
+{% endblock extra_js %}

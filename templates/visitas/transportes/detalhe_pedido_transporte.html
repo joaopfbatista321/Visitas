@@ -1,0 +1,272 @@
+{% extends "visitas/transportes/base_transportes.html" %}
+
+{% block transportes_content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">
+      Pedido de transporte #{{ pedido.pk }}
+    </h4>
+
+    {% if pedido.estado == "POR_VALIDAR" %}
+      <span class="badge bg-warning text-dark">
+        A validar pela Receção
+      </span>
+
+    {% elif pedido.estado == "DEVOLVIDO" %}
+      <span class="badge bg-info text-dark">
+        Devolvido
+      </span>
+
+    {% elif pedido.estado == "VALIDADO" %}
+      <span class="badge bg-success">
+        Validado
+      </span>
+
+    {% elif pedido.estado == "REJEITADO" %}
+      <span class="badge bg-danger">
+        Rejeitado
+      </span>
+
+    {% else %}
+      <span class="badge bg-secondary">
+        Cancelado
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="d-flex gap-2">
+    {% if pode_validar %}
+        {% if pedido.estado == "POR_VALIDAR" or pedido.estado == "DEVOLVIDO" %}
+            <a
+            href="{% url 'visitas:validar_pedido_transporte' pedido.pk %}"
+            class="btn btn-sm btn-success"
+            >
+            <i data-feather="check-circle" class="me-1"></i>
+            Validar pedido
+            </a>
+        {% endif %}
+    {% endif %}
+    {% if pedido.transporte and pode_validar %}
+      <a
+        href="{% url 'visitas:detalhe_transporte' pedido.transporte.pk %}"
+        class="btn btn-sm btn-primary"
+      >
+        Abrir transporte
+      </a>
+    {% endif %}
+
+    <a
+      href="{% url 'visitas:lista_pedidos_transporte' %}"
+      class="btn btn-sm btn-secondary"
+    >
+      Voltar
+    </a>
+  </div>
+</div>
+
+
+{% if pode_validar and pedido.estado == "POR_VALIDAR" %}
+  <div class="alert alert-warning">
+    Este pedido está a aguardar validação pela Receção.
+  </div>
+{% endif %}
+
+
+<div class="row">
+  <div class="col-lg-8">
+
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">Informação do pedido</h5>
+      </div>
+
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <dl class="transport-detail">
+              <dt>Utente</dt>
+              <dd>{{ pedido.utente.nome }}</dd>
+
+              <dt>Número de processo</dt>
+              <dd>{{ pedido.utente.numero_processo|default:"-" }}</dd>
+
+              <dt>Tipo de deslocação</dt>
+              <dd>{{ pedido.get_tipo_deslocacao_display }}</dd>
+
+              <dt>Motivo</dt>
+              <dd>{{ pedido.motivo|default:"Por indicar" }}</dd>
+            </dl>
+          </div>
+
+          <div class="col-md-6">
+            <dl class="transport-detail">
+              <dt>Destino</dt>
+              <dd>{{ pedido.destino|default:"Por indicar" }}</dd>
+
+              <dt>Consulta/exame</dt>
+              <dd>
+                {{ pedido.data_hora_consulta|date:"d/m/Y H:i"|default:"Por indicar" }}
+              </dd>
+
+              <dt>Saída sugerida</dt>
+              <dd>
+                {{ pedido.data_hora_saida|date:"d/m/Y H:i"|default:"Por indicar" }}
+              </dd>
+
+              <dt>Regresso sugerido</dt>
+              <dd>
+                {{ pedido.data_hora_regresso_previsto|date:"d/m/Y H:i"|default:"Por indicar" }}
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">Acompanhamento e necessidades</h5>
+      </div>
+
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <dl class="transport-detail">
+              <dt>Acompanhante</dt>
+              <dd>{{ pedido.acompanhante_nome|default:"-" }}</dd>
+
+              <dt>Contacto do acompanhante</dt>
+              <dd>{{ pedido.acompanhante_contacto|default:"-" }}</dd>
+
+              <dt>Outras necessidades</dt>
+              <dd>{{ pedido.outras_necessidades|default:"-" }}</dd>
+            </dl>
+          </div>
+
+          <div class="col-md-6">
+            <dl class="transport-detail">
+              <dt>Necessidades específicas</dt>
+              <dd>
+                {% if pedido.necessita_cadeira_rodas %}
+                  <span class="badge bg-info text-dark me-1">
+                    Cadeira de rodas
+                  </span>
+                {% endif %}
+
+                {% if pedido.necessita_maca %}
+                  <span class="badge bg-info text-dark me-1">
+                    Maca
+                  </span>
+                {% endif %}
+
+                {% if pedido.necessita_oxigenio %}
+                  <span class="badge bg-info text-dark">
+                    Oxigénio
+                  </span>
+                {% endif %}
+
+                {% if not pedido.necessita_cadeira_rodas and not pedido.necessita_maca and not pedido.necessita_oxigenio %}
+                  -
+                {% endif %}
+              </dd>
+
+              <dt>Observações</dt>
+              <dd>
+                {{ pedido.observacoes|linebreaksbr|default:"-" }}
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">Informação logística fornecida</h5>
+      </div>
+
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <dl class="transport-detail">
+              <dt>Meio de transporte</dt>
+              <dd>
+                {{ pedido.get_meio_transporte_display|default:"Por indicar" }}
+              </dd>
+
+              <dt>Entidade externa</dt>
+              <dd>{{ pedido.entidade_transporte|default:"-" }}</dd>
+            </dl>
+          </div>
+
+          <div class="col-md-6">
+            <dl class="transport-detail">
+              <dt>Viatura</dt>
+              <dd>{{ pedido.viatura|default:"Por indicar" }}</dd>
+
+              <dt>Condutor</dt>
+              <dd>{{ pedido.condutor|default:"Por indicar" }}</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <div class="col-lg-4">
+    <div class="card mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">Registo</h5>
+      </div>
+
+      <div class="card-body">
+        <p>
+          <strong>Pedido por:</strong><br>
+          {{ pedido.pedido_por|default:"-" }}
+        </p>
+
+        <p>
+          <strong>Data do pedido:</strong><br>
+          {{ pedido.criado_em|date:"d/m/Y H:i" }}
+        </p>
+
+        <p>
+          <strong>Última alteração:</strong><br>
+          {{ pedido.atualizado_em|date:"d/m/Y H:i" }}
+        </p>
+
+        {% if pedido.validado_por %}
+          <hr>
+
+          <p>
+            <strong>Validado por:</strong><br>
+            {{ pedido.validado_por }}
+          </p>
+
+          <p>
+            <strong>Validado em:</strong><br>
+            {{ pedido.validado_em|date:"d/m/Y H:i" }}
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+
+    {% if pedido.observacoes_recepcao %}
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">Observações da Receção</h5>
+        </div>
+
+        <div class="card-body">
+          {{ pedido.observacoes_recepcao|linebreaksbr }}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock transportes_content %}

@@ -1,179 +1,96 @@
 {% extends "layouts/base.html" %}
 {% load static %}
 
-{% block title %}Dashboard UCCI{% endblock title %}
+{% block title %}Portal UCCI{% endblock title %}
 
 {% block content %}
 <div class="pc-container">
   <div class="pc-content">
 
-    <!-- Header -->
     <div class="page-header">
       <div class="page-block">
         <div class="row align-items-center">
-          <div class="col-md-12">
-            <div class="page-header-title">
-              <h4 class="mb-0">Dashboard UCCI</h4>
-            </div>
-            <p class="text-muted mb-0">Resumo da atividade diária da Unidade</p>
+          <div class="col-md-8">
+            <h3 class="mb-1">Portal UCCI</h3>
+
+            <p class="text-muted mb-0">
+              Bem-vindo,
+              <strong>
+                {{ request.user.get_full_name|default:request.user.username }}
+              </strong>.
+              Selecione a área a que pretende aceder.
+            </p>
+          </div>
+
+          <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <span class="badge bg-light-primary text-primary p-2">
+              {{ perfis|length }}
+              {% if perfis|length == 1 %}área disponível{% else %}áreas disponíveis{% endif %}
+            </span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- === CARDS PRINCIPAIS === -->
-    <div class="row">
+    <div class="row g-4 mt-1">
 
-      <div class="col-md-4">
-        <div class="card bg-primary text-white">
-          <div class="card-body">
-            <h5>Utentes Ativos</h5>
-            <h2 class="fw-bold">{{ total_utentes_ativos }}</h2>
-            <p class="mb-0">Atualmente internados</p>
-          </div>
-        </div>
-      </div>
+      {% for perfil in perfis %}
+        <div class="col-md-6 col-xl-4">
+          <div class="card h-100 border-0 shadow-sm">
 
-      <div class="col-md-4">
-        <div class="card bg-success text-white">
-          <div class="card-body">
-            <h5>Visitas Hoje</h5>
-            <h2 class="fw-bold">{{ visitas_hoje }}</h2>
-            <p class="mb-0">Entradas registadas hoje</p>
-          </div>
-        </div>
-      </div>
+            <div class="card-body d-flex flex-column">
 
-      <div class="col-md-4">
-        <div class="card bg-danger text-white">
-          <div class="card-body">
-            <h5>Visitas em Curso</h5>
-            <h2 class="fw-bold">{{ visitas_em_curso }}</h2>
-            <p class="mb-0">Visitantes ainda dentro da unidade</p>
-          </div>
-        </div>
-      </div>
+              <div class="d-flex align-items-center mb-3">
+                <div class="avtar avtar-xl bg-light-{{ perfil.cor }} text-{{ perfil.cor }} me-3">
+                  <i data-feather="{{ perfil.icone }}"></i>
+                </div>
 
-    </div>
-
-    <!-- === GRÁFICO MOVIMENTOS 30 DIAS === -->
-    <div class="row mt-4">
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header">
-            <h5>Entradas e Saídas (Últimos 30 dias)</h5>
-          </div>
-          <div class="card-body">
-            <div id="chart-movimentos" style="height: 300px;"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- === PRÓXIMAS ALTAS === -->
-      <div class="col-md-6">
-        <div class="card">
-          <div class="card-header">
-            <h5>Internamentos a terminar (próximos 5 dias)</h5>
-          </div>
-          <div class="card-body">
-            {% if proximas_altas %}
-              <ul class="list-group">
-                {% for u in proximas_altas %}
-                  <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <div>
-                      <strong>{{ u.nome }}</strong><br>
-                      Prevista: {{ u.data_prevista_saida|date:"d/m/Y" }}<br>
-                      <small class="text-muted">
-                        Quarto: {{ u.quarto|default:"-" }}
-                        {% if u.quarto and u.quarto.piso %}
-                          — Piso {{ u.quarto.piso }}
-                        {% endif %}
-                      </small>
-                    </div>
-                    <a href="{% url 'visitas:detalhe_utente' u.pk %}" class="btn btn-outline-primary btn-sm">Abrir</a>
-                  </li>
-                {% endfor %}
-              </ul>
-            {% else %}
-              <p class="text-muted mb-0">Nenhuma alta prevista.</p>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- === VISITAS EM CURSO === -->
-    <div class="row mt-4">
-      <div class="col-md-12">
-        <div class="card">
-          <div class="card-header">
-            <h5>Visitas em Curso</h5>
-          </div>
-          <div class="card-body">
-            {% if lista_visitas_em_curso %}
-              <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead>
-                    <tr>
-                      <th>Visitante</th>
-                      <th>Utente</th>
-                      <th>Quarto</th>
-                      <th>Piso</th>
-                      <th>Entrada</th>
-                      <th>Duração</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for v in lista_visitas_em_curso %}
-                      <tr>
-                        <td>{{ v.nome_visitante }}</td>
-                        <td>{{ v.utente.nome }}</td>
-                        <td>{{ v.utente.quarto|default:"-" }}</td>
-                        <td>
-                          {% if v.utente.quarto and v.utente.quarto.piso %}
-                            Piso {{ v.utente.quarto.piso }}
-                          {% else %}
-                            -
-                          {% endif %}
-                        </td>
-                        <td>{{ v.data_hora_entrada|date:"H:i d/m/Y" }}</td>
-                        <td>{{ v.duracao_horas_minutos|default:"-" }}</td>
-                        <td class="text-end">
-                          <a href="{% url 'visitas:registar_saida_visita' v.pk %}"
-                             class="btn btn-danger btn-sm">Registar saída</a>
-                        </td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
+                <div>
+                  <h5 class="mb-1">{{ perfil.titulo }}</h5>
+                  <span class="text-muted small">Área profissional</span>
+                </div>
               </div>
-            {% else %}
-              <p class="text-muted mb-0">Nenhuma visita em curso.</p>
-            {% endif %}
+
+              <p class="text-muted flex-grow-1">
+                {{ perfil.descricao }}
+              </p>
+
+              <a
+                href="{% url 'perfil_inicio' perfil.slug %}"
+                class="btn btn-{{ perfil.cor }} w-100"
+              >
+                Entrar
+                <i data-feather="arrow-right" class="ms-1"></i>
+              </a>
+
+            </div>
           </div>
         </div>
-      </div>
-    </div>
 
+      {% empty %}
+        <div class="col-12">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body py-5 text-center">
+
+              <i
+                data-feather="lock"
+                class="text-muted mb-3"
+                style="width: 42px; height: 42px;"
+              ></i>
+
+              <h4>Sem áreas disponíveis</h4>
+
+              <p class="text-muted mb-0">
+                O seu utilizador ainda não está associado a nenhum perfil.
+                Contacte o Departamento de Informática.
+              </p>
+
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+    </div>
   </div>
 </div>
 {% endblock content %}
-
-
-{% block extra_js %}
-<script src="{% static 'assets/js/plugins/apexcharts.min.js' %}"></script>
-
-<script>
-var options = {
-  chart: { type: 'line', height: 250 },
-  series: [
-    { name: "Entradas", data: {{ grafico_entradas|safe }} },
-    { name: "Saídas", data: {{ grafico_saidas|safe }} }
-  ],
-  xaxis: { categories: {{ grafico_dias|safe }} }
-};
-
-new ApexCharts(document.querySelector("#chart-movimentos"), options).render();
-</script>
-{% endblock extra_js %}

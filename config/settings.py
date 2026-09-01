@@ -70,6 +70,11 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',  # Include DRF Auth      # <-- NEW    
     # Paginas
     "visitas", 
+    "fisioterapia.apps.FisioterapiaConfig",
+    "enfermagem",
+    "clinica",
+    "cozinha.apps.CozinhaConfig",
+    "coordenacao.apps.CoordenacaoConfig",
 ]
 
 MIDDLEWARE = [
@@ -98,6 +103,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.pages.context_processors.permissoes_portal",
             ],
         },
     },

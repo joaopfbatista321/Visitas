@@ -1,0 +1,60 @@
+{% extends "cozinha/base_cozinha.html" %}
+
+{% block cozinha_content %}
+<style>
+  @media print {
+    .pc-sidebar, .pc-header, .btn, form, .page-header { display: none !important; }
+    .pc-container { margin: 0 !important; }
+    .card { box-shadow: none !important; break-inside: avoid; }
+  }
+</style>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div><h5 class="mb-1">Mapa diário da Cozinha</h5><p class="text-muted mb-0">{{ total_pedidos }} pedido{{ total_pedidos|pluralize }} encontrado{{ total_pedidos|pluralize }}.</p></div>
+    <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i data-feather="printer" class="me-1"></i>Imprimir</button>
+  </div>
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+      <div class="col-md-4"><label for="mapa-data" class="form-label">Data</label><input id="mapa-data" type="date" name="data" value="{{ data|date:'Y-m-d' }}" class="form-control"></div>
+      <div class="col-md-4">
+        <label for="mapa-tipo" class="form-label">Tipo</label>
+        <select id="mapa-tipo" name="tipo" class="form-select">
+          <option value="">Todos</option>
+          <option value="REFEICOES" {% if tipo_pedido == "REFEICOES" %}selected{% endif %}>Refeições</option>
+          <option value="SUPLEMENTOS" {% if tipo_pedido == "SUPLEMENTOS" %}selected{% endif %}>Suplementos</option>
+        </select>
+      </div>
+      <div class="col-md-4"><button type="submit" class="btn btn-warning">Atualizar mapa</button></div>
+    </form>
+  </div>
+</div>
+
+{% for pedido in pedidos %}
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="mb-1">{{ pedido.unidade.nome }}</h5>
+        <p class="text-muted mb-0">{{ pedido.get_tipo_display }} · {{ pedido.data_servico|date:"d/m/Y" }}</p>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge {% if pedido.estado == 'EM_PREPARACAO' %}bg-warning text-dark{% elif pedido.estado == 'ENTREGUE' %}bg-info{% elif pedido.estado == 'CONFIRMADO' %}bg-success{% else %}bg-secondary{% endif %}">{{ pedido.get_estado_display }}</span>
+        <a href="{% url 'cozinha:detalhe_pedido' pedido.pk %}" class="btn btn-sm btn-outline-warning">Abrir</a>
+      </div>
+    </div>
+    <div class="card-body table-responsive">
+      {% if pedido.tipo == "REFEICOES" %}
+        <table class="table table-sm align-middle mb-0"><thead><tr><th>Refeição</th><th>Dieta</th><th class="text-center">Pedida</th><th class="text-center">Preparada</th><th class="text-center">Entregue</th></tr></thead><tbody>
+          {% for linha in pedido.linhas_refeicoes.all %}{% if linha.quantidade_solicitada %}<tr><td>{{ linha.tipo_refeicao.nome }}</td><td>{{ linha.tipo_dieta.nome }}</td><td class="text-center"><strong>{{ linha.quantidade_solicitada }}</strong></td><td class="text-center">{{ linha.quantidade_preparada|default_if_none:"—" }}</td><td class="text-center">{{ linha.quantidade_entregue|default_if_none:"—" }}</td></tr>{% endif %}{% endfor %}
+        </tbody></table>
+      {% else %}
+        <table class="table table-sm align-middle mb-0"><thead><tr><th>Produto</th><th>Unidade</th><th class="text-center">Pedido</th><th class="text-center">Preparado</th><th class="text-center">Entregue</th></tr></thead><tbody>
+          {% for linha in pedido.linhas_produtos.all %}{% if linha.quantidade_solicitada %}<tr><td>{{ linha.produto.nome }}</td><td>{{ linha.produto.get_unidade_medida_display }}</td><td class="text-center"><strong>{{ linha.quantidade_solicitada }}</strong></td><td class="text-center">{{ linha.quantidade_preparada|default_if_none:"—" }}</td><td class="text-center">{{ linha.quantidade_entregue|default_if_none:"—" }}</td></tr>{% endif %}{% endfor %}
+        </tbody></table>
+      {% endif %}
+    </div>
+  </div>
+{% empty %}
+  <div class="card border-0 shadow-sm"><div class="card-body text-center text-muted py-5">Não existem pedidos para a data e o tipo selecionados.</div></div>
+{% endfor %}
+{% endblock cozinha_content %}

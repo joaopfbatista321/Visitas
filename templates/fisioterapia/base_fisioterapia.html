@@ -1,0 +1,143 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Fisioterapia{% endblock title %}
+
+{% block extrastyle %}
+{{ block.super }}
+
+<style>
+  .fisio-toolbar .btn {
+    white-space: nowrap;
+  }
+
+  .fisio-status {
+    min-width: 100px;
+  }
+
+  .fisio-card-link {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .fisio-card-link:hover {
+    color: inherit;
+  }
+
+  .fisio-participante-cancelado {
+    opacity: 0.65;
+    background-color: #f8f9fa;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+  }
+
+  .fc .fc-button {
+    text-transform: capitalize;
+  }
+
+  .fc .fc-button-primary {
+    background-color: #4680ff;
+    border-color: #4680ff;
+  }
+
+  .fc .fc-button-primary:hover,
+  .fc .fc-button-primary:focus {
+    background-color: #2f66d0;
+    border-color: #2f66d0;
+  }
+
+  @media (max-width: 767.98px) {
+    .fc .fc-toolbar {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .fc .fc-toolbar-chunk {
+      display: flex;
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock extrastyle %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <h2 class="mb-1">Fisioterapia</h2>
+
+        <p class="text-muted mb-0">
+          Planeamento, presenças e registos de fisioterapia.
+        </p>
+      </div>
+
+      {% if pode_gerir_fisioterapia %}
+        <a
+          href="{% url 'fisioterapia:criar_sessao' %}"
+          class="btn btn-primary"
+        >
+          <i data-feather="plus-circle" class="me-1"></i>
+          Nova sessão
+        </a>
+      {% endif %}
+    </div>
+
+    {% if pode_gerir_fisioterapia %}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2">
+          <div class="d-flex flex-wrap gap-2 fisio-toolbar">
+
+            <a
+              href="{% url 'fisioterapia:calendario' %}"
+              class="btn btn-sm {% if request.resolver_match.url_name == 'calendario' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+            >
+              Calendário
+            </a>
+
+            <a
+              href="{% url 'fisioterapia:lista_sessoes' %}"
+              class="btn btn-sm {% if request.resolver_match.url_name == 'lista_sessoes' %}btn-primary{% else %}btn-outline-primary{% endif %}"
+            >
+              Sessões
+            </a>
+
+            <a
+              href="{% url 'fisioterapia:criar_sessao' %}"
+              class="btn btn-sm {% if request.resolver_match.url_name == 'criar_sessao' %}btn-success{% else %}btn-outline-success{% endif %}"
+            >
+              Nova sessão
+            </a>
+
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if messages %}
+      {% for message in messages %}
+        <div
+          class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
+          role="alert"
+        >
+          {{ message }}
+
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="alert"
+            aria-label="Fechar"
+          ></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    {% block fisioterapia_content %}
+    {% endblock fisioterapia_content %}
+
+  </div>
+</div>
+{% endblock content %}

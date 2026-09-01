@@ -1,74 +1,433 @@
 {% extends "layouts/base.html" %}
 
+{% block title %}
+  Acessos rápidos
+{% endblock title %}
+
 {% block content %}
 <div class="pc-container">
   <div class="pc-content">
 
-    <!-- Header -->
+    <!-- CABEÇALHO -->
     <div class="page-header mb-4">
       <div class="page-block">
-        <h4 class="mb-1">Acessos Rápidos</h4>
+        <h4 class="mb-1">
+          Acessos rápidos
+        </h4>
+
         <p class="text-muted mb-0">
-          Plataformas internas e sistemas institucionais
+          Acesso às funcionalidades autorizadas e aos sistemas institucionais.
         </p>
       </div>
     </div>
 
-    <div class="row">
 
-      <!-- Wiki SCME -->
-      <div class="col-md-4">
-        <a href="https://wiki.local.scment.pt/login"
-           target="_blank"
-           class="text-decoration-none">
-          <div class="card h-100 border-primary">
-            <div class="card-body">
-              <h5 class="card-title text-primary">Wiki SCME</h5>
-              <p class="card-text text-muted">
-                Documentação interna, procedimentos e manuais.
-              </p>
-              <span class="badge bg-primary">Interno</span>
+    <!-- FUNCIONALIDADES DO PORTAL -->
+    {% if pode_ver_utentes or pode_pedir_transporte or pode_ver_pedidos_transporte or pode_gerir_fisioterapia or pode_ver_transportes or pode_ver_visitas or pode_ver_externos or pode_ver_financeiro %}
+
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="avtar bg-light-primary text-primary">
+          <i data-feather="grid"></i>
+        </div>
+
+        <div>
+          <h5 class="mb-0">
+            Trabalho diário
+          </h5>
+
+          <small class="text-muted">
+            Funcionalidades disponíveis para os seus grupos profissionais.
+          </small>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-5">
+
+        <!-- UTENTES -->
+        {% if pode_ver_utentes %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'visitas:lista_utentes' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-primary text-primary mb-3">
+                  <i data-feather="users"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Utentes
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Consultar a lista e as fichas dos utentes.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+
+        <!-- NOVO PEDIDO DE TRANSPORTE -->
+        {% if pode_pedir_transporte %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'visitas:criar_pedido_transporte' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-info text-info mb-3">
+                  <i data-feather="plus-circle"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Pedir transporte
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Criar um novo pedido para validação pela Receção.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+
+        <!-- PEDIDOS DE TRANSPORTE -->
+        {% if pode_ver_pedidos_transporte %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'visitas:lista_pedidos_transporte' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-warning text-warning mb-3">
+                  <i data-feather="clipboard"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Pedidos de transporte
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Consultar e acompanhar o estado dos pedidos.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+
+        <!-- VALIDAR PEDIDOS -->
+        {% if pode_validar_pedidos_transporte %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'visitas:lista_pedidos_transporte' %}?estado=POR_VALIDAR"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-danger text-danger mb-3">
+                  <i data-feather="check-square"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Validar pedidos
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Completar os dados e validar pedidos pendentes.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+
+        <!-- FISIOTERAPIA: CALENDÁRIO -->
+        {% if pode_gerir_fisioterapia %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'fisioterapia:calendario' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-success text-success mb-3">
+                  <i data-feather="calendar"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Calendário de Fisioterapia
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Consultar e organizar as sessões de reabilitação.
+                </p>
+              </div>
+            </a>
+          </div>
+
+
+          <!-- FISIOTERAPIA: NOVA SESSÃO -->
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'fisioterapia:criar_sessao' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-primary text-primary mb-3">
+                  <i data-feather="plus-circle"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Nova sessão de Fisioterapia
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Marcar uma sessão individual ou de grupo.
+                </p>
+              </div>
+            </a>
+          </div>
+
+
+          <!-- FISIOTERAPIA: VALIDAR PRESENÇAS -->
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'fisioterapia:lista_sessoes' %}?por_validar=1"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-warning text-warning mb-3">
+                  <i data-feather="user-check"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Validar presenças
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Registar se cada utente realizou ou faltou à sessão.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+
+        <!-- CALENDÁRIO DE TRANSPORTES -->
+        {% if pode_ver_transportes %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'visitas:calendario_transportes' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-success text-success mb-3">
+                  <i data-feather="truck"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Calendário de transportes
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Consultar o planeamento das deslocações.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+
+        <!-- VISITAS -->
+        {% if pode_ver_visitas %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'visitas:dashboard_visitas' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-info text-info mb-3">
+                  <i data-feather="user-check"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Gestão de visitas
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Registar entradas, saídas e consultar visitas.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+
+        <!-- EXTERNOS -->
+        {% if pode_ver_externos %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'visitas:lista_externos' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-secondary text-secondary mb-3">
+                  <i data-feather="briefcase"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Entradas externas
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Consultar e registar prestadores e serviços externos.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+
+        <!-- FINANCEIRO -->
+        {% if pode_ver_financeiro %}
+          <div class="col-md-6 col-xl-3">
+            <a
+              href="{% url 'visitas:lista_financeira_utentes' %}"
+              class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+            >
+              <div class="card-body">
+                <div class="avtar bg-light-secondary text-secondary mb-3">
+                  <i data-feather="credit-card"></i>
+                </div>
+
+                <h5 class="text-dark mb-1">
+                  Contas dos utentes
+                </h5>
+
+                <p class="text-muted small mb-0">
+                  Consultar saldos e movimentos financeiros.
+                </p>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+
+      </div>
+    {% endif %}
+
+
+    <!-- SISTEMAS INSTITUCIONAIS -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+      <div class="avtar bg-light-secondary text-secondary">
+        <i data-feather="external-link"></i>
+      </div>
+
+      <div>
+        <h5 class="mb-0">
+          Sistemas institucionais
+        </h5>
+
+        <small class="text-muted">
+          As plataformas externas possuem autenticação própria.
+        </small>
+      </div>
+    </div>
+
+    <div class="row g-3">
+
+      <!-- WIKI SCME -->
+      <div class="col-md-6 col-xl-4">
+        <a
+          href="https://wiki.local.scment.pt/login"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+        >
+          <div class="card-body">
+            <div class="avtar bg-light-primary text-primary mb-3">
+              <i data-feather="book-open"></i>
             </div>
+
+            <h5 class="text-dark mb-1">
+              Wiki SCME
+            </h5>
+
+            <p class="text-muted small mb-3">
+              Documentação interna, procedimentos e manuais.
+            </p>
+
+            <span class="badge bg-primary">
+              Interno
+            </span>
           </div>
         </a>
       </div>
+
 
       <!-- RNCCI -->
-      <div class="col-md-4">
-        <a href="https://umcciweb-rncci.min-saude.pt/index.php?action=Login&module=Users"
-           target="_blank"
-           class="text-decoration-none">
-          <div class="card h-100 border-success">
+      {% if pode_ver_utentes %}
+        <div class="col-md-6 col-xl-4">
+          <a
+            href="https://umcciweb-rncci.min-saude.pt/index.php?action=Login&module=Users"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+          >
             <div class="card-body">
-              <h5 class="card-title text-success">RNCCI</h5>
-              <p class="card-text text-muted">
-                Plataforma da Rede Nacional de Cuidados Continuados Integrados.
+              <div class="avtar bg-light-success text-success mb-3">
+                <i data-feather="heart"></i>
+              </div>
+
+              <h5 class="text-dark mb-1">
+                RNCCI
+              </h5>
+
+              <p class="text-muted small mb-3">
+                Rede Nacional de Cuidados Continuados Integrados.
               </p>
-              <span class="badge bg-success">Ministério da Saúde</span>
+
+              <span class="badge bg-success">
+                Ministério da Saúde
+              </span>
             </div>
-          </div>
-        </a>
-      </div>
+          </a>
+        </div>
+      {% endif %}
+
 
       <!-- GH SCMENT -->
-      <div class="col-md-4">
-        <a href="https://gh.scment.org/Default_N.aspx"
-           target="_blank"
-           class="text-decoration-none">
-          <div class="card h-100 border-warning">
+      {% if pode_ver_utentes or pode_ver_financeiro %}
+        <div class="col-md-6 col-xl-4">
+          <a
+            href="https://gh.scment.org/Default_N.aspx"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="card h-100 border-0 shadow-sm text-decoration-none mb-0"
+          >
             <div class="card-body">
-              <h5 class="card-title text-warning">GH SCMENT</h5>
-              <p class="card-text text-muted">
+              <div class="avtar bg-light-warning text-warning mb-3">
+                <i data-feather="monitor"></i>
+              </div>
+
+              <h5 class="text-dark mb-1">
+                GH SCMENT
+              </h5>
+
+              <p class="text-muted small mb-3">
                 Gestão hospitalar e administrativa da instituição.
               </p>
-              <span class="badge bg-warning text-dark">Gestão</span>
+
+              <span class="badge bg-warning text-dark">
+                Gestão
+              </span>
             </div>
-          </div>
-        </a>
-      </div>
+          </a>
+        </div>
+      {% endif %}
 
     </div>
 
   </div>
 </div>
-{% endblock %}
+{% endblock content %}

@@ -551,6 +551,198 @@ class EstadoTransporte(models.TextChoices):
     CONCLUIDO = "CONCLUIDO", "Concluído"
     CANCELADO = "CANCELADO", "Cancelado"
 
+class EstadoPedidoTransporte(models.TextChoices):
+    POR_VALIDAR = "POR_VALIDAR", "A validar pela Receção"
+    DEVOLVIDO = "DEVOLVIDO", "Devolvido para correção"
+    VALIDADO = "VALIDADO", "Validado"
+    REJEITADO = "REJEITADO", "Rejeitado"
+    CANCELADO = "CANCELADO", "Cancelado"
+
+
+class PedidoTransporte(models.Model):
+    utente = models.ForeignKey(
+        "Utente",
+        on_delete=models.PROTECT,
+        related_name="pedidos_transporte",
+        verbose_name="Utente",
+    )
+
+    tipo_deslocacao = models.CharField(
+        "Tipo de deslocação",
+        max_length=20,
+        choices=TipoDeslocacao.choices,
+        default=TipoDeslocacao.CONSULTA,
+    )
+
+    motivo = models.CharField(
+        "Motivo",
+        max_length=250,
+        blank=True,
+    )
+
+    destino = models.CharField(
+        "Destino",
+        max_length=250,
+        blank=True,
+    )
+
+    # Datas conhecidas pelo profissional
+    data_hora_consulta = models.DateTimeField(
+        "Hora da consulta/exame",
+        blank=True,
+        null=True,
+    )
+
+    data_hora_saida = models.DateTimeField(
+        "Saída prevista da UCCI",
+        blank=True,
+        null=True,
+    )
+
+    data_hora_regresso_previsto = models.DateTimeField(
+        "Regresso previsto à UCCI",
+        blank=True,
+        null=True,
+    )
+
+    # Informação logística opcional no pedido
+    meio_transporte = models.CharField(
+        "Meio de transporte",
+        max_length=20,
+        choices=MeioTransporte.choices,
+        blank=True,
+        default="",
+    )
+
+    viatura = models.ForeignKey(
+        Viatura,
+        on_delete=models.PROTECT,
+        related_name="pedidos_transporte",
+        verbose_name="Viatura",
+        blank=True,
+        null=True,
+    )
+
+    condutor = models.ForeignKey(
+        Condutor,
+        on_delete=models.PROTECT,
+        related_name="pedidos_transporte",
+        verbose_name="Condutor",
+        blank=True,
+        null=True,
+    )
+
+    entidade_transporte = models.CharField(
+        "Entidade/pessoa responsável pelo transporte",
+        max_length=180,
+        blank=True,
+        help_text="Ex.: Bombeiros, táxi ou familiar.",
+    )
+
+    # Acompanhamento e necessidades clínicas
+    acompanhante_nome = models.CharField(
+        "Acompanhante",
+        max_length=180,
+        blank=True,
+    )
+
+    acompanhante_contacto = models.CharField(
+        "Contacto do acompanhante",
+        max_length=30,
+        blank=True,
+    )
+
+    necessita_cadeira_rodas = models.BooleanField(
+        "Cadeira de rodas",
+        default=False,
+    )
+
+    necessita_maca = models.BooleanField(
+        "Maca",
+        default=False,
+    )
+
+    necessita_oxigenio = models.BooleanField(
+        "Oxigénio",
+        default=False,
+    )
+
+    outras_necessidades = models.CharField(
+        "Outras necessidades",
+        max_length=250,
+        blank=True,
+    )
+
+    observacoes = models.TextField(
+        "Observações do pedido",
+        blank=True,
+    )
+
+    # Validação pela Receção
+    estado = models.CharField(
+        "Estado do pedido",
+        max_length=15,
+        choices=EstadoPedidoTransporte.choices,
+        default=EstadoPedidoTransporte.POR_VALIDAR,
+    )
+
+    observacoes_recepcao = models.TextField(
+        "Observações da Receção",
+        blank=True,
+    )
+
+    pedido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pedidos_transporte_criados",
+        editable=False,
+        verbose_name="Pedido por",
+    )
+
+    validado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="pedidos_transporte_validados",
+        editable=False,
+        verbose_name="Validado por",
+    )
+
+    validado_em = models.DateTimeField(
+        "Validado em",
+        blank=True,
+        null=True,
+        editable=False,
+    )
+
+    # Transporte criado depois da validação
+    transporte = models.OneToOneField(
+        "Transporte",
+        on_delete=models.SET_NULL,
+        related_name="pedido_origem",
+        blank=True,
+        null=True,
+        editable=False,
+        verbose_name="Transporte criado",
+    )
+
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-criado_em"]
+        verbose_name = "Pedido de transporte"
+        verbose_name_plural = "Pedidos de transporte"
+        indexes = [
+            models.Index(fields=["estado", "criado_em"]),
+        ]
+
+    def __str__(self):
+        return f"Pedido #{self.pk} — {self.utente}"
+
 
 class Transporte(models.Model):
     utente = models.ForeignKey(
@@ -641,6 +833,23 @@ class Transporte(models.Model):
         null=True,
         blank=True,
         related_name="transportes_atualizados",
+        editable=False,
+    )
+
+    confirmado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transportes_confirmados",
+        editable=False,
+        verbose_name="Confirmado por",
+    )
+
+    confirmado_em = models.DateTimeField(
+        "Confirmado em",
+        blank=True,
+        null=True,
         editable=False,
     )
     criado_em = models.DateTimeField(auto_now_add=True)

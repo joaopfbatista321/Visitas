@@ -1,0 +1,1081 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}
+  {% if queda %}
+    Editar notificação de queda
+  {% else %}
+    Nova notificação de queda
+  {% endif %}
+{% endblock title %}
+
+{% block enfermagem_content %}
+
+<style>
+  .queda-secao {
+    scroll-margin-top: 90px;
+  }
+
+  .queda-secao .card {
+    overflow: hidden;
+  }
+
+  .queda-secao .card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #eef0f3;
+    padding: 1rem 1.25rem;
+  }
+
+  .queda-secao .card-body {
+    padding: 1.25rem;
+  }
+
+  .queda-numero {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--bs-danger);
+    color: #fff;
+    font-weight: 600;
+    flex: 0 0 36px;
+  }
+
+  .queda-secao .form-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 500;
+  }
+
+  .queda-secao .form-control,
+  .queda-secao .form-select {
+    display: block;
+    width: 100%;
+  }
+
+  .queda-secao textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+  }
+
+  /*
+   * Suporta o HTML gerado pelas versões recentes do Django:
+   *
+   * <div id="...">
+   *   <div>
+   *     <label>
+   *       <input type="checkbox">
+   *       Opção
+   *     </label>
+   *   </div>
+   * </div>
+   */
+  .queda-checkboxes {
+    width: 100%;
+    min-height: 54px;
+    background-color: #fff;
+  }
+
+  .queda-checkboxes > div {
+    display: grid;
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+    gap: 0.65rem 1rem;
+  }
+
+  .queda-checkboxes > div > div {
+    min-width: 0;
+  }
+
+  .queda-checkboxes label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    width: 100%;
+    margin: 0;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid #eef0f3;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+    line-height: 1.35;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .queda-checkboxes label:hover {
+    background-color: #fff5f5;
+    border-color: rgba(220, 53, 69, 0.35);
+  }
+
+  .queda-checkboxes input[type="checkbox"] {
+    float: none;
+    flex: 0 0 auto;
+    margin: 0.15rem 0 0;
+  }
+
+  /*
+   * Compatibilidade com versões do Django que geram <ul>.
+   */
+  .queda-checkboxes ul {
+    display: grid;
+    grid-template-columns: repeat(
+      2,
+      minmax(0, 1fr)
+    );
+    gap: 0.65rem 1rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .queda-checkboxes ul li {
+    min-width: 0;
+  }
+
+  .queda-checkboxes .errorlist {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--bs-danger);
+  }
+
+  @media (max-width: 991.98px) {
+    .queda-checkboxes > div,
+    .queda-checkboxes ul {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .queda-secao .card-header,
+    .queda-secao .card-body {
+      padding: 1rem;
+    }
+
+    .queda-numero {
+      width: 32px;
+      height: 32px;
+      flex-basis: 32px;
+    }
+
+    .queda-checkboxes {
+      padding: 0.75rem !important;
+    }
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+  <div>
+    <h4 class="mb-1">
+      {% if queda %}
+        Editar ficha de notificação de queda
+      {% else %}
+        Nova ficha de notificação de queda
+      {% endif %}
+    </h4>
+
+    <p class="text-muted mb-0">
+      <strong>{{ utente.nome }}</strong>
+      · Processo {{ utente.numero_processo }}
+    </p>
+  </div>
+
+  <a
+    href="{% url 'enfermagem:registos_utente' utente.pk %}"
+    class="btn btn-outline-secondary"
+  >
+    Voltar ao histórico
+  </a>
+</div>
+
+<div class="alert alert-warning">
+  <div class="d-flex align-items-start gap-2">
+    <i data-feather="clock"></i>
+
+    <div>
+      <strong>Prazo de notificação</strong>
+
+      <div class="small mt-1">
+        A ocorrência deve ser registada, preferencialmente,
+        nas 24 horas seguintes à queda.
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  {% if cabecalho_form.non_field_errors or queda_form.non_field_errors %}
+    <div class="alert alert-danger">
+      {% for erro in cabecalho_form.non_field_errors %}
+        <div>{{ erro }}</div>
+      {% endfor %}
+
+      {% for erro in queda_form.non_field_errors %}
+        <div>{{ erro }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- 1. Identificação -->
+  <div class="card border-0 shadow-sm mb-3 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">1</span>
+
+        <div>
+          <h5 class="mb-0">Identificação do utente</h5>
+          <small class="text-muted">
+            Dados clínicos e administrativos
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="alert alert-light border">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <small class="text-muted d-block">Nome</small>
+            <strong>{{ utente.nome }}</strong>
+          </div>
+
+          <div class="col-md-3">
+            <small class="text-muted d-block">Processo</small>
+            <strong>{{ utente.numero_processo }}</strong>
+          </div>
+
+          <div class="col-md-3">
+            <small class="text-muted d-block">Data de nascimento</small>
+            <strong>
+              {{ utente.data_nascimento|date:"d/m/Y"|default:"Não indicada" }}
+            </strong>
+          </div>
+
+          <div class="col-md-2">
+            <small class="text-muted d-block">Quarto</small>
+            <strong>{{ utente.quarto|default:"Não indicado" }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.servico_unidade.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.servico_unidade.label }}
+          </label>
+
+          {{ queda_form.servico_unidade }}
+
+          {% for erro in queda_form.servico_unidade.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.medico_assistente.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.medico_assistente.label }}
+          </label>
+
+          {{ queda_form.medico_assistente }}
+
+          {% for erro in queda_form.medico_assistente.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.diagnostico_principal.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.diagnostico_principal.label }}
+          </label>
+
+          {{ queda_form.diagnostico_principal }}
+
+          {% for erro in queda_form.diagnostico_principal.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Ocorrência -->
+  <div class="card border-0 shadow-sm mb-3 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">2</span>
+
+        <div>
+          <h5 class="mb-0">Dados da ocorrência</h5>
+          <small class="text-muted">
+            Momento e local onde ocorreu a queda
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.data_hora_queda.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.data_hora_queda.label }} *
+          </label>
+
+          {{ queda_form.data_hora_queda }}
+
+          {% for erro in queda_form.data_hora_queda.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.local_queda.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.local_queda.label }} *
+          </label>
+
+          {{ queda_form.local_queda }}
+
+          {% for erro in queda_form.local_queda.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.local_detalhe.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.local_detalhe.label }}
+          </label>
+
+          {{ queda_form.local_detalhe }}
+
+          {% for erro in queda_form.local_detalhe.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Classificação -->
+  <div class="card border-0 shadow-sm mb-3 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">3</span>
+
+        <div>
+          <h5 class="mb-0">Classificação da queda</h5>
+          <small class="text-muted">
+            Tipo, gravidade e lesões identificadas
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.tipo_queda.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.tipo_queda.label }} *
+          </label>
+
+          {{ queda_form.tipo_queda }}
+
+          {% for erro in queda_form.tipo_queda.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.gravidade.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.gravidade.label }} *
+          </label>
+
+          {{ queda_form.gravidade }}
+
+          {% for erro in queda_form.gravidade.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">
+            {{ queda_form.lesoes_identificadas.label }} *
+          </label>
+
+          <div class="queda-checkboxes border rounded p-3">
+            {{ queda_form.lesoes_identificadas }}
+          </div>
+
+          {% for erro in queda_form.lesoes_identificadas.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">
+            {{ queda_form.localizacoes_lesao.label }}
+          </label>
+
+          <div class="queda-checkboxes border rounded p-3">
+            {{ queda_form.localizacoes_lesao }}
+          </div>
+
+          {% for erro in queda_form.localizacoes_lesao.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.lesao_outra.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.lesao_outra.label }}
+          </label>
+
+          {{ queda_form.lesao_outra }}
+
+          {% for erro in queda_form.lesao_outra.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.localizacao_outra.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.localizacao_outra.label }}
+          </label>
+
+          {{ queda_form.localizacao_outra }}
+
+          {% for erro in queda_form.localizacao_outra.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Circunstâncias -->
+  <div class="card border-0 shadow-sm mb-3 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">4</span>
+
+        <div>
+          <h5 class="mb-0">Circunstâncias da queda</h5>
+          <small class="text-muted">
+            Acompanhamento, atividade e fatores contribuintes
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.doente_estava.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.doente_estava.label }} *
+          </label>
+
+          {{ queda_form.doente_estava }}
+
+          {% for erro in queda_form.doente_estava.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.atividade_no_momento.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.atividade_no_momento.label }} *
+          </label>
+
+          {{ queda_form.atividade_no_momento }}
+
+          {% for erro in queda_form.atividade_no_momento.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label
+            for="{{ queda_form.atividade_outra.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.atividade_outra.label }}
+          </label>
+
+          {{ queda_form.atividade_outra }}
+
+          {% for erro in queda_form.atividade_outra.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">
+            {{ queda_form.fatores_contribuintes.label }}
+          </label>
+
+          <div class="queda-checkboxes border rounded p-3">
+            {{ queda_form.fatores_contribuintes }}
+          </div>
+
+          {% for erro in queda_form.fatores_contribuintes.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label
+            for="{{ queda_form.fator_contribuinte_outro.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.fator_contribuinte_outro.label }}
+          </label>
+
+          {{ queda_form.fator_contribuinte_outro }}
+
+          {% for erro in queda_form.fator_contribuinte_outro.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.grades_laterais.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.grades_laterais.label }} *
+          </label>
+
+          {{ queda_form.grades_laterais }}
+
+          {% for erro in queda_form.grades_laterais.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.dispositivo_auxilio.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.dispositivo_auxilio.label }} *
+          </label>
+
+          {{ queda_form.dispositivo_auxilio }}
+
+          {% for erro in queda_form.dispositivo_auxilio.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label
+            for="{{ queda_form.dispositivo_auxilio_outro.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.dispositivo_auxilio_outro.label }}
+          </label>
+
+          {{ queda_form.dispositivo_auxilio_outro }}
+
+          {% for erro in queda_form.dispositivo_auxilio_outro.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Morse -->
+  <div class="card border-0 shadow-sm mb-3 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">5</span>
+
+        <div>
+          <h5 class="mb-0">Avaliação de risco anterior</h5>
+          <small class="text-muted">
+            Escala de Morse antes da queda
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.morse_aplicada.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.morse_aplicada.label }} *
+          </label>
+
+          {{ queda_form.morse_aplicada }}
+
+          {% for erro in queda_form.morse_aplicada.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.score_morse_previo.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.score_morse_previo.label }}
+          </label>
+
+          {{ queda_form.score_morse_previo }}
+
+          {% for erro in queda_form.score_morse_previo.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.medidas_preventivas_implementadas.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.medidas_preventivas_implementadas.label }} *
+          </label>
+
+          {{ queda_form.medidas_preventivas_implementadas }}
+
+          {% for erro in queda_form.medidas_preventivas_implementadas.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Resposta imediata -->
+  <div class="card border-0 shadow-sm mb-3 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">6</span>
+
+        <div>
+          <h5 class="mb-0">Intervenções imediatas</h5>
+          <small class="text-muted">
+            Avaliação e atuação após a queda
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-12">
+          <label class="form-label">
+            {{ queda_form.intervencoes_realizadas.label }} *
+          </label>
+
+          <div class="queda-checkboxes border rounded p-3">
+            {{ queda_form.intervencoes_realizadas }}
+          </div>
+
+          {% for erro in queda_form.intervencoes_realizadas.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label
+            for="{{ queda_form.intervencao_outra.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.intervencao_outra.label }}
+          </label>
+
+          {{ queda_form.intervencao_outra }}
+
+          {% for erro in queda_form.intervencao_outra.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.medico_notificado.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.medico_notificado.label }} *
+          </label>
+
+          {{ queda_form.medico_notificado }}
+
+          {% for erro in queda_form.medico_notificado.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-8">
+          <label
+            for="{{ queda_form.medico_notificado_em.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.medico_notificado_em.label }}
+          </label>
+
+          {{ queda_form.medico_notificado_em }}
+
+          {% for erro in queda_form.medico_notificado_em.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label
+            for="{{ queda_form.medico_nao_notificado_justificacao.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.medico_nao_notificado_justificacao.label }}
+          </label>
+
+          {{ queda_form.medico_nao_notificado_justificacao }}
+
+          {% for erro in queda_form.medico_nao_notificado_justificacao.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ queda_form.familiar_notificado.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.familiar_notificado.label }} *
+          </label>
+
+          {{ queda_form.familiar_notificado }}
+
+          {% for erro in queda_form.familiar_notificado.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-8">
+          <label
+            for="{{ queda_form.familiar_notificado_em.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.familiar_notificado_em.label }}
+          </label>
+
+          {{ queda_form.familiar_notificado_em }}
+
+          {% for erro in queda_form.familiar_notificado_em.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label
+            for="{{ queda_form.descricao_ocorrencia.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.descricao_ocorrencia.label }} *
+          </label>
+
+          {{ queda_form.descricao_ocorrencia }}
+
+          {% for erro in queda_form.descricao_ocorrencia.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. Seguimento -->
+  <div class="card border-0 shadow-sm mb-3 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">7</span>
+
+        <div>
+          <h5 class="mb-0">Medidas corretivas e seguimento</h5>
+          <small class="text-muted">
+            Reavaliação e prevenção de novas quedas
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.reavaliacao_morse_estado.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.reavaliacao_morse_estado.label }} *
+          </label>
+
+          {{ queda_form.reavaliacao_morse_estado }}
+
+          {% for erro in queda_form.reavaliacao_morse_estado.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.score_morse_pos.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.score_morse_pos.label }}
+          </label>
+
+          {{ queda_form.score_morse_pos }}
+
+          {% for erro in queda_form.score_morse_pos.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label class="form-label">
+            {{ queda_form.medidas_corretivas.label }}
+          </label>
+
+          <div class="queda-checkboxes border rounded p-3">
+            {{ queda_form.medidas_corretivas }}
+          </div>
+
+          {% for erro in queda_form.medidas_corretivas.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label
+            for="{{ queda_form.medida_corretiva_outra.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.medida_corretiva_outra.label }}
+          </label>
+
+          {{ queda_form.medida_corretiva_outra }}
+
+          {% for erro in queda_form.medida_corretiva_outra.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-12">
+          <label
+            for="{{ queda_form.observacoes.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.observacoes.label }}
+          </label>
+
+          {{ queda_form.observacoes }}
+
+          {% for erro in queda_form.observacoes.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Notificação institucional -->
+  <div class="card border-0 shadow-sm mb-3 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">8</span>
+
+        <div>
+          <h5 class="mb-0">Notificação institucional</h5>
+          <small class="text-muted">
+            Registo no sistema institucional de ocorrências
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.notificacao_institucional_estado.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.notificacao_institucional_estado.label }} *
+          </label>
+
+          {{ queda_form.notificacao_institucional_estado }}
+
+          {% for erro in queda_form.notificacao_institucional_estado.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-6">
+          <label
+            for="{{ queda_form.data_notificacao_institucional.id_for_label }}"
+            class="form-label"
+          >
+            {{ queda_form.data_notificacao_institucional.label }}
+          </label>
+
+          {{ queda_form.data_notificacao_institucional }}
+
+          {% for erro in queda_form.data_notificacao_institucional.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. Notificador -->
+  <div class="card border-0 shadow-sm mb-4 queda-secao">
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="queda-numero">9</span>
+
+        <div>
+          <h5 class="mb-0">Identificação do notificador</h5>
+          <small class="text-muted">
+            Profissional, data, turno e visibilidade
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="alert alert-light border">
+        <small class="text-muted d-block">Profissional responsável</small>
+
+        <strong>
+          {% if request.user.get_full_name %}
+            {{ request.user.get_full_name }}
+          {% else %}
+            {{ request.user.username }}
+          {% endif %}
+        </strong>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label
+            for="{{ cabecalho_form.data_registo.id_for_label }}"
+            class="form-label"
+          >
+            {{ cabecalho_form.data_registo.label }} *
+          </label>
+
+          {{ cabecalho_form.data_registo }}
+
+          {% for erro in cabecalho_form.data_registo.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ cabecalho_form.turno.id_for_label }}"
+            class="form-label"
+          >
+            {{ cabecalho_form.turno.label }} *
+          </label>
+
+          {{ cabecalho_form.turno }}
+
+          {% for erro in cabecalho_form.turno.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="col-md-4">
+          <label
+            for="{{ cabecalho_form.visibilidade.id_for_label }}"
+            class="form-label"
+          >
+            {{ cabecalho_form.visibilidade.label }} *
+          </label>
+
+          {{ cabecalho_form.visibilidade }}
+
+          {% for erro in cabecalho_form.visibilidade.errors %}
+            <div class="text-danger small mt-1">{{ erro }}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-text mt-3">
+        A visibilidade “Todos” respeita sempre os grupos clínicos
+        configurados no Django Admin.
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm">
+    <div class="card-body d-flex justify-content-between flex-wrap gap-2">
+      <a
+        href="{% url 'enfermagem:registos_utente' utente.pk %}"
+        class="btn btn-outline-secondary"
+      >
+        Cancelar
+      </a>
+
+      <button type="submit" class="btn btn-danger">
+        <i data-feather="save" class="me-1"></i>
+
+        {% if queda %}
+          Guardar alterações
+        {% else %}
+          Registar queda
+        {% endif %}
+      </button>
+    </div>
+  </div>
+
+</form>
+
+{% endblock enfermagem_content %}

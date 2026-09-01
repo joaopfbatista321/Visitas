@@ -1,0 +1,391 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}
+  Registo de quedas
+{% endblock title %}
+
+{% block enfermagem_content %}
+
+<!-- Cabeçalho -->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+
+  <div>
+    <h4 class="mb-1">Registo de quedas</h4>
+
+    <p class="text-muted mb-0">
+      Consulta, pesquisa e acompanhamento das notificações de queda.
+    </p>
+  </div>
+
+  {% if pode_criar %}
+    <a
+      href="{% url 'visitas:lista_utentes' %}"
+      class="btn btn-danger"
+    >
+      <i data-feather="plus-circle" class="me-1"></i>
+      Selecionar utente
+    </a>
+  {% endif %}
+
+</div>
+
+<!-- Indicador -->
+<div class="row g-3 mb-3">
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body d-flex justify-content-between align-items-center">
+
+        <div>
+          <p class="text-muted mb-1">Resultados encontrados</p>
+          <h3 class="mb-0">{{ quedas|length }}</h3>
+        </div>
+
+        <div class="avtar bg-light-danger text-danger">
+          <i data-feather="alert-triangle"></i>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <h5 class="mb-0">Pesquisar notificações</h5>
+  </div>
+
+  <div class="card-body">
+    <form method="get" class="row g-3 align-items-end">
+
+      <div class="col-md-6 col-xl-4">
+        <label for="filtro-q" class="form-label">
+          Pesquisa
+        </label>
+
+        <input
+          type="search"
+          id="filtro-q"
+          name="q"
+          value="{{ q }}"
+          class="form-control"
+          placeholder="Utente, processo, profissional ou descrição"
+        >
+      </div>
+
+      <div class="col-md-3 col-xl-2">
+        <label for="filtro-gravidade" class="form-label">
+          Gravidade
+        </label>
+
+        <select
+          id="filtro-gravidade"
+          name="gravidade"
+          class="form-select"
+        >
+          <option value="">Todas</option>
+
+          {% for valor, nome in gravidades %}
+            <option
+              value="{{ valor }}"
+              {% if gravidade == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3 col-xl-2">
+        <label for="filtro-tipo" class="form-label">
+          Tipo
+        </label>
+
+        <select
+          id="filtro-tipo"
+          name="tipo_queda"
+          class="form-select"
+        >
+          <option value="">Todos</option>
+
+          {% for valor, nome in tipos_queda %}
+            <option
+              value="{{ valor }}"
+              {% if tipo_queda == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3 col-xl-2">
+        <label for="filtro-local" class="form-label">
+          Local
+        </label>
+
+        <select
+          id="filtro-local"
+          name="local"
+          class="form-select"
+        >
+          <option value="">Todos</option>
+
+          {% for valor, nome in locais %}
+            <option
+              value="{{ valor }}"
+              {% if local == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3 col-xl-2">
+        <label for="filtro-notificacao" class="form-label">
+          Notificação
+        </label>
+
+        <select
+          id="filtro-notificacao"
+          name="notificacao"
+          class="form-select"
+        >
+          <option value="">Todas</option>
+
+          {% for valor, nome in estados_notificacao %}
+            <option
+              value="{{ valor }}"
+              {% if notificacao == valor %}selected{% endif %}
+            >
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3 col-xl-2">
+        <label for="filtro-data-de" class="form-label">
+          Desde
+        </label>
+
+        <input
+          type="date"
+          id="filtro-data-de"
+          name="data_de"
+          value="{{ data_de }}"
+          class="form-control"
+        >
+      </div>
+
+      <div class="col-md-3 col-xl-2">
+        <label for="filtro-data-ate" class="form-label">
+          Até
+        </label>
+
+        <input
+          type="date"
+          id="filtro-data-ate"
+          name="data_ate"
+          value="{{ data_ate }}"
+          class="form-control"
+        >
+      </div>
+
+      <div class="col-md-6 col-xl-4">
+        <div class="d-flex gap-2">
+
+          <button type="submit" class="btn btn-danger w-100">
+            <i data-feather="search" class="me-1"></i>
+            Aplicar filtros
+          </button>
+
+          <a
+            href="{% url 'enfermagem:lista_quedas' %}"
+            class="btn btn-light w-100"
+          >
+            Limpar
+          </a>
+
+        </div>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<!-- Lista -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Notificações de queda</h5>
+
+    <span class="badge bg-light-danger text-danger">
+      {{ quedas|length }} resultado{{ quedas|length|pluralize }}
+    </span>
+  </div>
+
+  <div class="card-body table-responsive">
+    <table class="table table-hover align-middle mb-0">
+
+      <thead>
+        <tr>
+          <th>Data e hora</th>
+          <th>Utente</th>
+          <th>Queda</th>
+          <th>Gravidade</th>
+          <th>Notificação</th>
+          <th>Profissional</th>
+          <th>Prazo</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for queda in quedas %}
+          <tr>
+
+            <td>
+              <strong>
+                {{ queda.data_hora_queda|date:"d/m/Y" }}
+              </strong>
+
+              <br>
+
+              <small class="text-muted">
+                {{ queda.data_hora_queda|date:"H:i" }}
+              </small>
+            </td>
+
+            <td>
+              <strong>
+                {{ queda.registo_enfermagem.utente.nome }}
+              </strong>
+
+              <br>
+
+              <small class="text-muted">
+                Processo
+                {{ queda.registo_enfermagem.utente.numero_processo }}
+
+                {% if queda.registo_enfermagem.utente.quarto %}
+                  · {{ queda.registo_enfermagem.utente.quarto }}
+                {% endif %}
+              </small>
+            </td>
+
+            <td>
+              {{ queda.get_tipo_queda_display }}
+
+              <br>
+
+              <small class="text-muted">
+                {{ queda.get_local_queda_display }}
+
+                {% if queda.local_detalhe %}
+                  · {{ queda.local_detalhe }}
+                {% endif %}
+              </small>
+            </td>
+
+            <td>
+              {% if queda.gravidade == "SEM_LESAO" %}
+                <span class="badge bg-success">
+                  {{ queda.get_gravidade_display }}
+                </span>
+
+              {% elif queda.gravidade == "MINOR" %}
+                <span class="badge bg-info">
+                  {{ queda.get_gravidade_display }}
+                </span>
+
+              {% elif queda.gravidade == "MODERADA" %}
+                <span class="badge bg-warning text-dark">
+                  {{ queda.get_gravidade_display }}
+                </span>
+
+              {% else %}
+                <span class="badge bg-danger">
+                  {{ queda.get_gravidade_display }}
+                </span>
+              {% endif %}
+            </td>
+
+            <td>
+              {% if queda.notificacao_institucional_estado == "SIM" %}
+                <span class="badge bg-success">
+                  Notificada
+                </span>
+
+                {% if queda.data_notificacao_institucional %}
+                  <br>
+
+                  <small class="text-muted">
+                    {{ queda.data_notificacao_institucional|date:"d/m/Y" }}
+                  </small>
+                {% endif %}
+
+              {% elif queda.notificacao_institucional_estado == "PENDENTE" %}
+                <span class="badge bg-warning text-dark">
+                  Pendente
+                </span>
+
+              {% else %}
+                <span class="badge bg-secondary">
+                  Não notificada
+                </span>
+              {% endif %}
+            </td>
+
+            <td>
+              {{ queda.registo_enfermagem.profissional.get_full_name|default:queda.registo_enfermagem.profissional.username }}
+            </td>
+
+            <td>
+              {% if queda.notificacao_fora_prazo %}
+                <span class="badge bg-danger">
+                  Fora de prazo
+                </span>
+              {% else %}
+                <span class="badge bg-success">
+                  Dentro do prazo
+                </span>
+              {% endif %}
+            </td>
+
+            <td class="text-end">
+              <a
+                href="{% url 'enfermagem:detalhe_queda' queda.pk %}"
+                class="btn btn-sm btn-outline-danger"
+              >
+                Abrir
+              </a>
+            </td>
+
+          </tr>
+
+        {% empty %}
+          <tr>
+            <td colspan="8" class="text-center py-5">
+
+              <div class="avtar avtar-xl bg-light-danger text-danger mb-3">
+                <i data-feather="alert-triangle"></i>
+              </div>
+
+              <h5>Não foram encontradas quedas</h5>
+
+              <p class="text-muted mb-0">
+                Altere os filtros ou registe uma nova ocorrência
+                através da ficha do utente.
+              </p>
+
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+  </div>
+</div>
+
+{% endblock enfermagem_content %}

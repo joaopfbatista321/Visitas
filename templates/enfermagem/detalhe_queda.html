@@ -1,0 +1,664 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}
+  Ficha de notificação de queda
+{% endblock title %}
+
+{% block enfermagem_content %}
+
+<style>
+  .queda-numero {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: var(--bs-danger);
+    color: #fff;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .queda-lista {
+    margin-bottom: 0;
+    padding-left: 1.2rem;
+  }
+
+  .queda-lista li + li {
+    margin-top: 0.25rem;
+  }
+
+  @media print {
+    .d-print-none,
+    .pc-sidebar,
+    .pc-header {
+      display: none !important;
+    }
+
+    .pc-container {
+      margin-left: 0 !important;
+    }
+
+    .card {
+      break-inside: avoid;
+      box-shadow: none !important;
+      border: 1px solid #dee2e6 !important;
+    }
+  }
+</style>
+
+<!-- Cabeçalho -->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+
+  <div>
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+      <h4 class="mb-0">
+        Ficha de notificação de queda
+      </h4>
+
+      <span
+        class="badge
+          {% if queda.gravidade == 'SEM_LESAO' %}
+            bg-success
+          {% elif queda.gravidade == 'MINOR' %}
+            bg-info
+          {% elif queda.gravidade == 'MODERADA' %}
+            bg-warning text-dark
+          {% else %}
+            bg-danger
+          {% endif %}
+        "
+      >
+        {{ queda.get_gravidade_display }}
+      </span>
+
+      {% if registo.visibilidade == "CONFIDENCIAL" %}
+        <span class="badge bg-danger">Apenas eu</span>
+      {% elif registo.visibilidade == "GRUPO" %}
+        <span class="badge bg-warning text-dark">
+          Grupo profissional
+        </span>
+      {% else %}
+        <span class="badge bg-success">Todos</span>
+      {% endif %}
+    </div>
+
+    <p class="text-muted mb-0">
+      <strong>{{ registo.utente.nome }}</strong>
+      · Processo {{ registo.utente.numero_processo }}
+      · Queda em {{ queda.data_hora_queda|date:"d/m/Y H:i" }}
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2 d-print-none">
+
+    <button
+      type="button"
+      class="btn btn-outline-secondary"
+      onclick="window.print()"
+    >
+      <i data-feather="printer" class="me-1"></i>
+      Imprimir
+    </button>
+
+    {% if pode_editar %}
+      <a
+        href="{% url 'enfermagem:editar_queda' queda.pk %}"
+        class="btn btn-warning"
+      >
+        <i data-feather="edit-2" class="me-1"></i>
+        Editar ficha
+      </a>
+    {% endif %}
+
+    <a
+      href="{% url 'enfermagem:registos_utente' registo.utente.pk %}"
+      class="btn btn-outline-secondary"
+    >
+      Voltar ao histórico
+    </a>
+
+  </div>
+</div>
+
+<!-- Prazo -->
+{% if queda.notificacao_fora_prazo %}
+  <div class="alert alert-danger">
+    <strong>Notificação registada fora do prazo de 24 horas.</strong>
+
+    <div class="small mt-1">
+      Prazo limite:
+      {{ queda.prazo_limite_notificacao|date:"d/m/Y H:i" }}.
+      Registo criado em {{ queda.criado_em|date:"d/m/Y H:i" }}.
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-success">
+    <strong>Notificação registada dentro do prazo de 24 horas.</strong>
+
+    <div class="small mt-1">
+      Prazo limite:
+      {{ queda.prazo_limite_notificacao|date:"d/m/Y H:i" }}.
+    </div>
+  </div>
+{% endif %}
+
+<!-- 1. Identificação -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">1</span>
+      <h5 class="mb-0">Identificação do utente</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-md-4">
+        <small class="text-muted d-block">Nome</small>
+        <strong>{{ registo.utente.nome }}</strong>
+      </div>
+
+      <div class="col-md-2">
+        <small class="text-muted d-block">Processo</small>
+        <strong>{{ registo.utente.numero_processo }}</strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Data de nascimento</small>
+        <strong>
+          {{ registo.utente.data_nascimento|date:"d/m/Y"|default:"—" }}
+        </strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Idade na ocorrência</small>
+        <strong>
+          {{ queda.identificacao_utente.idade|default:"—" }}
+          {% if queda.identificacao_utente.idade %}anos{% endif %}
+        </strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Género</small>
+        <strong>
+          {{ queda.identificacao_utente.genero|default:"—" }}
+        </strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Serviço/unidade</small>
+        <strong>{{ queda.servico_unidade|default:"—" }}</strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Quarto</small>
+        <strong>
+          {{ queda.identificacao_utente.quarto|default:"—" }}
+        </strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Piso</small>
+        <strong>
+          {{ queda.identificacao_utente.piso|default:"—" }}
+        </strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Diagnóstico principal</small>
+        <div>{{ queda.diagnostico_principal|default:"—"|linebreaksbr }}</div>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Médico assistente</small>
+        <strong>{{ queda.medico_assistente|default:"—" }}</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 2. Ocorrência -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">2</span>
+      <h5 class="mb-0">Dados da ocorrência</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-md-4">
+        <small class="text-muted d-block">Data e hora da queda</small>
+        <strong>{{ queda.data_hora_queda|date:"d/m/Y H:i" }}</strong>
+      </div>
+
+      <div class="col-md-4">
+        <small class="text-muted d-block">Local exato</small>
+        <strong>{{ queda.get_local_queda_display }}</strong>
+      </div>
+
+      <div class="col-md-4">
+        <small class="text-muted d-block">Outro local/detalhe</small>
+        <strong>{{ queda.local_detalhe|default:"—" }}</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 3. Classificação -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">3</span>
+      <h5 class="mb-0">Classificação da queda</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Tipo de queda</small>
+        <strong>{{ queda.get_tipo_queda_display }}</strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Grau de lesão</small>
+        <strong>{{ queda.get_gravidade_display }}</strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block mb-1">Lesões identificadas</small>
+
+        {% if lesoes %}
+          <ul class="queda-lista">
+            {% for item in lesoes %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span>—</span>
+        {% endif %}
+
+        {% if queda.lesao_outra %}
+          <div class="mt-2">
+            <strong>Outra:</strong> {{ queda.lesao_outra }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block mb-1">Localização das lesões</small>
+
+        {% if localizacoes_lesao %}
+          <ul class="queda-lista">
+            {% for item in localizacoes_lesao %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span>—</span>
+        {% endif %}
+
+        {% if queda.localizacao_outra %}
+          <div class="mt-2">
+            <strong>Outra:</strong> {{ queda.localizacao_outra }}
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 4. Circunstâncias -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">4</span>
+      <h5 class="mb-0">Circunstâncias da queda</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">O utente estava</small>
+        <strong>{{ queda.get_doente_estava_display|default:"—" }}</strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Atividade no momento</small>
+        <strong>
+          {{ queda.get_atividade_no_momento_display|default:"—" }}
+        </strong>
+
+        {% if queda.atividade_outra %}
+          <div class="small mt-1">
+            {{ queda.atividade_outra }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-12">
+        <small class="text-muted d-block mb-1">Fatores contribuintes</small>
+
+        {% if fatores_contribuintes %}
+          <ul class="queda-lista">
+            {% for item in fatores_contribuintes %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span>—</span>
+        {% endif %}
+
+        {% if queda.fator_contribuinte_outro %}
+          <div class="mt-2">
+            <strong>Outro:</strong>
+            {{ queda.fator_contribuinte_outro }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Grades laterais da cama</small>
+        <strong>{{ queda.get_grades_laterais_display|default:"—" }}</strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Dispositivo de auxílio</small>
+        <strong>
+          {{ queda.get_dispositivo_auxilio_display|default:"—" }}
+        </strong>
+
+        {% if queda.dispositivo_auxilio_outro %}
+          <div class="small mt-1">
+            {{ queda.dispositivo_auxilio_outro }}
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 5. Morse anterior -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">5</span>
+      <h5 class="mb-0">Avaliação de risco anterior</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Escala de Morse aplicada</small>
+        <strong>{{ queda.get_morse_aplicada_display|default:"—" }}</strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Score Morse anterior</small>
+        <strong>{{ queda.score_morse_previo|default:"—" }}</strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Nível de risco anterior</small>
+        <strong>{{ queda.get_nivel_risco_previo_display|default:"—" }}</strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Medidas preventivas</small>
+        <strong>
+          {{ queda.get_medidas_preventivas_implementadas_display|default:"—" }}
+        </strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 6. Intervenções -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">6</span>
+      <h5 class="mb-0">Intervenções imediatas</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-12">
+        <small class="text-muted d-block mb-1">Intervenções efetuadas</small>
+
+        {% if intervencoes %}
+          <ul class="queda-lista">
+            {% for item in intervencoes %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span>—</span>
+        {% endif %}
+
+        {% if queda.intervencao_outra %}
+          <div class="mt-2">
+            <strong>Outra:</strong> {{ queda.intervencao_outra }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-4">
+        <small class="text-muted d-block">Médico notificado</small>
+        <strong>{{ queda.get_medico_notificado_display|default:"—" }}</strong>
+      </div>
+
+      <div class="col-md-8">
+        <small class="text-muted d-block">Data e hora</small>
+        <strong>
+          {{ queda.medico_notificado_em|date:"d/m/Y H:i"|default:"—" }}
+        </strong>
+      </div>
+
+      {% if queda.medico_nao_notificado_justificacao %}
+        <div class="col-12">
+          <small class="text-muted d-block">
+            Justificação para médico não notificado
+          </small>
+
+          <div>
+            {{ queda.medico_nao_notificado_justificacao|linebreaksbr }}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="col-md-4">
+        <small class="text-muted d-block">Familiar notificado</small>
+        <strong>
+          {{ queda.get_familiar_notificado_display|default:"—" }}
+        </strong>
+      </div>
+
+      <div class="col-md-8">
+        <small class="text-muted d-block">Data e hora</small>
+        <strong>
+          {{ queda.familiar_notificado_em|date:"d/m/Y H:i"|default:"—" }}
+        </strong>
+      </div>
+
+      <div class="col-12">
+        <small class="text-muted d-block">Descrição da queda</small>
+
+        <div class="border rounded bg-light p-3 mt-1">
+          {{ queda.descricao_ocorrencia|linebreaksbr }}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 7. Seguimento -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">7</span>
+      <h5 class="mb-0">Medidas corretivas e seguimento</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Reavaliação Morse pós-queda</small>
+        <strong>
+          {{ queda.get_reavaliacao_morse_estado_display|default:"—" }}
+        </strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Novo score Morse</small>
+        <strong>{{ queda.score_morse_pos|default:"—" }}</strong>
+      </div>
+
+      <div class="col-12">
+        <small class="text-muted d-block mb-1">
+          Medidas corretivas implementadas
+        </small>
+
+        {% if medidas_corretivas %}
+          <ul class="queda-lista">
+            {% for item in medidas_corretivas %}
+              <li>{{ item }}</li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <span>—</span>
+        {% endif %}
+
+        {% if queda.medida_corretiva_outra %}
+          <div class="mt-2">
+            <strong>Outra:</strong>
+            {{ queda.medida_corretiva_outra }}
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-12">
+        <small class="text-muted d-block">Observações/seguimento</small>
+
+        <div class="mt-1">
+          {{ queda.observacoes|default:"—"|linebreaksbr }}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 8. Notificação institucional -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">8</span>
+      <h5 class="mb-0">Notificação institucional</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">
+          Introduzido no sistema de notificação
+        </small>
+
+        <strong>
+          {{ queda.get_notificacao_institucional_estado_display }}
+        </strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">
+          Data da notificação institucional
+        </small>
+
+        <strong>
+          {{ queda.data_notificacao_institucional|date:"d/m/Y"|default:"—" }}
+        </strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 9. Notificador -->
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header">
+    <div class="d-flex align-items-center gap-2">
+      <span class="queda-numero">9</span>
+      <h5 class="mb-0">Identificação do notificador</h5>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row g-3">
+
+      <div class="col-md-4">
+        <small class="text-muted d-block">Profissional</small>
+        <strong>
+          {{ registo.profissional.get_full_name|default:registo.profissional.username }}
+        </strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Data do registo</small>
+        <strong>{{ registo.data_registo|date:"d/m/Y H:i" }}</strong>
+      </div>
+
+      <div class="col-md-2">
+        <small class="text-muted d-block">Turno</small>
+        <strong>{{ registo.get_turno_display|default:"—" }}</strong>
+      </div>
+
+      <div class="col-md-3">
+        <small class="text-muted d-block">Visibilidade</small>
+        <strong>{{ registo.get_visibilidade_display }}</strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Criado no sistema</small>
+        <strong>{{ queda.criado_em|date:"d/m/Y H:i" }}</strong>
+      </div>
+
+      <div class="col-md-6">
+        <small class="text-muted d-block">Última alteração</small>
+        <strong>{{ queda.atualizado_em|date:"d/m/Y H:i" }}</strong>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% if not pode_editar %}
+  <div class="alert alert-info d-print-none">
+    Pode consultar esta ficha, mas apenas o profissional
+    que a criou pode alterá-la.
+  </div>
+{% endif %}
+
+{% endblock enfermagem_content %}

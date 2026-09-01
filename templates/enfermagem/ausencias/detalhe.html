@@ -1,0 +1,122 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}Detalhe da ausência{% endblock title %}
+
+{% block enfermagem_content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+  <div>
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+      <h4 class="mb-0">{{ ausencia.get_tipo_display }}</h4>
+      {% if ausencia.estado == "ATIVA" %}
+        <span class="badge bg-danger">Utente ausente</span>
+      {% elif ausencia.estado == "TERMINADA" %}
+        <span class="badge bg-success">Regresso registado</span>
+      {% else %}
+        <span class="badge bg-secondary">Cancelada</span>
+      {% endif %}
+    </div>
+    <p class="text-muted mb-0">
+      <strong>{{ ausencia.utente.nome }}</strong> · Processo {{ ausencia.utente.numero_processo }}
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+    {% if ausencia.estado == "ATIVA" %}
+      <a href="{% url 'enfermagem:editar_ausencia' ausencia.pk %}" class="btn btn-outline-warning">Editar</a>
+      <a href="{% url 'enfermagem:registar_regresso_ausencia' ausencia.pk %}" class="btn btn-success">
+        <i data-feather="log-in" class="me-1"></i>Registar regresso
+      </a>
+    {% endif %}
+    <a href="{% url 'enfermagem:lista_ausencias' %}" class="btn btn-outline-secondary">Voltar à lista</a>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header"><h5 class="mb-0">Dados da ocorrência</h5></div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-6"><small class="text-muted d-block">Início</small><strong>{{ ausencia.data_hora_inicio|date:"d/m/Y H:i" }}</strong></div>
+          <div class="col-md-6"><small class="text-muted d-block">Regresso previsto</small><strong>{{ ausencia.data_hora_fim_prevista|date:"d/m/Y H:i"|default:"Sem previsão" }}</strong></div>
+          <div class="col-md-6"><small class="text-muted d-block">Regresso efetivo</small><strong>{{ ausencia.data_hora_regresso|date:"d/m/Y H:i"|default:"Ainda ausente" }}</strong></div>
+          <div class="col-md-6"><small class="text-muted d-block">Destino</small><strong>{{ ausencia.destino|default:"Não indicado" }}</strong></div>
+          <div class="col-12"><small class="text-muted d-block">Motivo</small><div>{{ ausencia.motivo|linebreaksbr }}</div></div>
+          <div class="col-12"><small class="text-muted d-block">Observações</small><div>{{ ausencia.observacoes|linebreaksbr|default:"Sem observações." }}</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-1">Impacto na Reabilitação</h5>
+        <small class="text-muted">Marcações atualmente canceladas por esta ausência.</small>
+      </div>
+      <div class="card-body table-responsive">
+        <table class="table table-sm table-hover align-middle mb-0">
+          <thead><tr><th>Data</th><th>Área</th><th>Sessão</th><th>Estado</th><th></th></tr></thead>
+          <tbody>
+            {% for participacao in ausencia.participacoes_reabilitacao_canceladas.all %}
+              <tr>
+                <td class="text-nowrap">{{ participacao.sessao.inicio|date:"d/m/Y H:i" }}</td>
+                <td>{{ participacao.sessao.get_area_display }}</td>
+                <td>{{ participacao.sessao.titulo }}</td>
+                <td><span class="badge bg-secondary">{{ participacao.get_estado_display }}</span></td>
+                <td class="text-end"><a href="{% url 'fisioterapia:detalhe_sessao' participacao.sessao.pk %}" class="btn btn-sm btn-outline-primary">Abrir</a></td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Não existem marcações canceladas por esta ausência.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-5">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header"><h5 class="mb-0">Registo</h5></div>
+      <div class="card-body">
+        <p><strong>Criado por:</strong><br>{{ ausencia.criado_por.get_full_name|default:ausencia.criado_por.username }}</p>
+        <p><strong>Criado em:</strong><br>{{ ausencia.criado_em|date:"d/m/Y H:i" }}</p>
+        {% if ausencia.estado_atualizado_por %}
+          <p><strong>Último estado por:</strong><br>{{ ausencia.estado_atualizado_por.get_full_name|default:ausencia.estado_atualizado_por.username }}</p>
+        {% endif %}
+        <p class="mb-0"><strong>Atualizado em:</strong><br>{{ ausencia.atualizado_em|date:"d/m/Y H:i" }}</p>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header"><h5 class="mb-0">Histórico</h5></div>
+      <div class="card-body">
+        <div class="list-group list-group-flush">
+          {% for item in ausencia.historico.all %}
+            <div class="list-group-item px-0">
+              <div class="d-flex justify-content-between gap-2">
+                <strong>{{ item.get_acao_display }}</strong>
+                <small class="text-muted text-nowrap">{{ item.criado_em|date:"d/m/Y H:i" }}</small>
+              </div>
+              <div class="small text-muted">{{ item.profissional.get_full_name|default:item.profissional.username }}</div>
+            </div>
+          {% empty %}
+            <span class="text-muted">Sem histórico.</span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    {% if ausencia.estado == "ATIVA" %}
+      <div class="card border-danger shadow-sm">
+        <div class="card-body">
+          <h6 class="text-danger">Cancelar registo</h6>
+          <p class="small text-muted">Use apenas quando a ausência foi registada por engano.</p>
+          <form method="post" action="{% url 'enfermagem:cancelar_ausencia' ausencia.pk %}" onsubmit="return confirm('Confirma o cancelamento deste registo?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-sm btn-outline-danger">Cancelar ocorrência</button>
+          </form>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock enfermagem_content %}

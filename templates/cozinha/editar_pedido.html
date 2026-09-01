@@ -1,0 +1,106 @@
+{% extends "cozinha/base_cozinha.html" %}
+
+{% block cozinha_content %}
+<form method="post" novalidate>
+  {% csrf_token %}
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+          <h5 class="mb-0">{{ pedido.get_tipo_display }}</h5>
+          {% if tipo_pedido == "REFEICOES" %}<span class="badge bg-warning text-dark">Refeições</span>
+          {% else %}<span class="badge bg-info">Suplementos</span>{% endif %}
+        </div>
+        <p class="text-muted mb-0">{{ pedido.unidade.nome }} · {{ pedido.data_servico|date:"d/m/Y" }}</p>
+      </div>
+      <span class="badge bg-secondary">{{ pedido.get_estado_display }}</span>
+    </div>
+    <div class="card-body">
+      {% if tipo_pedido == "REFEICOES" %}
+        <div class="alert alert-warning">Editável até às 12:00, enquanto a Cozinha não tiver iniciado a preparação.</div>
+      {% else %}
+        <div class="alert alert-info">Editável até a Cozinha iniciar a preparação. Não existe limite das 12:00.</div>
+      {% endif %}
+
+      {% if formulario.non_field_errors %}
+        <div class="alert alert-danger">{% for erro in formulario.non_field_errors %}<div>{{ erro }}</div>{% endfor %}</div>
+      {% endif %}
+
+      {{ formulario.unidade.as_hidden }}
+      {{ formulario.data_servico.as_hidden }}
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <span class="form-label d-block">Unidade/piso</span><strong>{{ pedido.unidade.nome }}</strong>
+          {% for erro in formulario.unidade.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+        </div>
+        <div class="col-md-6">
+          <span class="form-label d-block">{% if tipo_pedido == "REFEICOES" %}Data das refeições{% else %}Data do pedido{% endif %}</span>
+          <strong>{{ pedido.data_servico|date:"d/m/Y" }}</strong>
+          {% for erro in formulario.data_servico.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+        </div>
+        <div class="col-12">
+          <label for="{{ formulario.observacoes_enfermagem.id_for_label }}" class="form-label">{{ formulario.observacoes_enfermagem.label }}</label>
+          {{ formulario.observacoes_enfermagem }}
+          {% for erro in formulario.observacoes_enfermagem.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-header">
+      <h5 class="mb-1">{% if tipo_pedido == "REFEICOES" %}Número de refeições{% else %}Suplementos e produtos{% endif %}</h5>
+      <p class="text-muted mb-0">Indique apenas as quantidades necessárias. Os restantes campos podem ficar a zero.</p>
+    </div>
+    <div class="card-body table-responsive">
+      {{ linhas_formset.management_form }}
+      {% if linhas_formset.non_form_errors %}
+        <div class="alert alert-danger">{% for erro in linhas_formset.non_form_errors %}<div>{{ erro }}</div>{% endfor %}</div>
+      {% endif %}
+
+      <table class="table table-sm table-hover align-middle">
+        <thead>
+          <tr>
+            {% if tipo_pedido == "REFEICOES" %}<th>Refeição</th><th>Dieta</th>
+            {% else %}<th>Produto</th><th>Unidade</th>{% endif %}
+            <th style="width:150px">Quantidade</th>
+            <th style="min-width:240px">Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for linha in linhas_formset %}
+            <tr>
+              {% for hidden in linha.hidden_fields %}{{ hidden }}{% endfor %}
+              {% if tipo_pedido == "REFEICOES" %}
+                <td><strong>{{ linha.instance.tipo_refeicao.nome }}</strong></td><td>{{ linha.instance.tipo_dieta.nome }}</td>
+              {% else %}
+                <td><strong>{{ linha.instance.produto.nome }}</strong></td><td>{{ linha.instance.produto.get_unidade_medida_display }}</td>
+              {% endif %}
+              <td>
+                {{ linha.quantidade_solicitada }}
+                {% for erro in linha.quantidade_solicitada.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+              </td>
+              <td>
+                {{ linha.observacao_enfermagem }}
+                {% for erro in linha.observacao_enfermagem.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-center text-muted py-4">Não existem linhas configuradas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between flex-wrap gap-2">
+    <a href="{% url 'cozinha:detalhe_pedido' pedido.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+    <div class="d-flex flex-wrap gap-2">
+      <button name="acao" value="guardar" class="btn btn-outline-warning" type="submit">Guardar</button>
+      {% if pode_enviar %}<button name="acao" value="enviar" class="btn btn-warning" type="submit">Guardar e enviar à Cozinha</button>{% endif %}
+    </div>
+  </div>
+</form>
+{% endblock cozinha_content %}

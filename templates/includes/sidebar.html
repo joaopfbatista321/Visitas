@@ -2,6 +2,7 @@
 
 <nav class="pc-sidebar">
   <div class="navbar-wrapper">
+
     <div class="m-header">
       <a href="{% url 'index' %}" class="b-brand text-primary">
         <div style="display: flex; align-items: center;">
@@ -10,7 +11,17 @@
             alt="Logótipo da SCME"
             style="width: 60px; height: 60px; object-fit: contain;"
           >
-          <span style="margin-left: 20px; color: white; font-weight: normal; font-size: 60px; position: relative; top: 5px;">
+
+          <span
+            style="
+              margin-left: 20px;
+              color: white;
+              font-weight: normal;
+              font-size: 60px;
+              position: relative;
+              top: 5px;
+            "
+          >
             UCCI
           </span>
         </div>
@@ -20,183 +31,751 @@
     <div class="navbar-content">
       <ul class="pc-navbar">
 
-        {% if request.user.is_superuser %}
+        {% if request.user.is_authenticated %}
+
+          <!-- PORTAL -->
           <li class="pc-item pc-caption">
-            <label>Administração</label>
-            <i data-feather="shield"></i>
+            <label>Portal</label>
+            <i data-feather="grid"></i>
           </li>
 
-          <li class="pc-item{% if request.resolver_match.app_name == 'admin' %} active{% endif %}">
-            <a href="{% url 'admin:index' %}" class="pc-link">
-              <span class="pc-micon"><i data-feather="settings"></i></span>
-              <span class="pc-mtext">Painel Admin</span>
+          <li class="pc-item{% if request.resolver_match.url_name == 'index' or request.resolver_match.url_name == 'perfil_inicio' %} active{% endif %}">
+            <a href="{% url 'index' %}" class="pc-link">
+              <span class="pc-micon">
+                <i data-feather="home"></i>
+              </span>
+
+              <span class="pc-mtext">
+                Áreas profissionais
+              </span>
             </a>
           </li>
-        {% endif %}
 
-        <!-- APLICAÇÃO -->
-        <li class="pc-item pc-caption">
-          <label>Aplicação</label>
-          <i data-feather="grid"></i>
-        </li>
+          <li class="pc-item{% if request.resolver_match.url_name == 'acessos_rapidos' %} active{% endif %}">
+            <a href="{% url 'acessos_rapidos' %}" class="pc-link">
+              <span class="pc-micon">
+                <i data-feather="external-link"></i>
+              </span>
 
-        <li class="pc-item{% if request.resolver_match.url_name == 'index' %} active{% endif %}">
-          <a href="{% url 'index' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="home"></i></span>
-            <span class="pc-mtext">Dashboard geral</span>
-          </a>
-        </li>
+              <span class="pc-mtext">
+                Acessos rápidos
+              </span>
+            </a>
+          </li>
 
-        <li class="pc-item{% if request.resolver_match.url_name == 'acessos_rapidos' %} active{% endif %}">
-          <a href="{% url 'acessos_rapidos' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="external-link"></i></span>
-            <span class="pc-mtext">Acessos rápidos</span>
-          </a>
-        </li>
+          {% if pode_ver_dashboard_geral %}
+            <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_geral' %} active{% endif %}">
+              <a href="{% url 'dashboard_geral' %}" class="pc-link">
+                <span class="pc-micon">
+                  <i data-feather="bar-chart-2"></i>
+                </span>
 
-        <!-- GESTÃO DE VISITAS -->
-        <li class="pc-item pc-caption">
-          <label>Gestão de Visitas</label>
-          <i data-feather="user-check"></i>
-        </li>
-
-        <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_visitas' %} active{% endif %}">
-          <a href="{% url 'visitas:dashboard_visitas' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="activity"></i></span>
-            <span class="pc-mtext">Dashboard visitas</span>
-          </a>
-        </li>
-
-        <!-- UTENTES -->
-        <li class="pc-item pc-hasmenu{% if request.resolver_match.url_name == 'lista_utentes' or request.resolver_match.url_name == 'criar_utente' or request.resolver_match.url_name == 'isolamentos_ativos' %} active pc-trigger{% endif %}">
-          <a href="#!" class="pc-link">
-            <span class="pc-micon"><i data-feather="users"></i></span>
-            <span class="pc-mtext">Utentes</span>
-            <span class="pc-arrow"><i class="ti ti-chevron-right"></i></span>
-          </a>
-          <ul class="pc-submenu">
-            <li class="pc-item{% if request.resolver_match.url_name == 'lista_utentes' %} active{% endif %}">
-              <a href="{% url 'visitas:lista_utentes' %}" class="pc-link">Listar utentes</a>
-            </li>
-            <li class="pc-item{% if request.resolver_match.url_name == 'criar_utente' %} active{% endif %}">
-              <a href="{% url 'visitas:criar_utente' %}" class="pc-link">Novo utente</a>
-            </li>
-            <li class="pc-item{% if request.resolver_match.url_name == 'isolamentos_ativos' %} active{% endif %}">
-              <a href="{% url 'visitas:isolamentos_ativos' %}" class="pc-link">
-                Isolamentos ativos
+                <span class="pc-mtext">
+                  Dashboard geral
+                </span>
               </a>
             </li>
-          </ul>
-        </li>
+          {% endif %}
 
-        <!-- REGISTO DE VISITAS -->
-        <li class="pc-item pc-caption">
-          <label>Registo de Visitas</label>
-          <i data-feather="log-in"></i>
-        </li>
 
-        <li class="pc-item{% if request.resolver_match.url_name == 'escolher_utente_para_visita' %} active{% endif %}">
-          <a href="{% url 'visitas:escolher_utente_para_visita' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="user-plus"></i></span>
-            <span class="pc-mtext">Registar nova visita</span>
-          </a>
-        </li>
-
-        <li class="pc-item{% if request.resolver_match.url_name == 'visitas_ativas' %} active{% endif %}">
-          <a href="{% url 'visitas:visitas_ativas' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="log-out"></i></span>
-            <span class="pc-mtext">Registar saída de visita</span>
-          </a>
-        </li>
-
-        <li class="pc-item{% if request.resolver_match.url_name == 'visitas_hoje' %} active{% endif %}">
-          <a href="{% url 'visitas:visitas_hoje' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="sunrise"></i></span>
-            <span class="pc-mtext">Visitas de hoje</span>
-          </a>
-        </li>
-
-        <li class="pc-item{% if request.resolver_match.url_name == 'visitas_relatorio' %} active{% endif %}">
-          <a href="{% url 'visitas:visitas_relatorio' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="file-text"></i></span>
-            <span class="pc-mtext">Relatório de visitas</span>
-          </a>
-        </li>
-
-        <!-- TRANSPORTES DE UTENTES -->
-        <li class="pc-item pc-caption">
-          <label>Transportes de Utentes</label>
-          <i data-feather="truck"></i>
-        </li>
-
-        <li class="pc-item{% if request.resolver_match.url_name == 'calendario_transportes' %} active{% endif %}">
-          <a href="{% url 'visitas:calendario_transportes' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="calendar"></i></span>
-            <span class="pc-mtext">Calendário</span>
-          </a>
-        </li>
-
-        <li class="pc-item{% if request.resolver_match.url_name == 'criar_transporte' %} active{% endif %}">
-          <a href="{% url 'visitas:criar_transporte' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="plus-circle"></i></span>
-            <span class="pc-mtext">Nova marcação</span>
-          </a>
-        </li>
-
-        <li class="pc-item{% if request.resolver_match.url_name == 'lista_transportes' %} active{% endif %}">
-          <a href="{% url 'visitas:lista_transportes' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="list"></i></span>
-            <span class="pc-mtext">Listar transportes</span>
-          </a>
-        </li>
-
-        <li class="pc-item pc-hasmenu{% if request.resolver_match.url_name == 'lista_viaturas' or request.resolver_match.url_name == 'criar_viatura' or request.resolver_match.url_name == 'editar_viatura' or request.resolver_match.url_name == 'lista_condutores' or request.resolver_match.url_name == 'criar_condutor' or request.resolver_match.url_name == 'editar_condutor' or request.resolver_match.url_name == 'lista_indisponibilidades' or request.resolver_match.url_name == 'criar_indisponibilidade' or request.resolver_match.url_name == 'editar_indisponibilidade' %} active pc-trigger{% endif %}">
-          <a href="#!" class="pc-link">
-            <span class="pc-micon"><i data-feather="sliders"></i></span>
-            <span class="pc-mtext">Gestão de recursos</span>
-            <span class="pc-arrow"><i class="ti ti-chevron-right"></i></span>
-          </a>
-          <ul class="pc-submenu">
-            <li class="pc-item{% if request.resolver_match.url_name == 'lista_viaturas' or request.resolver_match.url_name == 'criar_viatura' or request.resolver_match.url_name == 'editar_viatura' %} active{% endif %}">
-              <a href="{% url 'visitas:lista_viaturas' %}" class="pc-link">Viaturas</a>
+          <!-- UTENTES -->
+          {% if pode_ver_utentes %}
+            <li class="pc-item pc-caption">
+              <label>Utentes</label>
+              <i data-feather="users"></i>
             </li>
-            <li class="pc-item{% if request.resolver_match.url_name == 'lista_condutores' or request.resolver_match.url_name == 'criar_condutor' or request.resolver_match.url_name == 'editar_condutor' %} active{% endif %}">
-              <a href="{% url 'visitas:lista_condutores' %}" class="pc-link">Condutores</a>
+
+            <li class="pc-item pc-hasmenu{% if request.resolver_match.url_name == 'lista_utentes' or request.resolver_match.url_name == 'detalhe_utente' or request.resolver_match.url_name == 'criar_utente' or request.resolver_match.url_name == 'editar_utente' or request.resolver_match.url_name == 'saida_utente' or request.resolver_match.url_name == 'isolamentos_ativos' or request.resolver_match.url_name == 'criar_isolamento' or request.resolver_match.url_name == 'editar_isolamento' %} active pc-trigger{% endif %}">
+              <a href="#!" class="pc-link">
+                <span class="pc-micon">
+                  <i data-feather="users"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Utentes
+                </span>
+
+                <span class="pc-arrow">
+                  <i class="ti ti-chevron-right"></i>
+                </span>
+              </a>
+
+              <ul class="pc-submenu">
+                <li class="pc-item{% if request.resolver_match.url_name == 'lista_utentes' %} active{% endif %}">
+                  <a
+                    href="{% url 'visitas:lista_utentes' %}"
+                    class="pc-link"
+                  >
+                    Consultar utentes
+                  </a>
+                </li>
+
+                {% if pode_gerir_utentes %}
+                  <li class="pc-item{% if request.resolver_match.url_name == 'criar_utente' %} active{% endif %}">
+                    <a
+                      href="{% url 'visitas:criar_utente' %}"
+                      class="pc-link"
+                    >
+                      Novo utente
+                    </a>
+                  </li>
+                {% endif %}
+
+                {% if pode_ver_isolamentos %}
+                  <li class="pc-item{% if request.resolver_match.url_name == 'isolamentos_ativos' %} active{% endif %}">
+                    <a
+                      href="{% url 'visitas:isolamentos_ativos' %}"
+                      class="pc-link"
+                    >
+                      Isolamentos ativos
+                    </a>
+                  </li>
+                {% endif %}
+              </ul>
             </li>
-            <li class="pc-item{% if request.resolver_match.url_name == 'lista_indisponibilidades' or request.resolver_match.url_name == 'criar_indisponibilidade' or request.resolver_match.url_name == 'editar_indisponibilidade' %} active{% endif %}">
-              <a href="{% url 'visitas:lista_indisponibilidades' %}" class="pc-link">Indisponibilidades</a>
+          {% endif %}
+
+          <!-- ENFERMAGEM -->
+          {% if pode_ver_registos_enfermagem or pode_criar_registos_enfermagem %}
+
+            <li class="pc-item pc-caption">
+              <label>Enfermagem</label>
+              <i data-feather="heart"></i>
             </li>
-          </ul>
-        </li>
 
-        <li class="pc-item{% if request.resolver_match.url_name == 'relatorio_diario_transportes' %} active{% endif %}">
-          <a href="{% url 'visitas:relatorio_diario_transportes' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="printer"></i></span>
-            <span class="pc-mtext">Folha diária</span>
-          </a>
-        </li>
+            <li class="pc-item pc-hasmenu{% if request.resolver_match.namespace == 'enfermagem' %} active pc-trigger{% endif %}">
 
-        <!-- EXTERNOS -->
-        <li class="pc-item pc-caption">
-          <label>Externos / Serviços</label>
-          <i data-feather="briefcase"></i>
-        </li>
+              <a href="#!" class="pc-link">
+                <span class="pc-micon">
+                  <i data-feather="heart"></i>
+                </span>
 
-        <li class="pc-item{% if request.resolver_match.url_name == 'lista_externos' %} active{% endif %}">
-          <a href="{% url 'visitas:lista_externos' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="users"></i></span>
-            <span class="pc-mtext">Entradas externas</span>
-          </a>
-        </li>
+                <span class="pc-mtext">
+                  Enfermagem
+                </span>
 
-        <li class="pc-item{% if request.resolver_match.url_name == 'registar_entrada_externo' %} active{% endif %}">
-          <a href="{% url 'visitas:registar_entrada_externo' %}" class="pc-link">
-            <span class="pc-micon"><i data-feather="log-in"></i></span>
-            <span class="pc-mtext">Nova entrada externa</span>
-          </a>
-        </li>
+                <span class="pc-arrow">
+                  <i class="ti ti-chevron-right"></i>
+                </span>
+              </a>
 
-        {% if request.user.is_authenticated %}
+              <ul class="pc-submenu">
+
+                {% if pode_ver_registos_enfermagem %}
+                  <li class="pc-item">
+                    <a
+                      href="{% url 'visitas:lista_utentes' %}"
+                      class="pc-link"
+                    >
+                      Registos por utente
+                    </a>
+                  </li>
+
+                  <li class="pc-item{% if request.resolver_match.namespace == 'enfermagem' and request.resolver_match.url_name == 'lista_quedas' %} active{% endif %}">
+                    <a
+                      href="{% url 'enfermagem:lista_quedas' %}"
+                      class="pc-link"
+                    >
+                      Registo de quedas
+                    </a>
+                  </li>
+                {% endif %}
+
+                {% if pode_criar_registos_enfermagem %}
+                  <li class="pc-item">
+                    <a
+                      href="{% url 'visitas:lista_utentes' %}"
+                      class="pc-link"
+                    >
+                      Criar registo
+                    </a>
+                  </li>
+                {% endif %}
+
+                {% if perms.enfermagem.view_tiporegistoenfermagem %}
+                  <li class="pc-item{% if request.resolver_match.url_name == 'enfermagem_tiporegistoenfermagem_changelist' %} active{% endif %}">
+                    <a
+                      href="{% url 'admin:enfermagem_tiporegistoenfermagem_changelist' %}"
+                      class="pc-link"
+                    >
+                      Tipos de registo
+                    </a>
+                  </li>
+                {% endif %}
+
+              </ul>
+            </li>
+
+          {% endif %}
+
+          <!-- COZINHA -->
+          {% if pode_ver_cozinha %}
+            <li class="pc-item pc-caption">
+              <label>Cozinha</label>
+              <i data-feather="coffee"></i>
+            </li>
+
+            <li class="pc-item pc-hasmenu{% if request.resolver_match.namespace == 'cozinha' %} active pc-trigger{% endif %}">
+              <a href="#!" class="pc-link">
+                <span class="pc-micon">
+                  <i data-feather="coffee"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Cozinha e alimentação
+                </span>
+
+                <span class="pc-arrow">
+                  <i class="ti ti-chevron-right"></i>
+                </span>
+              </a>
+
+              <ul class="pc-submenu">
+                <li class="pc-item{% if request.resolver_match.namespace == 'cozinha' and request.resolver_match.url_name == 'lista_pedidos' %} active{% endif %}">
+                  <a
+                    href="{% url 'cozinha:lista_pedidos' %}"
+                    class="pc-link"
+                  >
+                    Pedidos à Cozinha
+                  </a>
+                </li>
+
+                {% if pode_criar_pedido_cozinha %}
+                  <li class="pc-item{% if request.resolver_match.namespace == 'cozinha' and request.resolver_match.url_name == 'criar_pedido' %} active{% endif %}">
+                    <a
+                      href="{% url 'cozinha:criar_pedido' %}"
+                      class="pc-link"
+                    >
+                      Novo pedido
+                    </a>
+                  </li>
+                {% endif %}
+
+                <li class="pc-item{% if request.resolver_match.namespace == 'cozinha' and request.resolver_match.url_name == 'mapa_diario' %} active{% endif %}">
+                  <a
+                    href="{% url 'cozinha:mapa_diario' %}"
+                    class="pc-link"
+                  >
+                    Mapa diário
+                  </a>
+                </li>
+
+                {% if pode_relatorios_cozinha %}
+                  <li class="pc-item{% if request.resolver_match.namespace == 'cozinha' and request.resolver_match.url_name == 'relatorio_mensal' %} active{% endif %}">
+                    <a
+                      href="{% url 'cozinha:relatorio_mensal' %}"
+                      class="pc-link"
+                    >
+                      Relatório mensal
+                    </a>
+                  </li>
+                {% endif %}
+              </ul>
+            </li>
+          {% endif %}
+
+          <!-- FISIOTERAPIA -->
+          {% if pode_gerir_fisioterapia %}
+            <li class="pc-item pc-caption">
+              <label>Fisioterapia</label>
+              <i data-feather="activity"></i>
+            </li>
+
+            <li class="pc-item pc-hasmenu{% if request.resolver_match.namespace == 'fisioterapia' or request.resolver_match.url_name == 'fisioterapia_tipointervencaofisioterapia_changelist' %} active pc-trigger{% endif %}">
+              <a href="#!" class="pc-link">
+                <span class="pc-micon">
+                  <i data-feather="activity"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Fisioterapia
+                </span>
+
+                <span class="pc-arrow">
+                  <i class="ti ti-chevron-right"></i>
+                </span>
+              </a>
+
+              <ul class="pc-submenu">
+
+                <li class="pc-item{% if request.resolver_match.namespace == 'fisioterapia' and request.resolver_match.url_name == 'calendario' %} active{% endif %}">
+                  <a
+                    href="{% url 'fisioterapia:calendario' %}"
+                    class="pc-link"
+                  >
+                    Calendário
+                  </a>
+                </li>
+
+                <li class="pc-item
+                  {% if request.resolver_match.namespace == 'fisioterapia' and request.resolver_match.url_name == 'alertas_clinicos' %}
+                    active
+                  {% endif %}
+                ">
+                  <a
+                    href="{% url 'fisioterapia:alertas_clinicos' %}"
+                    class="pc-link"
+                  >
+                    Alertas clínicos
+                  </a>
+                </li>
+
+                <li class="pc-item{% if request.resolver_match.namespace == 'fisioterapia' and request.resolver_match.url_name == 'lista_sessoes' and request.GET.por_validar != '1' %} active{% endif %}">
+                  <a
+                    href="{% url 'fisioterapia:lista_sessoes' %}"
+                    class="pc-link"
+                  >
+                    Lista de sessões
+                  </a>
+                </li>
+
+                <li class="pc-item{% if request.resolver_match.namespace == 'fisioterapia' and request.resolver_match.url_name == 'lista_sessoes' and request.GET.por_validar == '1' %} active{% endif %}">
+                  <a
+                    href="{% url 'fisioterapia:lista_sessoes' %}?por_validar=1"
+                    class="pc-link"
+                  >
+                    Presenças por validar
+                  </a>
+                </li>
+
+                <li class="pc-item{% if request.resolver_match.namespace == 'fisioterapia' and request.resolver_match.url_name == 'criar_sessao' %} active{% endif %}">
+                  <a
+                    href="{% url 'fisioterapia:criar_sessao' %}"
+                    class="pc-link"
+                  >
+                    Nova sessão
+                  </a>
+                </li>
+
+                <li class="pc-item">
+                  <a
+                    href="{% url 'visitas:lista_utentes' %}"
+                    class="pc-link"
+                  >
+                    Registos por utente
+                  </a>
+                </li>
+
+                {% if perms.fisioterapia.view_tipointervencaofisioterapia %}
+                  <li class="pc-item{% if request.resolver_match.url_name == 'fisioterapia_tipointervencaofisioterapia_changelist' %} active{% endif %}">
+                    <a
+                      href="{% url 'admin:fisioterapia_tipointervencaofisioterapia_changelist' %}"
+                      class="pc-link"
+                    >
+                      Tipos de intervenção
+                    </a>
+                  </li>
+                {% endif %}
+
+              </ul>
+            </li>
+          {% endif %}
+
+
+          <!-- PEDIDOS DE TRANSPORTE -->
+          {% if pode_ver_pedidos_transporte %}
+            <li class="pc-item pc-caption">
+              <label>Pedidos de Transporte</label>
+              <i data-feather="send"></i>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'lista_pedidos_transporte' or request.resolver_match.url_name == 'detalhe_pedido_transporte' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:lista_pedidos_transporte' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="list"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Todos os pedidos
+                </span>
+              </a>
+            </li>
+
+            {% if pode_pedir_transporte %}
+              <li class="pc-item{% if request.resolver_match.url_name == 'criar_pedido_transporte' %} active{% endif %}">
+                <a
+                  href="{% url 'visitas:criar_pedido_transporte' %}"
+                  class="pc-link"
+                >
+                  <span class="pc-micon">
+                    <i data-feather="plus-circle"></i>
+                  </span>
+
+                  <span class="pc-mtext">
+                    Novo pedido
+                  </span>
+                </a>
+              </li>
+            {% endif %}
+
+            {% if pode_validar_pedidos_transporte %}
+              <li class="pc-item{% if request.resolver_match.url_name == 'validar_pedido_transporte' %} active{% endif %}">
+                <a
+                  href="{% url 'visitas:lista_pedidos_transporte' %}?estado=POR_VALIDAR"
+                  class="pc-link"
+                >
+                  <span class="pc-micon">
+                    <i data-feather="check-square"></i>
+                  </span>
+
+                  <span class="pc-mtext">
+                    Pedidos por validar
+                  </span>
+                </a>
+              </li>
+            {% endif %}
+          {% endif %}
+
+
+          <!-- TRANSPORTES -->
+          {% if pode_ver_transportes %}
+            <li class="pc-item pc-caption">
+              <label>Transportes</label>
+              <i data-feather="truck"></i>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'calendario_transportes' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:calendario_transportes' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="calendar"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Calendário
+                </span>
+              </a>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'lista_transportes' or request.resolver_match.url_name == 'detalhe_transporte' or request.resolver_match.url_name == 'editar_transporte' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:lista_transportes' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="list"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Lista de transportes
+                </span>
+              </a>
+            </li>
+
+            {% if pode_confirmar_transporte_interno %}
+              <li class="pc-item">
+                <a
+                  href="{% url 'visitas:lista_transportes' %}?estado=PENDENTE&amp;meio=INSTITUICAO"
+                  class="pc-link"
+                >
+                  <span class="pc-micon">
+                    <i data-feather="alert-circle"></i>
+                  </span>
+
+                  <span class="pc-mtext">
+                    Internos por confirmar
+                  </span>
+                </a>
+              </li>
+            {% endif %}
+
+            {% if pode_confirmar_transporte_externo %}
+              <li class="pc-item">
+                <a
+                  href="{% url 'visitas:lista_transportes' %}?estado=PENDENTE&amp;meio=EXTERNO"
+                  class="pc-link"
+                >
+                  <span class="pc-micon">
+                    <i data-feather="check-circle"></i>
+                  </span>
+
+                  <span class="pc-mtext">
+                    Externos por confirmar
+                  </span>
+                </a>
+              </li>
+            {% endif %}
+
+            <li class="pc-item pc-hasmenu{% if request.resolver_match.url_name == 'lista_viaturas' or request.resolver_match.url_name == 'criar_viatura' or request.resolver_match.url_name == 'editar_viatura' or request.resolver_match.url_name == 'lista_condutores' or request.resolver_match.url_name == 'criar_condutor' or request.resolver_match.url_name == 'editar_condutor' or request.resolver_match.url_name == 'lista_indisponibilidades' or request.resolver_match.url_name == 'criar_indisponibilidade' or request.resolver_match.url_name == 'editar_indisponibilidade' %} active pc-trigger{% endif %}">
+              <a href="#!" class="pc-link">
+                <span class="pc-micon">
+                  <i data-feather="sliders"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Recursos
+                </span>
+
+                <span class="pc-arrow">
+                  <i class="ti ti-chevron-right"></i>
+                </span>
+              </a>
+
+              <ul class="pc-submenu">
+                <li class="pc-item">
+                  <a
+                    href="{% url 'visitas:lista_viaturas' %}"
+                    class="pc-link"
+                  >
+                    Viaturas
+                  </a>
+                </li>
+
+                <li class="pc-item">
+                  <a
+                    href="{% url 'visitas:lista_condutores' %}"
+                    class="pc-link"
+                  >
+                    Condutores
+                  </a>
+                </li>
+
+                <li class="pc-item">
+                  <a
+                    href="{% url 'visitas:lista_indisponibilidades' %}"
+                    class="pc-link"
+                  >
+                    Indisponibilidades
+                  </a>
+                </li>
+              </ul>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'relatorio_diario_transportes' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:relatorio_diario_transportes' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="printer"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Folha diária
+                </span>
+              </a>
+            </li>
+          {% endif %}
+
+
+          <!-- VISITAS -->
+          {% if pode_ver_visitas %}
+            <li class="pc-item pc-caption">
+              <label>Visitas</label>
+              <i data-feather="user-check"></i>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_visitas' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:dashboard_visitas' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="activity"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Dashboard de visitas
+                </span>
+              </a>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'escolher_utente_para_visita' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:escolher_utente_para_visita' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="user-plus"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Nova visita
+                </span>
+              </a>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'visitas_ativas' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:visitas_ativas' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="log-out"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Visitas em curso
+                </span>
+              </a>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'visitas_hoje' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:visitas_hoje' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="sunrise"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Visitas de hoje
+                </span>
+              </a>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'visitas_relatorio' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:visitas_relatorio' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="file-text"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Relatório de visitas
+                </span>
+              </a>
+            </li>
+          {% endif %}
+
+
+          <!-- EXTERNOS -->
+          {% if pode_ver_externos %}
+            <li class="pc-item pc-caption">
+              <label>Externos / Serviços</label>
+              <i data-feather="briefcase"></i>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'lista_externos' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:lista_externos' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="users"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Entradas externas
+                </span>
+              </a>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'registar_entrada_externo' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:registar_entrada_externo' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="log-in"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Nova entrada externa
+                </span>
+              </a>
+            </li>
+          {% endif %}
+
+
+          <!-- FINANCEIRO -->
+          {% if pode_ver_financeiro %}
+            <li class="pc-item pc-caption">
+              <label>Financeiro</label>
+              <i data-feather="credit-card"></i>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'lista_financeira_utentes' or request.resolver_match.url_name == 'financeiro_utente' %} active{% endif %}">
+              <a
+                href="{% url 'visitas:lista_financeira_utentes' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="credit-card"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Contas dos utentes
+                </span>
+              </a>
+            </li>
+          {% endif %}
+
+          {% if pode_ver_coordenacao %}
+            <li class="pc-item pc-caption">
+              <label>Coordenação</label>
+              <i data-feather="bar-chart-2"></i>
+            </li>
+
+            <li class="pc-item pc-hasmenu{% if request.resolver_match.app_name == 'coordenacao' %} active pc-trigger{% endif %}">
+              <a href="#!" class="pc-link">
+                <span class="pc-micon"><i data-feather="pie-chart"></i></span>
+                <span class="pc-mtext">Dashboards</span>
+                <span class="pc-arrow"><i class="ti ti-chevron-right"></i></span>
+              </a>
+              <ul class="pc-submenu">
+                <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_geral' %} active{% endif %}">
+                  <a href="{% url 'coordenacao:dashboard_geral' %}" class="pc-link">Visão geral</a>
+                </li>
+                <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_utentes' %} active{% endif %}">
+                  <a href="{% url 'coordenacao:dashboard_utentes' %}" class="pc-link">Utentes</a>
+                </li>
+                <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_visitas' %} active{% endif %}">
+                  <a href="{% url 'coordenacao:dashboard_visitas' %}" class="pc-link">Visitas</a>
+                </li>
+                <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_transportes' %} active{% endif %}">
+                  <a href="{% url 'coordenacao:dashboard_transportes' %}" class="pc-link">Transportes</a>
+                </li>
+                <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_enfermagem' %} active{% endif %}">
+                  <a href="{% url 'coordenacao:dashboard_enfermagem' %}" class="pc-link">Enfermagem</a>
+                </li>
+                <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_fisioterapia' %} active{% endif %}">
+                  <a href="{% url 'coordenacao:dashboard_fisioterapia' %}" class="pc-link">Fisioterapia</a>
+                </li>
+                <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_cozinha' %} active{% endif %}">
+                  <a href="{% url 'coordenacao:dashboard_cozinha' %}" class="pc-link">Cozinha</a>
+                </li>
+                <li class="pc-item{% if request.resolver_match.url_name == 'dashboard_financeiro' %} active{% endif %}">
+                  <a href="{% url 'coordenacao:dashboard_financeiro' %}" class="pc-link">Financeiro</a>
+                </li>
+              </ul>
+            </li>
+          {% endif %}
+
+
+          <!-- ADMINISTRAÇÃO -->
+          {% if request.user.is_staff %}
+            <li class="pc-item pc-caption">
+              <label>Administração</label>
+              <i data-feather="shield"></i>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.app_name == 'admin' %} active{% endif %}">
+              <a
+                href="{% url 'admin:index' %}"
+                class="pc-link"
+              >
+                <span class="pc-micon">
+                  <i data-feather="settings"></i>
+                </span>
+
+                <span class="pc-mtext">
+                  Painel Admin
+                </span>
+              </a>
+            </li>
+          {% endif %}
+
+
+          <!-- SESSÃO -->
           <li class="pc-item pc-caption">
             <label>Sessão</label>
             <i data-feather="user"></i>
@@ -204,10 +783,16 @@
 
           <li class="pc-item">
             <a href="{% url 'logout' %}" class="pc-link">
-              <span class="pc-micon"><i data-feather="log-out"></i></span>
-              <span class="pc-mtext">Logout</span>
+              <span class="pc-micon">
+                <i data-feather="log-out"></i>
+              </span>
+
+              <span class="pc-mtext">
+                Terminar sessão
+              </span>
             </a>
           </li>
+
         {% endif %}
 
       </ul>

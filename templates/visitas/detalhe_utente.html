@@ -4,119 +4,307 @@
 <div class="pc-container">
   <div class="pc-content">
 
-    <!-- TÍTULO + AÇÕES -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h2 class="mb-0">{{ utente.nome }}</h2>
+    <!-- TÍTULO E AÇÕES -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+      <h2 class="mb-0">
+        {{ utente.nome }}
+      </h2>
 
-      <div class="d-flex gap-1">
-        {% if utente.ativo %}
-        <a href="{% url 'visitas:saida_utente' utente.pk %}" class="btn btn-danger btn-sm">
-          Dar alta / Registar saída
-        </a>
+      <div class="d-flex flex-wrap gap-2">
+        {% if pode_gerir_utentes %}
+          {% if utente.ativo %}
+            <a
+              href="{% url 'visitas:saida_utente' utente.pk %}"
+              class="btn btn-danger btn-sm"
+            >
+              Dar alta / Registar saída
+            </a>
+          {% endif %}
+
+          <a
+            href="{% url 'visitas:editar_utente' utente.pk %}"
+            class="btn btn-warning btn-sm"
+          >
+            Editar utente
+          </a>
         {% endif %}
 
-        <a href="{% url 'visitas:editar_utente' utente.pk %}" class="btn btn-warning btn-sm">
-          Editar utente
-        </a>
-
-        {% if is_financeiro %}
-        <a href="{% url 'visitas:financeiro_utente' utente.pk %}" class="btn btn-outline-success btn-sm">
-          Financeiro
-        </a>
+        {% if pode_ver_financeiro %}
+          <a
+            href="{% url 'visitas:financeiro_utente' utente.pk %}"
+            class="btn btn-outline-success btn-sm"
+          >
+            Financeiro
+          </a>
         {% endif %}
 
-
-        <a href="{% url 'visitas:registar_visita_utente' utente.pk %}" class="btn btn-primary btn-sm">
-          Registar visita
-        </a>
-
-        {% if not utente.isolamento_ativo %}
-        <a href="{% url 'visitas:criar_isolamento' utente.pk %}" class="btn btn-outline-danger btn-sm">
-          Registar isolamento
-        </a>
+        {% if pode_ver_visitas %}
+          <a
+            href="{% url 'visitas:registar_visita_utente' utente.pk %}"
+            class="btn btn-primary btn-sm"
+          >
+            Registar visita
+          </a>
         {% endif %}
+
+        {% if pode_ver_isolamentos and not utente.isolamento_ativo %}
+          <a
+            href="{% url 'visitas:criar_isolamento' utente.pk %}"
+            class="btn btn-outline-danger btn-sm"
+          >
+            Registar isolamento
+          </a>
+        {% endif %}
+
       </div>
     </div>
 
-    <!-- ALERTA VISITAS RESTRITAS -->
+    <!-- ALERTA DE VISITAS RESTRITAS -->
     {% if utente.visitas_restritas %}
-    <div class="alert alert-danger">
-      <strong>⚠ ATENÇÃO:</strong> Este utente tem visitas restritas.
-      {% if utente.alerta_visitas %}
-      <br>{{ utente.alerta_visitas }}
-      {% endif %}
-    </div>
+      <div class="alert alert-danger">
+        <strong>⚠ ATENÇÃO:</strong>
+        Este utente tem visitas restritas.
+
+        {% if utente.alerta_visitas %}
+          <br>
+          {{ utente.alerta_visitas }}
+        {% endif %}
+      </div>
     {% endif %}
 
-    <!-- ALERTA ISOLAMENTO -->
+    <!-- ALERTA DE ISOLAMENTO -->
     {% if utente.isolamento_ativo %}
-    <div class="alert alert-warning border border-danger">
-      <div class="d-flex justify-content-between align-items-start">
-        <div>
-          <strong>🛑 UTENTE EM ISOLAMENTO</strong><br>
+      <div class="alert alert-warning border border-danger">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <strong>🛑 UTENTE EM ISOLAMENTO</strong>
+            <br>
 
-          <span class="badge bg-danger">
-            {{ utente.isolamento_ativo.get_tipo_display }}
-          </span>
+            <span class="badge bg-danger">
+              {{ utente.isolamento_ativo.get_tipo_display }}
+            </span>
 
-          <div class="mt-2 small">
-            <strong>Início:</strong>
-            {{ utente.isolamento_ativo.data_inicio|date:"d/m/Y H:i" }}<br>
+            <div class="mt-2 small">
+              <strong>Início:</strong>
+              {{ utente.isolamento_ativo.data_inicio|date:"d/m/Y H:i" }}
+              <br>
 
-            {% if utente.isolamento_ativo.motivo %}
-            <strong>Motivo:</strong> {{ utente.isolamento_ativo.motivo }}<br>
-            {% endif %}
+              {% if utente.isolamento_ativo.motivo %}
+                <strong>Motivo:</strong>
+                {{ utente.isolamento_ativo.motivo }}
+                <br>
+              {% endif %}
 
-            {% if utente.isolamento_ativo.observacoes %}
-            <strong>Obs.:</strong>
-            {{ utente.isolamento_ativo.observacoes|linebreaksbr }}
-            {% endif %}
+              {% if utente.isolamento_ativo.observacoes %}
+                <strong>Observações:</strong>
+                {{ utente.isolamento_ativo.observacoes|linebreaksbr }}
+              {% endif %}
+            </div>
+          </div>
+
+          {% if pode_ver_isolamentos %}
+            <div class="d-flex flex-column gap-1">
+              <a
+                href="{% url 'visitas:editar_isolamento' utente.isolamento_ativo.pk %}"
+                class="btn btn-sm btn-outline-primary"
+              >
+                Editar isolamento
+              </a>
+
+              <a
+                href="{% url 'visitas:terminar_isolamento' utente.isolamento_ativo.pk %}"
+                class="btn btn-sm btn-outline-danger"
+              >
+                Terminar isolamento
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- REGISTOS CLÍNICOS -->
+    {% if pode_ver_registos_clinicos or pode_gerir_fisioterapia or pode_ver_registos_enfermagem or pode_criar_registos_enfermagem %}
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header">
+          <div class="d-flex align-items-center gap-2">
+            <div class="avtar bg-light-primary text-primary">
+              <i data-feather="file-text"></i>
+            </div>
+
+            <div>
+              <h5 class="mb-0">Registos clínicos</h5>
+              <small class="text-muted">
+                Consulta e criação de registos por área profissional
+              </small>
+            </div>
           </div>
         </div>
 
-        <div class="d-flex flex-column gap-1">
-          <a href="{% url 'visitas:editar_isolamento' utente.isolamento_ativo.pk %}"
-            class="btn btn-sm btn-outline-primary">
-            Editar isolamento
-          </a>
+        <div class="card-body">
+          <div class="row g-3">
 
-          <a href="{% url 'visitas:terminar_isolamento' utente.isolamento_ativo.pk %}"
-            class="btn btn-sm btn-outline-danger">
-            Terminar isolamento
-          </a>
+            <!-- Enfermagem -->
+            {% if pode_ver_registos_enfermagem or pode_criar_registos_enfermagem %}
+              <div class="col-lg-6">
+                <div class="border rounded h-100 p-3">
+                  <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="avtar bg-light-danger text-danger">
+                      <i data-feather="heart"></i>
+                    </div>
+
+                    <div>
+                      <h6 class="mb-0">Enfermagem</h6>
+                      <small class="text-muted">
+                        Evolução, cuidados e notificações de queda
+                      </small>
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-wrap gap-2">
+                    {% if pode_ver_registos_enfermagem %}
+                      <a
+                        href="{% url 'enfermagem:registos_utente' utente.pk %}"
+                        class="btn btn-outline-danger btn-sm"
+                      >
+                        <i data-feather="clipboard" class="me-1"></i>
+                        Ver histórico
+                      </a>
+                    {% endif %}
+
+                    {% if pode_criar_registos_enfermagem and not utente.data_saida %}
+                      <a
+                        href="{% url 'enfermagem:criar_registo' utente.pk %}"
+                        class="btn btn-danger btn-sm"
+                      >
+                        <i data-feather="plus-circle" class="me-1"></i>
+                        Novo registo
+                      </a>
+
+                      <a
+                        href="{% url 'enfermagem:criar_queda' utente.pk %}"
+                        class="btn btn-outline-warning btn-sm"
+                      >
+                        <i data-feather="alert-triangle" class="me-1"></i>
+                        Registar queda
+                      </a>
+                    {% endif %}
+                  </div>
+
+                  {% if utente.data_saida %}
+                    <div class="alert alert-secondary mt-3 mb-0 py-2 small">
+                      Utente com alta: disponível apenas para consulta.
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+
+            <!-- Fisioterapia -->
+            {% if pode_ver_registos_clinicos or pode_gerir_fisioterapia %}
+              <div class="col-lg-6">
+                <div class="border rounded h-100 p-3">
+                  <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="avtar bg-light-warning text-warning">
+                      <i data-feather="activity"></i>
+                    </div>
+
+                    <div>
+                      <h6 class="mb-0">Fisioterapia</h6>
+                      <small class="text-muted">
+                        Reabilitação e acompanhamento funcional
+                      </small>
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-wrap gap-2">
+                    {% if pode_ver_registos_clinicos or pode_gerir_fisioterapia %}
+                      <a
+                        href="{% url 'fisioterapia:registos_utente' utente.pk %}"
+                        class="btn btn-outline-primary btn-sm"
+                      >
+                        <i data-feather="clipboard" class="me-1"></i>
+                        Ver histórico
+                      </a>
+                    {% endif %}
+
+                    {% if pode_gerir_fisioterapia and not utente.data_saida %}
+                      <a
+                        href="{% url 'fisioterapia:criar_registo' utente.pk %}"
+                        class="btn btn-primary btn-sm"
+                      >
+                        <i data-feather="plus-circle" class="me-1"></i>
+                        Novo registo
+                      </a>
+                    {% endif %}
+                  </div>
+
+                  {% if utente.data_saida %}
+                    <div class="alert alert-secondary mt-3 mb-0 py-2 small">
+                      Utente com alta: disponível apenas para consulta.
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+
+          </div>
         </div>
-
       </div>
-    </div>
     {% endif %}
 
     <!-- INFORMAÇÕES DO UTENTE -->
     <div class="card mb-3">
       <div class="card-header">
-        <h5 class="mb-0">Informações do Utente</h5>
+        <h5 class="mb-0">
+          Informações do Utente
+        </h5>
       </div>
 
       <div class="card-body">
-
         <div class="row">
           <div class="col-md-6">
-            <p><strong>N.º Processo:</strong> {{ utente.numero_processo }}</p>
-            <p><strong>N.º Utente SNS:</strong> {{ utente.numero_utente_sns|default:"-" }}</p>
-            <p><strong>Género:</strong> {{ utente.get_genero_display|default:"-" }}</p>
-            <p><strong>Tipo de Internamento:</strong> {{ utente.get_tipo_internamento_display|default:"-" }}</p>
+            <p>
+              <strong>N.º Processo:</strong>
+              {{ utente.numero_processo }}
+            </p>
+
+            <p>
+              <strong>N.º Utente SNS:</strong>
+              {{ utente.numero_utente_sns|default:"-" }}
+            </p>
+
+            <p>
+              <strong>Género:</strong>
+              {{ utente.get_genero_display|default:"-" }}
+            </p>
+
+            <p>
+              <strong>Tipo de Internamento:</strong>
+              {{ utente.get_tipo_internamento_display|default:"-" }}
+            </p>
           </div>
 
           <div class="col-md-6">
-            <p><strong>Data de nascimento:</strong>
+            <p>
+              <strong>Data de nascimento:</strong>
+
               {% if utente.data_nascimento %}
-              {{ utente.data_nascimento|date:"d/m/Y" }}
-              {% if utente.idade %} — <strong>{{ utente.idade }} anos</strong>{% endif %}
+                {{ utente.data_nascimento|date:"d/m/Y" }}
+
+                {% if utente.idade %}
+                  —
+                  <strong>{{ utente.idade }} anos</strong>
+                {% endif %}
               {% else %}
-              -
+                -
               {% endif %}
             </p>
 
-            <p><strong>Quarto:</strong> {{ utente.quarto|default:"-" }}</p>
+            <p>
+              <strong>Quarto:</strong>
+              {{ utente.quarto|default:"-" }}
+            </p>
           </div>
         </div>
 
@@ -124,215 +312,314 @@
 
         <div class="row">
           <div class="col-md-4">
-            <p><strong>Entrada:</strong> {{ utente.data_entrada|date:"d/m/Y" }}</p>
+            <p>
+              <strong>Entrada:</strong>
+              {{ utente.data_entrada|date:"d/m/Y" }}
+            </p>
           </div>
 
           <div class="col-md-4">
-            <p><strong>Data prevista de saída:</strong>
+            <p>
+              <strong>Data prevista de saída:</strong>
               {{ utente.data_prevista_saida|date:"d/m/Y"|default:"-" }}
             </p>
           </div>
 
           <div class="col-md-4">
-            <p><strong>Saída:</strong>
+            <p>
+              <strong>Saída:</strong>
+
               {% if utente.data_saida %}
-              {{ utente.data_saida|date:"d/m/Y" }}
+                {{ utente.data_saida|date:"d/m/Y" }}
               {% else %}
-              <span class="text-success fw-bold">Ainda internado</span>
+                <span class="text-success fw-bold">
+                  Ainda internado
+                </span>
               {% endif %}
             </p>
           </div>
         </div>
 
-        <p><strong>Duração do internamento:</strong>
+        <p>
+          <strong>Duração do internamento:</strong>
+
           {% if utente.duracao_internamento %}
-          {{ utente.duracao_internamento }} dias
+            {{ utente.duracao_internamento }} dias
           {% else %}
-          -
+            -
           {% endif %}
         </p>
 
         <hr>
 
-        <p><strong>Observações:</strong><br>
-          {{ utente.observacoes|linebreaksbr|default:"-" }}
-        </p>
+        <p class="mb-0">
+          <strong>Observações:</strong>
+          <br>
 
+          {% if utente.observacoes %}
+            {{ utente.observacoes|linebreaksbr }}
+          {% else %}
+            -
+          {% endif %}
+        </p>
       </div>
     </div>
 
-
     <!-- VISITAS -->
-    <div class="card">
-      <div class="card-header">
-        <h5 class="mb-0">Visitas deste utente</h5>
+    {% if pode_ver_visitas %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0">
+            Visitas deste utente
+          </h5>
+        </div>
+
+        <div class="card-body">
+          <form method="get" class="row g-2 mb-3">
+            <div class="col-md-5">
+              <input
+                type="text"
+                name="q"
+                class="form-control"
+                placeholder="Pesquisar visitante, parentesco ou motivo..."
+                value="{{ q }}"
+              >
+            </div>
+
+            <div class="col-md-3">
+              <select name="estado" class="form-select">
+                <option value="">
+                  Todos os estados
+                </option>
+
+                <option
+                  value="em_curso"
+                  {% if estado == "em_curso" %}selected{% endif %}
+                >
+                  Em curso
+                </option>
+
+                <option
+                  value="terminada"
+                  {% if estado == "terminada" %}selected{% endif %}
+                >
+                  Terminada
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-2">
+              <select name="tipo" class="form-select">
+                <option value="">
+                  Todos os tipos
+                </option>
+
+                {% for value, label in tipos_visitante %}
+                  <option
+                    value="{{ value }}"
+                    {% if tipo == value %}selected{% endif %}
+                  >
+                    {{ label }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-2 d-flex gap-2">
+              <button
+                type="submit"
+                class="btn btn-primary w-100"
+              >
+                Pesquisar
+              </button>
+
+              <a
+                href="{% url 'visitas:detalhe_utente' utente.pk %}"
+                class="btn btn-outline-secondary w-100"
+              >
+                Limpar
+              </a>
+            </div>
+          </form>
+
+          <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+              <thead>
+                <tr>
+                  <th>Entrada</th>
+                  <th>Saída</th>
+                  <th>Duração</th>
+                  <th>Visitante</th>
+                  <th>Tipo</th>
+                  <th>Parentesco</th>
+                  <th>Motivo</th>
+                  <th></th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {% for v in visitas %}
+                  <tr>
+                    <td>
+                      {{ v.data_hora_entrada|date:"d/m/Y H:i" }}
+                    </td>
+
+                    <td>
+                      {% if v.data_hora_saida %}
+                        {{ v.data_hora_saida|date:"d/m/Y H:i" }}
+                      {% else %}
+                        <span class="text-danger">
+                          Em curso
+                        </span>
+                      {% endif %}
+                    </td>
+
+                    <td>
+                      {{ v.duracao_horas_minutos|default:"-" }}
+                    </td>
+
+                    <td>
+                      {{ v.nome_visitante }}
+                    </td>
+
+                    <td>
+                      {{ v.get_tipo_visitante_display }}
+                    </td>
+
+                    <td>
+                      {{ v.parentesco|default:"-" }}
+                    </td>
+
+                    <td>
+                      {{ v.motivo|default:"-" }}
+                    </td>
+
+                    <td class="text-end text-nowrap">
+                      {% if v.em_curso %}
+                        <a
+                          href="{% url 'visitas:registar_saida_visita' v.pk %}"
+                          class="btn btn-sm btn-outline-danger"
+                        >
+                          Registar saída
+                        </a>
+                      {% endif %}
+
+                      <a
+                        href="{% url 'visitas:registar_visita_utente' utente.pk %}?from={{ v.pk }}"
+                        class="btn btn-sm btn-outline-secondary ms-1"
+                      >
+                        Nova visita com estes dados
+                      </a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                      Sem visitas registadas.
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
+    {% endif %}
 
-      <div class="card-body">
+    <!-- HISTÓRICO DE ISOLAMENTOS -->
+    {% if pode_ver_isolamentos %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h5 class="mb-0">
+            Isolamentos
+          </h5>
+        </div>
 
-        <form method="get" class="row g-2 mb-3">
-          <div class="col-md-5">
-            <input type="text" name="q" class="form-control" placeholder="Pesquisar visitante, parentesco ou motivo..."
-              value="{{ q }}">
-          </div>
-
-          <div class="col-md-3">
-            <select name="estado" class="form-select">
-              <option value="">Todos os estados</option>
-              <option value="em_curso" {% if estado == "em_curso" %}selected{% endif %}>Em curso</option>
-              <option value="terminada" {% if estado == "terminada" %}selected{% endif %}>Terminada</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <select name="tipo" class="form-select">
-              <option value="">Todos os tipos</option>
-              {% for value, label in tipos_visitante %}
-              <option value="{{ value }}" {% if tipo == value %}selected{% endif %}>
-                {{ label }}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-primary w-100">Pesquisar</button>
-            <a href="{% url 'visitas:detalhe_utente' utente.pk %}" class="btn btn-outline-secondary w-100">Limpar</a>
-          </div>
-        </form>
-
-        <div class="table-responsive">
-          <table class="table table-hover mb-0">
+        <div class="card-body table-responsive">
+          <table class="table table-sm table-hover mb-0 align-middle">
             <thead>
               <tr>
-                <th>Entrada</th>
-                <th>Saída</th>
-                <th>Duração</th>
-                <th>Visitante</th>
                 <th>Tipo</th>
-                <th>Parentesco</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Estado</th>
                 <th>Motivo</th>
+                <th>Observações</th>
                 <th></th>
               </tr>
             </thead>
 
             <tbody>
-              {% for v in visitas %}
-              <tr>
-                <td>{{ v.data_hora_entrada|date:"d/m/Y H:i" }}</td>
+              {% for i in utente.isolamentos.all %}
+                <tr class="{% if i.ativo %}table-warning{% endif %}">
+                  <td>
+                    {{ i.get_tipo_display }}
+                  </td>
 
-                <td>
-                  {% if v.data_hora_saida %}
-                  {{ v.data_hora_saida|date:"d/m/Y H:i" }}
-                  {% else %}
-                  <span class="text-danger">Em curso</span>
-                  {% endif %}
-                </td>
+                  <td>
+                    {{ i.data_inicio|date:"d/m/Y H:i" }}
+                  </td>
 
-                <td>{{ v.duracao_horas_minutos|default:"-" }}</td>
-                <td>{{ v.nome_visitante }}</td>
-                <td>{{ v.get_tipo_visitante_display }}</td>
-                <td>{{ v.parentesco|default:"-" }}</td>
-                <td>{{ v.motivo|default:"-" }}</td>
+                  <td>
+                    {{ i.data_fim|date:"d/m/Y H:i"|default:"-" }}
+                  </td>
 
-                <td class="text-end">
-                  {% if v.em_curso %}
-                  <a href="{% url 'visitas:registar_saida_visita' v.pk %}" class="btn btn-sm btn-outline-danger">
-                    Registar saída
-                  </a>
-                  {% endif %}
+                  <td>
+                    {% if i.ativo %}
+                      <span class="badge bg-danger">
+                        Ativo
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary">
+                        Terminado
+                      </span>
+                    {% endif %}
+                  </td>
 
-                  <a href="{% url 'visitas:registar_visita_utente' utente.pk %}?from={{ v.pk }}"
-                    class="btn btn-sm btn-outline-secondary ms-1">
-                    Nova visita com estes dados
-                  </a>
-                </td>
-              </tr>
+                  <td>
+                    {{ i.motivo|default:"-" }}
+                  </td>
+
+                  <td style="max-width: 280px;">
+                    {% if i.observacoes %}
+                      <small class="text-muted">
+                        {{ i.observacoes|linebreaksbr }}
+                      </small>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+
+                  <td class="text-end text-nowrap">
+                    <a
+                      href="{% url 'visitas:editar_isolamento' i.pk %}"
+                      class="btn btn-sm btn-outline-secondary"
+                    >
+                      Editar
+                    </a>
+
+                    {% if i.ativo %}
+                      <a
+                        href="{% url 'visitas:terminar_isolamento' i.pk %}"
+                        class="btn btn-sm btn-outline-danger ms-1"
+                      >
+                        Terminar
+                      </a>
+                    {% endif %}
+                  </td>
+                </tr>
               {% empty %}
-              <tr>
-                <td colspan="8" class="text-center">Sem visitas registadas.</td>
-              </tr>
+                <tr>
+                  <td colspan="7" class="text-center text-muted py-4">
+                    Sem isolamentos registados.
+                  </td>
+                </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-
       </div>
-    </div>
-
-
-        <!-- HISTÓRICO DE ISOLAMENTOS -->
-    <div class="card mb-3">
-      <div class="card-header">
-        <h5 class="mb-0">Isolamentos</h5>
-      </div>
-
-      <div class="card-body table-responsive">
-        <table class="table table-sm table-hover mb-0 align-middle">
-          <thead>
-            <tr>
-              <th>Tipo</th>
-              <th>Início</th>
-              <th>Fim</th>
-              <th>Estado</th>
-              <th>Motivo</th>
-              <th>Observações</th>
-              <th></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {% for i in utente.isolamentos.all %}
-            <tr class="{% if i.ativo %}table-warning{% endif %}">
-              <td>{{ i.get_tipo_display }}</td>
-              <td>{{ i.data_inicio|date:"d/m/Y H:i" }}</td>
-              <td>{{ i.data_fim|date:"d/m/Y H:i"|default:"-" }}</td>
-
-              <td>
-                {% if i.ativo %}
-                <span class="badge bg-danger">Ativo</span>
-                {% else %}
-                <span class="badge bg-secondary">Terminado</span>
-                {% endif %}
-              </td>
-
-              <td>{{ i.motivo|default:"-" }}</td>
-
-              <td style="max-width: 280px;">
-                {% if i.observacoes %}
-                <small class="text-muted">
-                  {{ i.observacoes|linebreaksbr }}
-                </small>
-                {% else %}
-                -
-                {% endif %}
-              </td>
-
-              <td class="text-end">
-                <a href="{% url 'visitas:editar_isolamento' i.pk %}" class="btn btn-sm btn-outline-secondary">
-                  Editar
-                </a>
-
-                {% if i.ativo %}
-                <a href="{% url 'visitas:terminar_isolamento' i.pk %}" class="btn btn-sm btn-outline-danger ms-1">
-                  Terminar
-                </a>
-                {% endif %}
-              </td>
-            </tr>
-            {% empty %}
-            <tr>
-              <td colspan="7" class="text-center">
-                Sem isolamentos registados.
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-
-        </table>
-      </div>
-    </div>
-
+    {% endif %}
 
   </div>
 </div>

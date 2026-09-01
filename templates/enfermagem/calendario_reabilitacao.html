@@ -1,0 +1,190 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+{% load static %}
+
+{% block title %}Calendário da Reabilitação{% endblock title %}
+
+{% block enfermagem_content %}
+<link href="{% static 'visitas/transportes/fullcalendar/skeleton.css' %}" rel="stylesheet">
+<link href="{% static 'visitas/transportes/fullcalendar/classic.theme.css' %}" rel="stylesheet">
+<link href="{% static 'visitas/transportes/fullcalendar/classic.palette.css' %}" rel="stylesheet">
+
+<style>
+  .reab-evento { cursor: pointer; }
+  .reab-realizado { box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.8); }
+  .reab-faltou { opacity: 0.72; border-style: dashed !important; }
+  .reab-ausencia { opacity: 0.58; }
+  .reab-cancelado { opacity: 0.45; text-decoration: line-through; }
+  .reab-legenda-cor { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+  .fc .fc-event-title { font-weight: 500; }
+</style>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+  <div>
+    <h4 class="mb-1">Calendário mensal da Reabilitação</h4>
+    <p class="text-muted mb-0">Planeamento dos utentes por piso e área de intervenção.</p>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Marcações hoje</small><h3 class="mb-0">{{ total_marcacoes_hoje }}</h3></div></div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Agendadas hoje</small><h3 class="mb-0 text-primary">{{ total_agendadas_hoje }}</h3></div></div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Ausências ativas</small><h3 class="mb-0 text-warning">{{ total_ausencias_ativas }}</h3></div></div>
+  </div>
+  <div class="col-md-6 col-xl-3">
+    <div class="card border-0 shadow-sm h-100"><div class="card-body"><small class="text-muted">Quedas nas últimas 24 h</small><h3 class="mb-0 text-danger">{{ total_quedas_24h }}</h3></div></div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header"><h5 class="mb-0">Filtros do calendário</h5></div>
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label for="filtro-piso" class="form-label">Piso</label>
+        <select id="filtro-piso" class="form-select">
+          <option value="">Todos os pisos</option>
+          {% for valor, nome in pisos %}<option value="{{ valor }}">{{ nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label for="filtro-area" class="form-label">Área</label>
+        <select id="filtro-area" class="form-select">
+          <option value="">Todas as áreas</option>
+          {% for valor, nome in areas %}<option value="{{ valor }}">{{ nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label for="filtro-estado" class="form-label">Estado do utente</label>
+        <select id="filtro-estado" class="form-select">
+          <option value="">Todos os estados</option>
+          {% for valor, nome in estados_participacao %}<option value="{{ valor }}">{{ nome }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3 small">
+  <span><span class="reab-legenda-cor me-1" style="background:#0d6efd"></span>Fisioterapia</span>
+  <span><span class="reab-legenda-cor me-1" style="background:#006a4e"></span>Terapia Ocupacional</span>
+  <span><span class="reab-legenda-cor me-1" style="background:#dc3545"></span>Terapia da Fala</span>
+  <span class="text-muted">✓ Realizou · ✕ Faltou · ⏸ Ausência · ⚠ Queda nas últimas 24 h</span>
+</div>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header"><h5 class="mb-0">Reabilitação</h5></div>
+  <div class="card-body"><div id="calendario-reabilitacao-enfermagem"></div></div>
+</div>
+
+<div class="modal fade" id="modal-evento-reabilitacao" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modal-reab-titulo">Detalhe da marcação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="modal-reab-alerta-queda" class="alert alert-danger d-none">
+          <strong>Queda registada nas últimas 24 horas</strong>
+          <div id="modal-reab-queda" class="small mt-1"></div>
+        </div>
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Utente</dt><dd class="col-sm-8" id="modal-reab-utente"></dd>
+          <dt class="col-sm-4">Processo</dt><dd class="col-sm-8" id="modal-reab-processo"></dd>
+          <dt class="col-sm-4">Piso / quarto</dt><dd class="col-sm-8" id="modal-reab-piso"></dd>
+          <dt class="col-sm-4">Área</dt><dd class="col-sm-8" id="modal-reab-area"></dd>
+          <dt class="col-sm-4">Estado</dt><dd class="col-sm-8" id="modal-reab-estado"></dd>
+          <dt class="col-sm-4">Profissional</dt><dd class="col-sm-8" id="modal-reab-profissional"></dd>
+          <dt class="col-sm-4">Local</dt><dd class="col-sm-8" id="modal-reab-local"></dd>
+          <dt class="col-sm-4">Intervenções</dt><dd class="col-sm-8" id="modal-reab-intervencoes"></dd>
+          <dt class="col-sm-4">Motivo</dt><dd class="col-sm-8" id="modal-reab-motivo"></dd>
+          <dt class="col-sm-4">Ausência</dt><dd class="col-sm-8" id="modal-reab-ausencia"></dd>
+        </dl>
+      </div>
+      <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button></div>
+    </div>
+  </div>
+</div>
+{% endblock enfermagem_content %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'visitas/transportes/fullcalendar/fullcalendar.global.js' %}"></script>
+<script src="{% static 'visitas/transportes/fullcalendar/classic.global.js' %}"></script>
+<script src="{% static 'visitas/transportes/fullcalendar/pt.global.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const elemento = document.getElementById("calendario-reabilitacao-enfermagem");
+  const modalElemento = document.getElementById("modal-evento-reabilitacao");
+  const modal = bootstrap.Modal.getOrCreateInstance(modalElemento);
+
+  function texto(id, valor) {
+    document.getElementById(id).textContent = valor || "-";
+  }
+
+  const calendario = new FullCalendar.Calendar(elemento, {
+    themeSystem: "classic",
+    locale: "pt",
+    firstDay: 1,
+    initialView: window.innerWidth < 768 ? "listMonth" : "dayGridMonth",
+    height: "auto",
+    nowIndicator: true,
+    navLinks: true,
+    dayMaxEvents: true,
+    eventDisplay: "block",
+    headerToolbar: {
+      left: "prev,next today",
+      center: "title",
+      right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth"
+    },
+    buttonText: { today: "Hoje", month: "Mês", week: "Semana", day: "Dia", list: "Agenda" },
+    events: {
+      url: "{% url 'enfermagem:eventos_reabilitacao' %}",
+      extraParams: function () {
+        return {
+          piso: document.getElementById("filtro-piso").value,
+          area: document.getElementById("filtro-area").value,
+          estado: document.getElementById("filtro-estado").value
+        };
+      },
+      failure: function () { alert("Não foi possível carregar o calendário da Reabilitação."); }
+    },
+    eventClick: function (info) {
+      const dados = info.event.extendedProps;
+      texto("modal-reab-titulo", info.event.title);
+      texto("modal-reab-utente", dados.utente);
+      texto("modal-reab-processo", dados.processo);
+      texto("modal-reab-piso", dados.piso + " · " + dados.quarto);
+      texto("modal-reab-area", dados.area + " · " + dados.tipo);
+      texto("modal-reab-estado", dados.estado);
+      texto("modal-reab-profissional", dados.profissional);
+      texto("modal-reab-local", dados.local);
+      texto("modal-reab-intervencoes", (dados.intervencoes || []).join(", "));
+      texto("modal-reab-motivo", dados.motivo_estado);
+      texto("modal-reab-ausencia", dados.ausencia ? dados.ausencia + (dados.ausencia_destino ? " · " + dados.ausencia_destino : "") : "");
+
+      const alerta = document.getElementById("modal-reab-alerta-queda");
+      alerta.classList.toggle("d-none", !dados.alerta_queda);
+      texto("modal-reab-queda", dados.alerta_queda ? dados.queda_em + " · " + dados.queda_gravidade : "");
+      modal.show();
+    },
+    eventDidMount: function (info) {
+      const dados = info.event.extendedProps;
+      info.el.title = [dados.utente, dados.area, dados.estado, dados.profissional, dados.piso, dados.quarto, dados.motivo_estado].filter(Boolean).join(" · ");
+    }
+  });
+
+  calendario.render();
+  ["filtro-piso", "filtro-area", "filtro-estado"].forEach(function (id) {
+    document.getElementById(id).addEventListener("change", function () {
+      calendario.refetchEvents();
+    });
+  });
+});
+</script>
+{% endblock extra_js %}

@@ -1,0 +1,56 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}Registar regresso{% endblock title %}
+
+{% block enfermagem_content %}
+<div class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-1">Registar regresso do utente</h5>
+        <p class="text-muted mb-0"><strong>{{ ausencia.utente.nome }}</strong> · Processo {{ ausencia.utente.numero_processo }}</p>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-light border">
+          <div class="row g-2">
+            <div class="col-md-4"><small class="text-muted d-block">Ausência</small><strong>{{ ausencia.get_tipo_display }}</strong></div>
+            <div class="col-md-4"><small class="text-muted d-block">Desde</small><strong>{{ ausencia.data_hora_inicio|date:"d/m/Y H:i" }}</strong></div>
+            <div class="col-md-4"><small class="text-muted d-block">Destino</small><strong>{{ ausencia.destino|default:"Não indicado" }}</strong></div>
+          </div>
+        </div>
+
+        <div class="alert alert-success d-flex align-items-start gap-2">
+          <i data-feather="calendar"></i>
+          <div>
+            <strong>Reativação automática</strong>
+            <div class="small mt-1">As marcações futuras que já não coincidam com a ausência podem voltar a ficar agendadas.</div>
+          </div>
+        </div>
+
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if formulario.non_field_errors %}<div class="alert alert-danger">{{ formulario.non_field_errors }}</div>{% endif %}
+
+          <div class="mb-3">
+            <label for="{{ formulario.data_hora_regresso.id_for_label }}" class="form-label">{{ formulario.data_hora_regresso.label }}</label>
+            {{ formulario.data_hora_regresso }}
+            {% for erro in formulario.data_hora_regresso.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+          </div>
+
+          <div class="mb-3">
+            <label for="{{ formulario.observacoes.id_for_label }}" class="form-label">{{ formulario.observacoes.label }}</label>
+            {{ formulario.observacoes }}
+            {% for erro in formulario.observacoes.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+          </div>
+
+          <hr class="my-4">
+          <div class="d-flex justify-content-between gap-2">
+            <a href="{% url 'enfermagem:detalhe_ausencia' ausencia.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            <button type="submit" class="btn btn-success">Confirmar regresso</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock enfermagem_content %}

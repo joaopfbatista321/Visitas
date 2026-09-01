@@ -1,0 +1,251 @@
+{% extends "enfermagem/base_enfermagem.html" %}
+
+{% block title %}
+  Detalhe do registo de Enfermagem
+{% endblock title %}
+
+{% block enfermagem_content %}
+
+<!-- Cabeçalho -->
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+
+  <div>
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+      <h4 class="mb-0">
+        {{ registo.tipo_registo.nome }}
+      </h4>
+
+      {% if registo.visibilidade == "CONFIDENCIAL" %}
+        <span class="badge bg-danger">
+          Apenas eu
+        </span>
+      {% elif registo.visibilidade == "GRUPO" %}
+        <span class="badge bg-warning text-dark">
+          Grupo profissional
+        </span>
+      {% else %}
+        <span class="badge bg-success">
+          Todos
+        </span>
+      {% endif %}
+    </div>
+
+    <p class="text-muted mb-0">
+      <strong>{{ registo.utente.nome }}</strong>
+      · Processo {{ registo.utente.numero_processo }}
+
+      {% if registo.utente.quarto %}
+        · {{ registo.utente.quarto }}
+      {% endif %}
+    </p>
+  </div>
+
+  <div class="d-flex flex-wrap gap-2">
+
+    {% if pode_editar %}
+      <a
+        href="{% url 'enfermagem:editar_registo' registo.pk %}"
+        class="btn btn-warning"
+      >
+        <i data-feather="edit-2" class="me-1"></i>
+        Editar registo
+      </a>
+    {% endif %}
+
+    <a
+      href="{% url 'enfermagem:registos_utente' registo.utente.pk %}"
+      class="btn btn-outline-secondary"
+    >
+      Voltar ao histórico
+    </a>
+
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Conteúdo clínico -->
+  <div class="col-xl-8">
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Observação e evolução
+        </h5>
+      </div>
+
+      <div class="card-body">
+        {{ registo.observacao|linebreaksbr }}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Cuidados e intervenções realizadas
+        </h5>
+      </div>
+
+      <div class="card-body">
+        {% if registo.cuidados_realizados %}
+          {{ registo.cuidados_realizados|linebreaksbr }}
+        {% else %}
+          <span class="text-muted">
+            Não foram indicados cuidados ou intervenções.
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Resposta do utente
+        </h5>
+      </div>
+
+      <div class="card-body">
+        {% if registo.resposta_utente %}
+          {{ registo.resposta_utente|linebreaksbr }}
+        {% else %}
+          <span class="text-muted">
+            Não foi indicada a resposta do utente.
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Plano e recomendações seguintes
+        </h5>
+      </div>
+
+      <div class="card-body">
+        {% if registo.plano_cuidados %}
+          {{ registo.plano_cuidados|linebreaksbr }}
+        {% else %}
+          <span class="text-muted">
+            Não foi indicado um plano de cuidados seguinte.
+          </span>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Informação lateral -->
+  <div class="col-xl-4">
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header">
+        <h5 class="mb-0">
+          Informação do registo
+        </h5>
+      </div>
+
+      <div class="card-body">
+
+        <p>
+          <strong>Utente:</strong><br>
+          {{ registo.utente.nome }}
+        </p>
+
+        <p>
+          <strong>Número de processo:</strong><br>
+          {{ registo.utente.numero_processo }}
+        </p>
+
+        {% if registo.utente.quarto %}
+          <p>
+            <strong>Quarto:</strong><br>
+            {{ registo.utente.quarto }}
+          </p>
+        {% endif %}
+
+        <p>
+          <strong>Tipo de registo:</strong><br>
+          {{ registo.tipo_registo.nome }}
+        </p>
+
+        <p>
+          <strong>Data e hora:</strong><br>
+          {{ registo.data_registo|date:"d/m/Y H:i" }}
+        </p>
+
+        <p>
+          <strong>Turno:</strong><br>
+          {{ registo.get_turno_display|default:"Não indicado" }}
+        </p>
+
+        <p>
+          <strong>Profissional:</strong><br>
+          {{ registo.profissional.get_full_name|default:registo.profissional.username }}
+        </p>
+
+        <p>
+          <strong>Visibilidade:</strong><br>
+          {{ registo.get_visibilidade_display }}
+        </p>
+
+        <p>
+          <strong>Criado em:</strong><br>
+          {{ registo.criado_em|date:"d/m/Y H:i" }}
+        </p>
+
+        <p class="mb-0">
+          <strong>Última alteração:</strong><br>
+          {{ registo.atualizado_em|date:"d/m/Y H:i" }}
+        </p>
+
+      </div>
+    </div>
+
+    {% if not pode_editar %}
+      <div class="alert alert-info">
+        <div class="d-flex align-items-start gap-2">
+          <i data-feather="info"></i>
+
+          <div>
+            Pode consultar este registo, mas apenas o autor
+            pode alterá-lo.
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    {% if registo.visibilidade == "CONFIDENCIAL" %}
+      <div class="alert alert-danger">
+        <strong>Registo confidencial</strong>
+
+        <div class="small mt-1">
+          Este conteúdo está disponível apenas para o autor.
+        </div>
+      </div>
+
+    {% elif registo.visibilidade == "GRUPO" %}
+      <div class="alert alert-warning">
+        <strong>Registo do grupo profissional</strong>
+
+        <div class="small mt-1">
+          Este conteúdo está disponível para a equipa
+          de Enfermagem.
+        </div>
+      </div>
+
+    {% else %}
+      <div class="alert alert-success">
+        <strong>Registo clínico partilhado</strong>
+
+        <div class="small mt-1">
+          Disponível para os grupos clínicos autorizados
+          na configuração da área de Enfermagem.
+        </div>
+      </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock enfermagem_content %}

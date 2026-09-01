@@ -17,6 +17,13 @@
         </select>
       </div>
       <div class="col-md-2">
+        <label class="form-label mb-1">Meio</label>
+        <select class="form-select" name="meio">
+          <option value="">Todos</option>
+          {% for valor, nome in meios_transporte %}<option value="{{ valor }}" {% if meio == valor %}selected{% endif %}>{{ nome }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
         <label class="form-label mb-1">Desde</label>
         <input class="form-control" type="date" name="data_inicio" value="{{ data_inicio|date:'Y-m-d' }}">
       </div>
@@ -24,7 +31,7 @@
         <label class="form-label mb-1">Até</label>
         <input class="form-control" type="date" name="data_fim" value="{{ data_fim|date:'Y-m-d' }}">
       </div>
-      <div class="col-md-2 d-flex gap-1">
+      <div class="col-12 d-flex justify-content-end gap-1">
         <button class="btn btn-primary w-100" type="submit">Aplicar</button>
         <a class="btn btn-light w-100" href="{% url 'visitas:lista_transportes' %}">Limpar</a>
       </div>
@@ -35,7 +42,9 @@
 <div class="card">
   <div class="card-header d-flex justify-content-between align-items-center">
     <h5 class="mb-0">Marcações de transporte</h5>
-    <a href="{% url 'visitas:criar_transporte' %}" class="btn btn-sm btn-primary">Nova marcação</a>
+    {% if pode_pedir_transporte %}
+      <a href="{% url 'visitas:criar_pedido_transporte' %}" class="btn btn-sm btn-primary">Novo pedido</a>
+    {% endif %}
   </div>
   <div class="card-body table-responsive">
     <table class="table table-hover mb-0 align-middle">
