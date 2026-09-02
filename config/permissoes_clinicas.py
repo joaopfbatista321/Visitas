@@ -6,6 +6,8 @@ GRUPOS_CLINICOS = (
     "UCCI_Medicos",
     "UCCI_Psicologia",
     "UCCI_Fisioterapia",
+    "UCCI_TerapiaOcupacional",
+    "UCCI_TerapiaFala",
     "UCCI_ServicoSocial",
 )
 
@@ -32,7 +34,7 @@ def pode_ver_registo(
         Autor e utilizadores do mesmo grupo profissional.
 
     TODOS:
-        Apenas os cinco grupos clínicos autorizados.
+        Apenas os grupos clínicos autorizados.
     """
     if not utilizador.is_authenticated:
         return False

@@ -62,9 +62,9 @@
       <div class="card-header">
         <h5 class="mb-1">
           {% if registo %}
-            Editar registo de Fisioterapia
+            Editar registo de Reabilitação
           {% else %}
-            Novo registo de Fisioterapia
+            Novo registo de Reabilitação
           {% endif %}
         </h5>
 
@@ -83,6 +83,12 @@
             {{ utente.quarto.get_piso_display }}
           {% endif %}
         </p>
+
+        <div class="mt-2">
+          <span class="badge bg-light-primary text-primary">
+            Área: {{ area_reabilitacao }}
+          </span>
+        </div>
 
         {% if participacao %}
           <div class="mt-2">
@@ -310,7 +316,7 @@
                   <strong>Grupo profissional</strong>
 
                   <div class="small mt-1">
-                    Todos os fisioterapeutas podem consultar,
+                    Os profissionais da mesma área podem consultar,
                     mas apenas o autor pode editar.
                   </div>
                 </div>
@@ -325,7 +331,8 @@
 
                   <div class="small mt-1">
                     Visível para Enfermagem, Médicos, Psicologia,
-                    Fisioterapia e Serviço Social. Apenas o autor
+                    Fisioterapia, Terapia Ocupacional, Terapia da Fala
+                    e Serviço Social. Apenas o autor
                     pode editar.
                   </div>
                 </div>
@@ -335,7 +342,7 @@
 
             <div class="form-text mt-2">
               Por defeito, o registo fica disponível para os
-              cinco grupos profissionais clínicos autorizados.
+              grupos profissionais clínicos autorizados.
             </div>
           </div>
 

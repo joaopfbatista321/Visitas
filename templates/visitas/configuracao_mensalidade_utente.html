@@ -1,0 +1,60 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Configurar mensalidade{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+      <div>
+        <h3 class="mb-1">Configuração da mensalidade</h3>
+        <p class="text-muted mb-0">{{ utente.nome }} — processo {{ utente.numero_processo }}</p>
+      </div>
+      <a href="{% url 'visitas:mensalidades_utentes' %}?ano={{ ano }}&mes={{ mes }}" class="btn btn-outline-secondary">Voltar às mensalidades</a>
+    </div>
+
+    <div class="alert alert-info" role="alert">
+      Esta configuração pertence apenas à mensalidade. Não consulta nem
+      altera o dinheiro da conta pessoal do utente.
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header">
+        <h5 class="mb-0">Regras de faturação</h5>
+      </div>
+      <div class="card-body">
+        <form method="post" class="row g-3 align-items-end">
+          {% csrf_token %}
+          <input type="hidden" name="ano" value="{{ ano }}">
+          <input type="hidden" name="mes" value="{{ mes }}">
+
+          <div class="col-md-6">
+            <label for="{{ form.valor_dia.id_for_label }}" class="form-label">
+              Valor por dia (€)
+            </label>
+            {{ form.valor_dia }}
+            {% if form.valor_dia.help_text %}<div class="form-text">{{ form.valor_dia.help_text }}</div>{% endif %}
+            {% for erro in form.valor_dia.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-check mb-2">
+              {{ form.paga_dias_ausencia }}
+              <label class="form-check-label" for="{{ form.paga_dias_ausencia.id_for_label }}">
+                Paga os dias de ausência
+              </label>
+            </div>
+            {% if form.paga_dias_ausencia.help_text %}<div class="form-text">{{ form.paga_dias_ausencia.help_text }}</div>{% endif %}
+            {% for erro in form.paga_dias_ausencia.errors %}<div class="text-danger small mt-1">{{ erro }}</div>{% endfor %}
+          </div>
+
+          <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-success">Guardar configuração</button>
+            <a href="{% url 'visitas:mensalidades_utentes' %}?ano={{ ano }}&mes={{ mes }}" class="btn btn-secondary">Cancelar</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content %}

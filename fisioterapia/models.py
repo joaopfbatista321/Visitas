@@ -14,6 +14,12 @@ GRUPO_FISIOTERAPIA = "UCCI_Fisioterapia"
 GRUPO_TERAPIA_OCUPACIONAL = "UCCI_TerapiaOcupacional"
 GRUPO_TERAPIA_FALA = "UCCI_TerapiaFala"
 
+GRUPOS_REABILITACAO = (
+    GRUPO_FISIOTERAPIA,
+    GRUPO_TERAPIA_OCUPACIONAL,
+    GRUPO_TERAPIA_FALA,
+)
+
 
 class AreaReabilitacao(models.TextChoices):
     FISIOTERAPIA = "FISIOTERAPIA", "Fisioterapia"
@@ -84,6 +90,14 @@ class LocalSessaoFisioterapia(models.TextChoices):
 
 
 class TipoIntervencaoFisioterapia(models.Model):
+    area = models.CharField(
+        "Área de Reabilitação",
+        max_length=30,
+        choices=AreaReabilitacao.choices,
+        default=AreaReabilitacao.FISIOTERAPIA,
+        db_index=True,
+    )
+
     categoria = models.CharField(
         "Categoria",
         max_length=20,
@@ -95,7 +109,6 @@ class TipoIntervencaoFisioterapia(models.Model):
     nome = models.CharField(
         "Designação",
         max_length=150,
-        unique=True,
     )
 
     descricao = models.TextField(
@@ -124,14 +137,21 @@ class TipoIntervencaoFisioterapia(models.Model):
 
     class Meta:
         ordering = [
+            "area",
             "ordem",
             "categoria",
             "nome",
         ]
-        verbose_name = "Tipo de intervenção de fisioterapia"
+        verbose_name = "Tipo de intervenção de reabilitação"
         verbose_name_plural = (
-            "Tipos de intervenção de fisioterapia"
+            "Tipos de intervenção de reabilitação"
         )
+        constraints = [
+            models.UniqueConstraint(
+                fields=["area", "nome"],
+                name="reab_interv_area_nome_uniq",
+            ),
+        ]
 
     def __str__(self):
         return self.nome

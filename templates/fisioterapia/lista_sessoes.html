@@ -237,7 +237,7 @@
               value="{{ intervencao.pk }}"
               {% if intervencao_id == intervencao.pk|stringformat:"s" %}selected{% endif %}
             >
-              {{ intervencao.nome }}
+              {{ intervencao.get_area_display }} — {{ intervencao.nome }}
             </option>
           {% endfor %}
         </select>
@@ -304,7 +304,7 @@
         {% if por_validar %}
           As minhas presenças por validar
         {% else %}
-          Sessões de Fisioterapia
+          Sessões de Reabilitação
         {% endif %}
       </h5>
 
@@ -419,6 +419,9 @@
             <!-- Intervenções -->
             <td>
               <div class="d-flex flex-column align-items-start gap-1">
+                <span class="badge bg-secondary">
+                  {{ sessao.get_area_display }}
+                </span>
                 {% for intervencao in sessao.tipos_intervencao.all %}
                   <span class="badge bg-light-primary text-primary">
                     {{ intervencao.nome }}

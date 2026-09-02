@@ -36,8 +36,11 @@ from .forms import (
     SessaoFisioterapiaForm,
 )
 from .models import (
+    AreaReabilitacao,
     EstadoParticipacaoFisioterapia,
     EstadoSessaoFisioterapia,
+    GRUPO_POR_AREA_REABILITACAO,
+    GRUPOS_REABILITACAO,
     LocalSessaoFisioterapia,
     ParticipacaoFisioterapia,
     RegistoFisioterapia,
@@ -67,8 +70,6 @@ from visitas.models import (
     Utente,
 )
 
-GRUPO_FISIOTERAPIA = "UCCI_Fisioterapia"
-
 User = get_user_model()
 
 
@@ -92,7 +93,7 @@ def _utilizador_e_fisioterapeuta(utilizador):
     return (
         utilizador.is_authenticated
         and utilizador.groups.filter(
-            name=GRUPO_FISIOTERAPIA
+            name__in=GRUPOS_REABILITACAO
         ).exists()
     )
 
@@ -102,7 +103,7 @@ def _profissionais_fisioterapia():
         User.objects
         .filter(
             is_active=True,
-            groups__name=GRUPO_FISIOTERAPIA,
+            groups__name__in=GRUPOS_REABILITACAO,
         )
         .distinct()
         .order_by(
@@ -157,9 +158,16 @@ def _registos_visiveis(utilizador, queryset=None):
         profissional=utilizador
     )
 
-    if GRUPO_FISIOTERAPIA in grupos:
+    areas_profissional = [
+        area
+        for area, grupo in GRUPO_POR_AREA_REABILITACAO.items()
+        if grupo in grupos
+    ]
+
+    if areas_profissional:
         condicoes |= Q(
-            visibilidade=VisibilidadeRegisto.GRUPO
+            visibilidade=VisibilidadeRegisto.GRUPO,
+            area__in=areas_profissional,
         )
 
     if grupos.intersection(GRUPOS_CLINICOS):
@@ -195,7 +203,7 @@ def _registar_alteracao_estado_sessao(
 
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def calendario_fisioterapia(request):
     hoje = timezone.localdate()
 
@@ -246,6 +254,7 @@ def calendario_fisioterapia(request):
                 TipoIntervencaoFisioterapia.objects
                 .filter(ativo=True)
                 .order_by(
+                    "area",
                     "ordem",
                     "categoria",
                     "nome",
@@ -258,7 +267,7 @@ def calendario_fisioterapia(request):
 
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 @never_cache
 def eventos_fisioterapia(request):
     inicio = _converter_data_hora(
@@ -494,7 +503,7 @@ def eventos_fisioterapia(request):
 
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def lista_sessoes(request):
     sessoes = (
         SessaoFisioterapia.objects
@@ -675,6 +684,7 @@ def lista_sessoes(request):
                 TipoIntervencaoFisioterapia.objects
                 .filter(ativo=True)
                 .order_by(
+                    "area",
                     "ordem",
                     "categoria",
                     "nome",
@@ -687,13 +697,17 @@ def lista_sessoes(request):
 
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def criar_sessao(request):
     inicio = _converter_data_hora(
         request.GET.get("inicio")
     )
 
     initial = {}
+
+    area_pedida = request.GET.get("area")
+    if area_pedida in _areas_reabilitacao_utilizador(request.user):
+        initial["area"] = area_pedida
 
     if inicio:
         initial["inicio"] = inicio
@@ -765,7 +779,7 @@ def criar_sessao(request):
 
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def editar_sessao(request, pk):
     sessao = get_object_or_404(
         SessaoFisioterapia.objects
@@ -868,7 +882,7 @@ def editar_sessao(request, pk):
 
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def detalhe_sessao(request, pk):
     sessao = get_object_or_404(
         SessaoFisioterapia.objects
@@ -926,7 +940,7 @@ def detalhe_sessao(request, pk):
 
 @require_POST
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def acao_participacao(request, pk, acao):
     with transaction.atomic():
         participacao = get_object_or_404(
@@ -1025,7 +1039,7 @@ def acao_participacao(request, pk, acao):
 
 @require_POST
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def marcar_todos_realizados(request, pk):
     with transaction.atomic():
         sessao = get_object_or_404(
@@ -1107,7 +1121,7 @@ def marcar_todos_realizados(request, pk):
 
 @require_POST
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def cancelar_sessao(request, pk):
     with transaction.atomic():
         sessao = get_object_or_404(
@@ -1222,6 +1236,7 @@ def registos_utente(request, utente_id):
         )
         .distinct()
         .order_by(
+            "area",
             "ordem",
             "categoria",
             "nome",
@@ -1325,7 +1340,7 @@ def registos_utente(request, utente_id):
 
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def criar_registo(
     request,
     utente_id,
@@ -1380,10 +1395,17 @@ def criar_registo(
                 pk=participacao.sessao_id,
             )
 
+    area_registo = (
+        participacao.sessao.area
+        if participacao
+        else _area_principal_utilizador(request.user)
+    )
+
     if request.method == "POST":
         form = RegistoFisioterapiaForm(
             request.POST,
             participacao=participacao,
+            area=area_registo,
         )
 
         if form.is_valid():
@@ -1395,6 +1417,7 @@ def criar_registo(
 
                     registo.utente = utente
                     registo.participacao = participacao
+                    registo.area = area_registo
                     registo.profissional = request.user
 
                     registo.full_clean()
@@ -1427,6 +1450,7 @@ def criar_registo(
     else:
         form = RegistoFisioterapiaForm(
             participacao=participacao,
+            area=area_registo,
         )
 
     return render(
@@ -1437,12 +1461,15 @@ def criar_registo(
             "utente": utente,
             "participacao": participacao,
             "registo": None,
+            "area_reabilitacao": AreaReabilitacao(
+                area_registo
+            ).label,
         },
     )
 
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def editar_registo(request, pk):
     registo = get_object_or_404(
         RegistoFisioterapia.objects
@@ -1465,6 +1492,7 @@ def editar_registo(request, pk):
         form = RegistoFisioterapiaForm(
             request.POST,
             instance=registo,
+            area=registo.area,
         )
 
         if form.is_valid():
@@ -1500,7 +1528,8 @@ def editar_registo(request, pk):
                 )
     else:
         form = RegistoFisioterapiaForm(
-            instance=registo
+            instance=registo,
+            area=registo.area,
         )
 
     return render(
@@ -1511,6 +1540,7 @@ def editar_registo(request, pk):
             "utente": registo.utente,
             "participacao": registo.participacao,
             "registo": registo,
+            "area_reabilitacao": registo.get_area_display(),
         },
     )
 
@@ -1551,7 +1581,7 @@ def detalhe_registo(request, pk):
     )
 
 @login_required
-@grupos_permitidos(GRUPO_FISIOTERAPIA)
+@grupos_permitidos(*GRUPOS_REABILITACAO)
 def alertas_clinicos(request):
     agora = timezone.now()
     limite_quedas = agora - timedelta(hours=24)
@@ -1668,3 +1698,20 @@ def alertas_clinicos(request):
         "fisioterapia/alertas_clinicos.html",
         context,
     )
+
+
+def _areas_reabilitacao_utilizador(utilizador):
+    grupos = set(
+        utilizador.groups.values_list("name", flat=True)
+    )
+
+    return [
+        area
+        for area, grupo in GRUPO_POR_AREA_REABILITACAO.items()
+        if grupo in grupos
+    ]
+
+
+def _area_principal_utilizador(utilizador):
+    areas = _areas_reabilitacao_utilizador(utilizador)
+    return areas[0] if areas else AreaReabilitacao.FISIOTERAPIA

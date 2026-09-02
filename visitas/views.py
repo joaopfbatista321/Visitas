@@ -3,7 +3,7 @@ from datetime import timedelta, date
 from django.contrib.auth.decorators import login_required
 from django.db import models
 from django.db import transaction
-from django.db.models import Count
+from django.db.models import Count, Min, Sum
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -18,6 +18,8 @@ from .forms import (
     UtenteSaidaForm,
     IsolamentoForm,
     MovimentoFinanceiroForm,
+    PagamentoMensalidadeForm,
+    ConfiguracaoMensalidadeUtenteForm,
     TransporteForm,
     ViaturaForm,
     CondutorForm,
@@ -27,13 +29,12 @@ from .forms import (
 )
 
 import json
-from django.db.models.functions import TruncDate, TruncMonth
+from django.db.models.functions import Coalesce, TruncDate, TruncMonth
 from django.http import HttpResponse, JsonResponse
 from django.template.loader import get_template
 from django.urls import reverse
 from django.utils.dateparse import parse_date, parse_datetime
 from django.views.decorators.http import require_POST
-from xhtml2pdf import pisa
 
 from .models import (
     Visita,
@@ -44,6 +45,8 @@ from .models import (
     Externo,
     Isolamento,
     MovimentoFinanceiro,
+    Mensalidade,
+    Piso,
     Viatura,
     Condutor,
     PedidoTransporte,
@@ -56,6 +59,12 @@ from .models import (
 )
 from django.contrib import messages
 
+from .servicos_mensalidades import (
+    gerar_mensalidades,
+    registar_pagamento_mensalidade,
+)
+from .servicos_ocupacao import calcular_mapa_ocupacao, resolver_periodo
+
 
 GRUPOS_CONSULTA_UTENTES = (
     "UCCI_Rececao",
@@ -63,6 +72,8 @@ GRUPOS_CONSULTA_UTENTES = (
     "UCCI_Medicos",
     "UCCI_Psicologia",
     "UCCI_Fisioterapia",
+    "UCCI_TerapiaOcupacional",
+    "UCCI_TerapiaFala",
     "UCCI_ServicoSocial",
     "UCCI_Coordenacao",
 )
@@ -80,6 +91,12 @@ GRUPOS_ISOLAMENTOS = (
 
 GRUPOS_FINANCEIRO = (
     "Financeiro",
+    "UCCI_Rececao",
+    "UCCI_Coordenacao",
+)
+
+GRUPOS_MAPA_OCUPACAO = (
+    "UCCI_ServicoSocial",
     "UCCI_Coordenacao",
 )
 
@@ -197,6 +214,16 @@ def lista_utentes(request):
 def detalhe_utente(request, pk):
     utente = get_object_or_404(Utente, pk=pk)
 
+    ausencias_recentes = (
+        utente.ausencias_enfermagem
+        .select_related("criado_por", "estado_atualizado_por")[:10]
+    )
+    ausencia_ativa = (
+        utente.ausencias_enfermagem
+        .filter(estado="ATIVA")
+        .first()
+    )
+
     visitas = (
         Visita.objects
         .filter(utente=utente)
@@ -232,6 +259,8 @@ def detalhe_utente(request, pk):
         "estado": estado,
         "tipo": tipo,
         "tipos_visitante": Visita._meta.get_field("tipo_visitante").choices,
+        "ausencias_recentes": ausencias_recentes,
+        "ausencia_ativa": ausencia_ativa,
     }
 
     return render(request, "visitas/detalhe_utente.html", context)
@@ -843,6 +872,8 @@ def escolher_utente_para_visita(request):
     "UCCI_Coordenacao",
 )
 def visitas_relatorio_pdf(request):
+    from xhtml2pdf import pisa
+
     data_inicio = request.GET.get("data_inicio")
     data_fim = request.GET.get("data_fim")
 
@@ -1033,20 +1064,25 @@ def lista_financeira_utentes(request):
 @login_required
 @grupos_permitidos(*GRUPOS_FINANCEIRO)
 def financeiro_utente(request, pk):
-
     utente = get_object_or_404(Utente, pk=pk)
-
     movimentos = utente.movimentos.all()
     form = MovimentoFinanceiroForm()
 
     if request.method == "POST":
+        if request.POST.get("acao") != "movimento":
+            messages.error(request, "Ação inválida na conta pessoal.")
+            return redirect("visitas:financeiro_utente", pk=utente.pk)
+
         form = MovimentoFinanceiroForm(request.POST)
         if form.is_valid():
             movimento = form.save(commit=False)
             movimento.utente = utente
             movimento.registado_por = request.user
             movimento.save()
-            messages.success(request, "Movimento financeiro registado com sucesso.")
+            messages.success(
+                request,
+                "Movimento da conta pessoal registado com sucesso.",
+            )
             return redirect("visitas:financeiro_utente", pk=utente.pk)
 
     context = {
@@ -1056,6 +1092,277 @@ def financeiro_utente(request, pk):
     }
 
     return render(request, "visitas/financeiro_utente.html", context)
+
+
+def _ano_mes_pedido(request):
+    hoje = localdate()
+
+    try:
+        ano = int(request.GET.get("ano") or request.POST.get("ano") or hoje.year)
+        mes = int(request.GET.get("mes") or request.POST.get("mes") or hoje.month)
+    except (TypeError, ValueError):
+        return hoje.year, hoje.month
+
+    if ano < 2000 or ano > 2100 or mes < 1 or mes > 12:
+        return hoje.year, hoje.month
+
+    return ano, mes
+
+
+@login_required
+@grupos_permitidos(*GRUPOS_FINANCEIRO)
+def configuracao_mensalidade_utente(request, pk):
+    utente = get_object_or_404(Utente, pk=pk)
+    ano, mes = _ano_mes_pedido(request)
+    form = ConfiguracaoMensalidadeUtenteForm(
+        request.POST or None,
+        instance=utente,
+    )
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(
+            request,
+            "Configuração da mensalidade atualizada com sucesso.",
+        )
+        return redirect(
+            f"{reverse('visitas:mensalidades_utentes')}?ano={ano}&mes={mes}"
+        )
+
+    return render(
+        request,
+        "visitas/configuracao_mensalidade_utente.html",
+        {
+            "utente": utente,
+            "form": form,
+            "ano": ano,
+            "mes": mes,
+        },
+    )
+
+
+@login_required
+@grupos_permitidos(*GRUPOS_FINANCEIRO)
+def mensalidades_utentes(request):
+    ano, mes = _ano_mes_pedido(request)
+
+    # Garante que os utentes do período aparecem logo na lista.
+    resultado = gerar_mensalidades(ano, mes)
+
+    if request.method == "POST" and request.POST.get("acao") == "calcular":
+        messages.success(
+            request,
+            (
+                f"Cálculo concluído: {resultado['criadas']} criada(s), "
+                f"{resultado['atualizadas']} atualizada(s) e "
+                f"{resultado['reabertas']} reaberta(s) para revisão."
+            ),
+        )
+        return redirect(
+            f"{reverse('visitas:mensalidades_utentes')}?ano={ano}&mes={mes}"
+        )
+
+    q = request.GET.get("q", "").strip()
+    piso = request.GET.get("piso", "").strip()
+    estado = request.GET.get("estado", "").strip()
+
+    mensalidades = (
+        Mensalidade.objects.filter(
+            ano=ano,
+            mes=mes,
+            valor_total__gt=0,
+        )
+        .select_related("utente", "utente__quarto", "confirmado_por")
+        .prefetch_related("pagamentos__registado_por")
+        .annotate(
+            valor_recebido=Coalesce(
+                Sum("pagamentos__valor"),
+                models.Value(
+                    0,
+                    output_field=models.DecimalField(
+                        max_digits=10,
+                        decimal_places=2,
+                    ),
+                ),
+                output_field=models.DecimalField(
+                    max_digits=10,
+                    decimal_places=2,
+                ),
+            )
+        )
+    )
+
+    if q:
+        mensalidades = mensalidades.filter(
+            Q(utente__nome__icontains=q)
+            | Q(utente__numero_processo__icontains=q)
+        )
+    if piso in Piso.values:
+        mensalidades = mensalidades.filter(utente__quarto__piso=piso)
+    else:
+        piso = ""
+    if estado == "pago":
+        mensalidades = mensalidades.filter(
+            Q(valor_recebido__gte=models.F("valor_total"))
+            | Q(pago=True, valor_recebido=0)
+        )
+    elif estado == "parcial":
+        mensalidades = mensalidades.filter(
+            valor_recebido__gt=0,
+            valor_recebido__lt=models.F("valor_total"),
+        )
+    elif estado == "pendente":
+        mensalidades = mensalidades.filter(
+            pago=False,
+            necessita_revisao=False,
+            valor_recebido=0,
+        )
+    elif estado == "revisao":
+        mensalidades = mensalidades.filter(necessita_revisao=True)
+    else:
+        estado = ""
+
+    totais = mensalidades.aggregate(
+        total=Sum("valor_total"),
+        dias=Sum("dias_faturaveis"),
+        ausencias=Sum("dias_ausencia"),
+    )
+    total_pendentes = mensalidades.filter(
+        pago=False,
+        valor_recebido=0,
+    ).count()
+    total_parciais = mensalidades.filter(
+        valor_recebido__gt=0,
+        valor_recebido__lt=models.F("valor_total"),
+    ).count()
+    total_pagas = mensalidades.filter(
+        Q(valor_recebido__gte=models.F("valor_total"))
+        | Q(pago=True, valor_recebido=0)
+    ).count()
+    total_revisao = mensalidades.filter(necessita_revisao=True).count()
+
+    paginator = Paginator(mensalidades.order_by("utente__nome"), 50)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    query_sem_pagina = request.GET.copy()
+    query_sem_pagina.pop("page", None)
+
+    meses = [
+        (1, "Janeiro"),
+        (2, "Fevereiro"),
+        (3, "Março"),
+        (4, "Abril"),
+        (5, "Maio"),
+        (6, "Junho"),
+        (7, "Julho"),
+        (8, "Agosto"),
+        (9, "Setembro"),
+        (10, "Outubro"),
+        (11, "Novembro"),
+        (12, "Dezembro"),
+    ]
+    primeiro_ano = (
+        Utente.objects.aggregate(valor=Min("data_entrada"))["valor"]
+        or localdate()
+    ).year
+    ano_inicial = min(primeiro_ano, ano)
+    ano_final = max(localdate().year + 1, ano)
+
+    return render(
+        request,
+        "visitas/mensalidades_utentes.html",
+        {
+            "page_obj": page_obj,
+            "ano": ano,
+            "mes": mes,
+            "meses": meses,
+            "anos": range(ano_final, ano_inicial - 1, -1),
+            "pisos": Piso.choices,
+            "estados": (
+                ("pendente", "Pendente"),
+                ("parcial", "Pagamento parcial"),
+                ("pago", "Pago"),
+                ("revisao", "Revisão necessária"),
+            ),
+            "q": q,
+            "piso": piso,
+            "estado": estado,
+            "totais": totais,
+            "total_pendentes": total_pendentes,
+            "total_parciais": total_parciais,
+            "total_pagas": total_pagas,
+            "total_revisao": total_revisao,
+            "data_pagamento_padrao": localdate(),
+            "query_sem_pagina": query_sem_pagina.urlencode(),
+        },
+    )
+
+
+@require_POST
+@login_required
+@grupos_permitidos(*GRUPOS_FINANCEIRO)
+def validar_pagamento_mensalidade(request, pk):
+    mensalidade = get_object_or_404(Mensalidade, pk=pk)
+    form = PagamentoMensalidadeForm(request.POST)
+
+    if form.is_valid():
+        try:
+            registar_pagamento_mensalidade(
+                mensalidade,
+                form.cleaned_data["valor"],
+                form.cleaned_data["data_pagamento"],
+                request.user,
+                observacoes=form.cleaned_data.get("observacoes", ""),
+            )
+        except ValidationError as erro:
+            messages.error(request, " ".join(erro.messages))
+        else:
+            messages.success(request, "Pagamento registado com sucesso.")
+    else:
+        mensagens_erro = [
+            str(mensagem)
+            for erros_campo in form.errors.values()
+            for mensagem in erros_campo
+        ]
+        messages.error(
+            request,
+            " ".join(mensagens_erro) or "Verifique os dados do pagamento.",
+        )
+
+    return redirect(
+        f"{reverse('visitas:mensalidades_utentes')}"
+        f"?ano={mensalidade.ano}&mes={mensalidade.mes}"
+    )
+
+
+@login_required
+@grupos_permitidos(*GRUPOS_MAPA_OCUPACAO)
+def mapa_ocupacao(request):
+    tipo = request.GET.get("periodo", "dia").strip()
+    if tipo not in {"dia", "semana", "mes"}:
+        tipo = "dia"
+
+    referencia = parse_date(request.GET.get("data", "")) or localdate()
+    piso = request.GET.get("piso", "").strip()
+    if piso not in Piso.values:
+        piso = ""
+
+    inicio, fim = resolver_periodo(tipo, referencia)
+    linhas, total = calcular_mapa_ocupacao(inicio, fim, piso=piso)
+
+    return render(
+        request,
+        "visitas/mapa_ocupacao.html",
+        {
+            "periodo": tipo,
+            "referencia": referencia,
+            "inicio": inicio,
+            "fim_inclusivo": fim - timedelta(days=1),
+            "piso": piso,
+            "pisos": Piso.choices,
+            "linhas": linhas,
+            "total": total,
+        },
+    )
 
 
 # ============================================================

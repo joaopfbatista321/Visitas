@@ -231,8 +231,28 @@ urlpatterns = [
         name="lista_financeira_utentes",
     ),
     path(
+        "financeiro/mensalidades/",
+        views.mensalidades_utentes,
+        name="mensalidades_utentes",
+    ),
+    path(
+        "financeiro/mensalidades/utente/<int:pk>/configurar/",
+        views.configuracao_mensalidade_utente,
+        name="configuracao_mensalidade_utente",
+    ),
+    path(
+        "financeiro/mensalidades/<int:pk>/validar/",
+        views.validar_pagamento_mensalidade,
+        name="validar_pagamento_mensalidade",
+    ),
+    path(
         "utente/<int:pk>/financeiro/",
         views.financeiro_utente,
         name="financeiro_utente",
+    ),
+    path(
+        "mapa-ocupacao/",
+        views.mapa_ocupacao,
+        name="mapa_ocupacao",
     ),
 ]

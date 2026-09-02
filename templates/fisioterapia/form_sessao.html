@@ -200,8 +200,26 @@
 
             <div class="row g-3">
 
+              <!-- Área de Reabilitação -->
+              <div class="col-md-4">
+                <label
+                  for="{{ form.area.id_for_label }}"
+                  class="form-label"
+                >
+                  {{ form.area.label }}
+                </label>
+
+                {{ form.area }}
+
+                {% for erro in form.area.errors %}
+                  <div class="text-danger small mt-1">
+                    {{ erro }}
+                  </div>
+                {% endfor %}
+              </div>
+
               <!-- Profissional responsável -->
-              <div class="col-md-8">
+              <div class="col-md-5">
                 <label
                   for="{{ form.profissional.id_for_label }}"
                   class="form-label"
@@ -225,7 +243,7 @@
               </div>
 
               <!-- Formato -->
-              <div class="col-md-4">
+              <div class="col-md-3">
                 <label
                   for="{{ form.tipo.id_for_label }}"
                   class="form-label"
@@ -247,7 +265,7 @@
                   <strong>Profissional responsável:</strong>
 
                   <span id="nome-profissional-responsavel">
-                    Selecione o fisioterapeuta.
+                    Selecione o profissional.
                   </span>
 
                   <div class="small mt-1">
@@ -545,6 +563,8 @@
 document.addEventListener(
   "DOMContentLoaded",
   function () {
+    const area = document.getElementById("id_area");
+
     const tipo = document.getElementById(
       "id_tipo"
     );
@@ -605,6 +625,16 @@ document.addEventListener(
       )
     );
 
+    {% if not sessao %}
+      if (area && area.options.length > 1) {
+        area.addEventListener("change", function () {
+          const destino = new URL(window.location.href);
+          destino.searchParams.set("area", area.value);
+          window.location.href = destino.toString();
+        });
+      }
+    {% endif %}
+
     function obterLinha(caixa) {
       const etiqueta = caixa.closest("label");
 
@@ -628,7 +658,7 @@ document.addEventListener(
         nomeProfissional.textContent = opcao.text;
       } else {
         nomeProfissional.textContent =
-          "Selecione o fisioterapeuta.";
+          "Selecione o profissional.";
       }
     }
 

@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import date
@@ -26,6 +27,12 @@ class Quarto(models.Model):
     codigo = models.CharField("Código do quarto", max_length=10)
     piso = models.CharField("Piso", max_length=2, choices=Piso.choices)
     descricao = models.CharField("Descrição", max_length=100, blank=True, null=True)
+    capacidade = models.PositiveSmallIntegerField(
+        "Número de camas",
+        default=1,
+        validators=[MinValueValidator(1)],
+        help_text="Número de camas disponíveis neste quarto.",
+    )
 
     class Meta:
         verbose_name = "Quarto"
@@ -141,6 +148,36 @@ class Utente(models.Model):
         max_digits=10,
         decimal_places=2,
         default=Decimal("0.00")
+    )
+
+    valor_caucao = models.DecimalField(
+        "Valor da caução",
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text=(
+            "Valor administrativo da caução. Não altera o saldo pessoal "
+            "nem o cálculo das mensalidades."
+        ),
+    )
+
+    valor_dia = models.DecimalField(
+        "Valor diário",
+        max_digits=8,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+        help_text="Valor cobrado por cada dia faturável de internamento.",
+    )
+
+    paga_dias_ausencia = models.BooleanField(
+        "Paga durante as ausências",
+        default=True,
+        help_text=(
+            "Desative para descontar da mensalidade os dias em que o "
+            "utente está ausente."
+        ),
     )
 
     contacto_emergencia1_nome = models.CharField(max_length=100, blank=True)
@@ -403,6 +440,8 @@ def isolamento_ativo(self):
 
 
 class MovimentoFinanceiro(models.Model):
+    """Movimento da conta pessoal do utente, sem relação com mensalidades."""
+
     ENTRADA = "ENTRADA"
     SAIDA = "SAIDA"
 
@@ -432,8 +471,204 @@ class MovimentoFinanceiro(models.Model):
         ordering = ("-data",)
 
 
+class Mensalidade(models.Model):
+    """Cobrança administrativa independente do saldo pessoal do utente."""
+
+    utente = models.ForeignKey(
+        Utente,
+        on_delete=models.PROTECT,
+        related_name="mensalidades",
+        verbose_name="Utente",
+    )
+    ano = models.PositiveSmallIntegerField("Ano")
+    mes = models.PositiveSmallIntegerField(
+        "Mês",
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+    )
+    valor_dia = models.DecimalField(
+        "Valor diário aplicado",
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    dias_estadia = models.PositiveSmallIntegerField(
+        "Dias de estadia no mês",
+        default=0,
+    )
+    dias_ausencia = models.PositiveSmallIntegerField(
+        "Dias de ausência descontados",
+        default=0,
+    )
+    dias_faturaveis = models.PositiveSmallIntegerField(
+        "Dias faturáveis",
+        default=0,
+    )
+    valor_total = models.DecimalField(
+        "Valor total",
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+    pago = models.BooleanField(
+        "Pago",
+        default=False,
+        db_index=True,
+    )
+    pago_em = models.DateTimeField(
+        "Pago em",
+        blank=True,
+        null=True,
+    )
+    confirmado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="mensalidades_confirmadas",
+        editable=False,
+        verbose_name="Confirmado por",
+    )
+    necessita_revisao = models.BooleanField(
+        "Necessita de revisão",
+        default=False,
+        db_index=True,
+        help_text=(
+            "Indica que uma mensalidade já paga foi recalculada devido a "
+            "uma alteração de datas, ausências ou valor diário."
+        ),
+    )
+    observacoes = models.TextField("Observações", blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Mensalidade do utente"
+        verbose_name_plural = "Mensalidades dos utentes"
+        ordering = ["-ano", "-mes", "utente__nome"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["utente", "ano", "mes"],
+                name="mensalidade_unica_por_utente_mes",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["ano", "mes", "pago"],
+                name="vis_mens_ano_mes_pago",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.utente} — {self.mes:02d}/{self.ano}"
+
+    @property
+    def valor_pago(self):
+        if hasattr(self, "valor_recebido"):
+            total = self.valor_recebido or Decimal("0.00")
+        elif self.pk:
+            total = self.pagamentos.aggregate(
+                total=models.Sum("valor")
+            )["total"] or Decimal("0.00")
+        else:
+            total = Decimal("0.00")
+
+        # Compatibilidade com pagamentos confirmados antes da criação
+        # do histórico de pagamentos parciais.
+        if total == 0 and self.pago:
+            return self.valor_total
+        return total
+
+    @property
+    def valor_em_falta(self):
+        return max(
+            self.valor_total - self.valor_pago,
+            Decimal("0.00"),
+        )
+
+    @property
+    def valor_excedente(self):
+        return max(
+            self.valor_pago - self.valor_total,
+            Decimal("0.00"),
+        )
+
+    @property
+    def estado_pagamento(self):
+        if self.necessita_revisao:
+            return "REVISAO"
+        if self.valor_total > 0 and self.valor_em_falta == 0:
+            return "PAGO"
+        if self.valor_pago > 0:
+            return "PARCIAL"
+        return "PENDENTE"
+
+    def clean(self):
+        super().clean()
+        erros = {}
+
+        if self.dias_ausencia > self.dias_estadia:
+            erros["dias_ausencia"] = (
+                "Os dias de ausência não podem exceder os dias de estadia."
+            )
+
+        if self.dias_faturaveis != self.dias_estadia - self.dias_ausencia:
+            erros["dias_faturaveis"] = (
+                "Os dias faturáveis devem corresponder à estadia menos as ausências."
+            )
+
+        if erros:
+            raise ValidationError(erros)
+
+
+class PagamentoMensalidade(models.Model):
+    mensalidade = models.ForeignKey(
+        Mensalidade,
+        on_delete=models.PROTECT,
+        related_name="pagamentos",
+        verbose_name="Mensalidade",
+    )
+    valor = models.DecimalField(
+        "Valor recebido",
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    data_pagamento = models.DateField(
+        "Data do pagamento",
+        default=timezone.localdate,
+    )
+    observacoes = models.CharField(
+        "Observações",
+        max_length=250,
+        blank=True,
+    )
+    registado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="pagamentos_mensalidades_registados",
+        verbose_name="Registado por",
+    )
+    criado_em = models.DateTimeField("Registado em", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Pagamento de mensalidade"
+        verbose_name_plural = "Pagamentos de mensalidades"
+        ordering = ["-data_pagamento", "-criado_em"]
+        indexes = [
+            models.Index(
+                fields=["mensalidade", "data_pagamento"],
+                name="vis_pag_mens_data",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.mensalidade} — {self.valor:.2f} €"
 @receiver(post_save, sender=MovimentoFinanceiro)
 def atualizar_saldo(sender, instance, created, **kwargs):
+    # Só os movimentos da conta pessoal podem alterar o saldo do utente.
+    # Pagamentos de mensalidades são registados noutro modelo e não passam
+    # por este sinal.
     if not created:
         return
 

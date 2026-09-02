@@ -7,7 +7,7 @@
 
   <div>
     <h4 class="mb-1">
-      Histórico de Fisioterapia
+      Histórico de Reabilitação
     </h4>
 
     <p class="text-muted mb-0">
@@ -54,7 +54,7 @@
 
       <div class="small mt-1">
         Os registos confidenciais são apresentados apenas ao autor.
-        Os registos de grupo são apresentados à Fisioterapia.
+        Os registos de grupo são apresentados aos profissionais da mesma área.
         Os registos gerais são apresentados aos cinco grupos clínicos
         autorizados.
       </div>
@@ -195,7 +195,7 @@
               value="{{ intervencao.pk }}"
               {% if intervencao_id == intervencao.pk|stringformat:"s" %}selected{% endif %}
             >
-              {{ intervencao.nome }}
+              {{ intervencao.get_area_display }} — {{ intervencao.nome }}
             </option>
           {% endfor %}
         </select>
@@ -252,13 +252,17 @@
               <!-- Intervenções e visibilidade -->
               <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
 
+                <span class="badge bg-secondary">
+                  {{ registo.get_area_display }}
+                </span>
+
                 {% for intervencao in registo.tipos_intervencao.all %}
                   <span class="badge bg-light-primary text-primary">
                     {{ intervencao.nome }}
                   </span>
                 {% empty %}
                   <strong>
-                    Fisioterapia/Reabilitação
+                    Reabilitação
                   </strong>
                 {% endfor %}
 
@@ -401,7 +405,7 @@
             </h4>
 
             <p class="text-muted mb-3">
-              Não existem registos de Fisioterapia que possa
+              Não existem registos de Reabilitação que possa
               consultar para este utente.
             </p>
 

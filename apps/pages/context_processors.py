@@ -61,6 +61,8 @@ def permissoes_portal(request):
             "UCCI_Medicos",
             "UCCI_Psicologia",
             "UCCI_Fisioterapia",
+            "UCCI_TerapiaOcupacional",
+            "UCCI_TerapiaFala",
             "UCCI_ServicoSocial",
             "UCCI_Coordenacao",
         ),
@@ -123,7 +125,15 @@ def permissoes_portal(request):
         # Fisioterapia
         # Não concede acesso clínico automático ao superutilizador.
         "pode_gerir_fisioterapia": (
-            "UCCI_Fisioterapia" in grupos
+            bool(
+                grupos.intersection(
+                    {
+                        "UCCI_Fisioterapia",
+                        "UCCI_TerapiaOcupacional",
+                        "UCCI_TerapiaFala",
+                    }
+                )
+            )
         ),
 
         # Registos clínicos gerais
@@ -154,6 +164,12 @@ def permissoes_portal(request):
         # Financeiro
         "pode_ver_financeiro": tem_grupo(
             "Financeiro",
+            "UCCI_Rececao",
+            "UCCI_Coordenacao",
+        ),
+
+        "pode_ver_mapa_ocupacao": tem_grupo(
+            "UCCI_ServicoSocial",
             "UCCI_Coordenacao",
         ),
 

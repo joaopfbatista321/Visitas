@@ -85,7 +85,7 @@
               <i data-feather="users"></i>
             </li>
 
-            <li class="pc-item pc-hasmenu{% if request.resolver_match.url_name == 'lista_utentes' or request.resolver_match.url_name == 'detalhe_utente' or request.resolver_match.url_name == 'criar_utente' or request.resolver_match.url_name == 'editar_utente' or request.resolver_match.url_name == 'saida_utente' or request.resolver_match.url_name == 'isolamentos_ativos' or request.resolver_match.url_name == 'criar_isolamento' or request.resolver_match.url_name == 'editar_isolamento' %} active pc-trigger{% endif %}">
+            <li class="pc-item pc-hasmenu{% if request.resolver_match.url_name == 'lista_utentes' or request.resolver_match.url_name == 'detalhe_utente' or request.resolver_match.url_name == 'criar_utente' or request.resolver_match.url_name == 'editar_utente' or request.resolver_match.url_name == 'saida_utente' or request.resolver_match.url_name == 'mapa_ocupacao' %} active pc-trigger{% endif %}">
               <a href="#!" class="pc-link">
                 <span class="pc-micon">
                   <i data-feather="users"></i>
@@ -121,29 +121,27 @@
                   </li>
                 {% endif %}
 
-                {% if pode_ver_isolamentos %}
-                  <li class="pc-item{% if request.resolver_match.url_name == 'isolamentos_ativos' %} active{% endif %}">
-                    <a
-                      href="{% url 'visitas:isolamentos_ativos' %}"
-                      class="pc-link"
-                    >
-                      Isolamentos ativos
+                {% if pode_ver_mapa_ocupacao %}
+                  <li class="pc-item{% if request.resolver_match.url_name == 'mapa_ocupacao' %} active{% endif %}">
+                    <a href="{% url 'visitas:mapa_ocupacao' %}" class="pc-link">
+                      Mapa de ocupação
                     </a>
                   </li>
                 {% endif %}
+
               </ul>
             </li>
           {% endif %}
 
           <!-- ENFERMAGEM -->
-          {% if pode_ver_registos_enfermagem or pode_criar_registos_enfermagem %}
+          {% if pode_ver_registos_enfermagem or pode_criar_registos_enfermagem or pode_ver_isolamentos %}
 
             <li class="pc-item pc-caption">
               <label>Enfermagem</label>
               <i data-feather="heart"></i>
             </li>
 
-            <li class="pc-item pc-hasmenu{% if request.resolver_match.namespace == 'enfermagem' %} active pc-trigger{% endif %}">
+            <li class="pc-item pc-hasmenu{% if request.resolver_match.namespace == 'enfermagem' or request.resolver_match.url_name == 'isolamentos_ativos' or request.resolver_match.url_name == 'criar_isolamento' or request.resolver_match.url_name == 'editar_isolamento' or request.resolver_match.url_name == 'terminar_isolamento' %} active pc-trigger{% endif %}">
 
               <a href="#!" class="pc-link">
                 <span class="pc-micon">
@@ -177,6 +175,28 @@
                       class="pc-link"
                     >
                       Registo de quedas
+                    </a>
+                  </li>
+                {% endif %}
+
+                {% if pode_ver_registos_enfermagem or pode_criar_registos_enfermagem %}
+                  <li class="pc-item{% if request.resolver_match.namespace == 'enfermagem' and request.resolver_match.url_name == 'lista_ausencias' or request.resolver_match.url_name == 'criar_ausencia' or request.resolver_match.url_name == 'detalhe_ausencia' or request.resolver_match.url_name == 'editar_ausencia' or request.resolver_match.url_name == 'registar_regresso_ausencia' %} active{% endif %}">
+                    <a
+                      href="{% url 'enfermagem:lista_ausencias' %}"
+                      class="pc-link"
+                    >
+                      Ausências / Transferências
+                    </a>
+                  </li>
+                {% endif %}
+
+                {% if pode_ver_isolamentos %}
+                  <li class="pc-item{% if request.resolver_match.url_name == 'isolamentos_ativos' or request.resolver_match.url_name == 'criar_isolamento' or request.resolver_match.url_name == 'editar_isolamento' or request.resolver_match.url_name == 'terminar_isolamento' %} active{% endif %}">
+                    <a
+                      href="{% url 'visitas:isolamentos_ativos' %}"
+                      class="pc-link"
+                    >
+                      Isolamentos ativos
                     </a>
                   </li>
                 {% endif %}
@@ -274,10 +294,10 @@
             </li>
           {% endif %}
 
-          <!-- FISIOTERAPIA -->
+          <!-- REABILITAÇÃO -->
           {% if pode_gerir_fisioterapia %}
             <li class="pc-item pc-caption">
-              <label>Fisioterapia</label>
+              <label>Reabilitação</label>
               <i data-feather="activity"></i>
             </li>
 
@@ -288,7 +308,7 @@
                 </span>
 
                 <span class="pc-mtext">
-                  Fisioterapia
+                  Reabilitação
                 </span>
 
                 <span class="pc-arrow">
@@ -704,6 +724,17 @@
 
                 <span class="pc-mtext">
                   Contas dos utentes
+                </span>
+              </a>
+            </li>
+
+            <li class="pc-item{% if request.resolver_match.url_name == 'mensalidades_utentes' or request.resolver_match.url_name == 'validar_pagamento_mensalidade' %} active{% endif %}">
+              <a href="{% url 'visitas:mensalidades_utentes' %}" class="pc-link">
+                <span class="pc-micon">
+                  <i data-feather="calendar"></i>
+                </span>
+                <span class="pc-mtext">
+                  Mensalidades
                 </span>
               </a>
             </li>

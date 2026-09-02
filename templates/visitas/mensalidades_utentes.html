@@ -1,0 +1,239 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Mensalidades dos utentes{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+      <div>
+        <h3 class="mb-1">Mensalidades dos utentes</h3>
+        <p class="text-muted mb-0">Cálculo dos dias faturados e validação dos pagamentos.</p>
+      </div>
+    </div>
+
+    <div class="alert alert-info" role="alert">
+      Os pagamentos registados nesta área são exclusivamente pagamentos de
+      mensalidades. Não alteram o saldo da conta pessoal do utente.
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+          <div class="col-md-2">
+            <label class="form-label" for="filtro-mes">Mês</label>
+            <select class="form-select" id="filtro-mes" name="mes">
+              {% for valor, nome in meses %}
+                <option value="{{ valor }}" {% if mes == valor %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="filtro-ano">Ano</label>
+            <select class="form-select" id="filtro-ano" name="ano">
+              {% for valor in anos %}
+                <option value="{{ valor }}" {% if ano == valor %}selected{% endif %}>{{ valor }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="filtro-piso">Piso</label>
+            <select class="form-select" id="filtro-piso" name="piso">
+              <option value="">Todos</option>
+              {% for valor, nome in pisos %}
+                <option value="{{ valor }}" {% if piso == valor %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label" for="filtro-estado">Pagamento</label>
+            <select class="form-select" id="filtro-estado" name="estado">
+              <option value="">Todos</option>
+              {% for valor, nome in estados %}
+                <option value="{{ valor }}" {% if estado == valor %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="filtro-q">Utente</label>
+            <input class="form-control" id="filtro-q" type="search" name="q" value="{{ q }}" placeholder="Nome ou processo">
+          </div>
+          <div class="col-md-1">
+            <button class="btn btn-primary w-100" type="submit">Ver</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-xl col-md-4">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+          <small class="text-muted">Valor calculado</small>
+          <h3 class="mb-0">{{ totais.total|default_if_none:"0"|floatformat:2 }} €</h3>
+        </div></div>
+      </div>
+      <div class="col-xl col-md-4">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+          <small class="text-muted">Dias faturados</small>
+          <h3 class="mb-0">{{ totais.dias|default_if_none:"0" }}</h3>
+        </div></div>
+      </div>
+      <div class="col-xl col-md-4">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+          <small class="text-muted">Pagamentos pendentes</small>
+          <h3 class="mb-0 text-warning">{{ total_pendentes }}</h3>
+          {% if total_revisao %}
+            <small class="text-danger">{{ total_revisao }} para revisão</small>
+          {% endif %}
+        </div></div>
+      </div>
+      <div class="col-xl col-md-4">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+          <small class="text-muted">Pagamentos parciais</small>
+          <h3 class="mb-0 text-info">{{ total_parciais }}</h3>
+        </div></div>
+      </div>
+      <div class="col-xl col-md-4">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+          <small class="text-muted">Pagamentos validados</small>
+          <h3 class="mb-0 text-success">{{ total_pagas }}</h3>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h5 class="mb-1">Mapa mensal</h5>
+          <small class="text-muted">O dia de entrada conta; o dia da saída não conta. As ausências só são descontadas nos utentes configurados para não as pagar.</small>
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="calcular">
+          <input type="hidden" name="ano" value="{{ ano }}">
+          <input type="hidden" name="mes" value="{{ mes }}">
+          <button type="submit" class="btn btn-success">Calcular/atualizar mês</button>
+        </form>
+      </div>
+      <div class="card-body table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Utente</th>
+              <th>Piso</th>
+              <th class="text-end">Valor/dia</th>
+              <th class="text-center">Estadia</th>
+              <th class="text-center">Ausências</th>
+              <th class="text-center">Faturados</th>
+              <th class="text-end">Total</th>
+              <th class="text-end">Recebido</th>
+              <th class="text-end">Em falta</th>
+              <th>Estado</th>
+              <th style="min-width: 360px;">Registar pagamento</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for mensalidade in page_obj %}
+              <tr>
+                <td>
+                  <strong>{{ mensalidade.utente.nome }}</strong>
+                  <div class="small text-muted">Processo {{ mensalidade.utente.numero_processo }}</div>
+                  <a class="btn btn-sm btn-link px-0" href="{% url 'visitas:configuracao_mensalidade_utente' mensalidade.utente.pk %}?ano={{ ano }}&mes={{ mes }}">
+                    Configurar mensalidade
+                  </a>
+                </td>
+                <td>{% if mensalidade.utente.quarto %}{{ mensalidade.utente.quarto.get_piso_display }}{% else %}—{% endif %}</td>
+                <td class="text-end">{{ mensalidade.valor_dia|floatformat:2 }} €</td>
+                <td class="text-center">{{ mensalidade.dias_estadia }}</td>
+                <td class="text-center">{{ mensalidade.dias_ausencia }}</td>
+                <td class="text-center fw-bold">{{ mensalidade.dias_faturaveis }}</td>
+                <td class="text-end fw-bold">{{ mensalidade.valor_total|floatformat:2 }} €</td>
+                <td class="text-end text-success fw-semibold">{{ mensalidade.valor_pago|floatformat:2 }} €</td>
+                <td class="text-end text-danger fw-semibold">{{ mensalidade.valor_em_falta|floatformat:2 }} €</td>
+                <td>
+                  {% if mensalidade.estado_pagamento == "PAGO" %}
+                    <span class="badge bg-success">Pago</span>
+                  {% elif mensalidade.estado_pagamento == "PARCIAL" %}
+                    <span class="badge bg-info text-dark">Parcial</span>
+                  {% elif mensalidade.estado_pagamento == "REVISAO" %}
+                    <span class="badge bg-danger">Revisão necessária</span>
+                  {% else %}
+                    <span class="badge bg-warning text-dark">Pendente</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if mensalidade.valor_em_falta > 0 %}
+                    <form method="post" action="{% url 'visitas:validar_pagamento_mensalidade' mensalidade.pk %}" class="row g-1">
+                      {% csrf_token %}
+                      <div class="col-4">
+                        <input type="number" name="valor" class="form-control form-control-sm" min="0.01" max="{{ mensalidade.valor_em_falta|floatformat:'2u' }}" step="0.01" value="{{ mensalidade.valor_em_falta|floatformat:'2u' }}" required aria-label="Valor recebido">
+                      </div>
+                      <div class="col-4">
+                        <input type="date" name="data_pagamento" class="form-control form-control-sm" value="{{ data_pagamento_padrao|date:'Y-m-d' }}" required aria-label="Data do pagamento">
+                      </div>
+                      <div class="col-4">
+                        <button class="btn btn-sm btn-primary w-100" type="submit">Registar</button>
+                      </div>
+                      <div class="col-12">
+                        <input type="text" name="observacoes" class="form-control form-control-sm" maxlength="250" placeholder="Observações (opcional)">
+                      </div>
+                    </form>
+                  {% else %}
+                    <div class="text-success fw-semibold">Mensalidade liquidada</div>
+                  {% endif %}
+
+                  {% if mensalidade.necessita_revisao %}
+                    <div class="small text-danger fw-semibold mt-2">
+                      O total mudou depois de existirem pagamentos. Reveja os valores.
+                      {% if mensalidade.valor_excedente > 0 %}
+                        Existe um excedente de {{ mensalidade.valor_excedente|floatformat:2 }} €.
+                      {% endif %}
+                    </div>
+                  {% endif %}
+
+                  {% with pagamentos=mensalidade.pagamentos.all %}
+                    {% if pagamentos %}
+                      <details class="mt-2">
+                        <summary class="small text-primary">Ver pagamentos registados</summary>
+                        <div class="small mt-1">
+                          {% for pagamento in pagamentos %}
+                            <div class="border-top py-1">
+                              <strong>{{ pagamento.valor|floatformat:2 }} €</strong>
+                              — {{ pagamento.data_pagamento|date:"d/m/Y" }}
+                              — {{ pagamento.registado_por.get_full_name|default:pagamento.registado_por.username }}
+                              {% if pagamento.observacoes %}<br>{{ pagamento.observacoes }}{% endif %}
+                            </div>
+                          {% endfor %}
+                        </div>
+                      </details>
+                    {% elif mensalidade.pago and mensalidade.confirmado_por %}
+                      <div class="small text-muted mt-2">
+                        Pagamento anterior confirmado por {{ mensalidade.confirmado_por.get_full_name|default:mensalidade.confirmado_por.username }}.
+                      </div>
+                    {% endif %}
+                  {% endwith %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="11" class="text-center text-muted py-5">
+                  Não existem mensalidades calculadas para este período. Use <strong>Calcular/atualizar mês</strong>.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if page_obj.paginator.num_pages > 1 %}
+        <div class="card-footer d-flex justify-content-between align-items-center">
+          <span class="text-muted small">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+          <div class="btn-group">
+            {% if page_obj.has_previous %}<a class="btn btn-sm btn-outline-secondary" href="?{% if query_sem_pagina %}{{ query_sem_pagina }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}
+            {% if page_obj.has_next %}<a class="btn btn-sm btn-outline-secondary" href="?{% if query_sem_pagina %}{{ query_sem_pagina }}&{% endif %}page={{ page_obj.next_page_number }}">Seguinte</a>{% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock content %}

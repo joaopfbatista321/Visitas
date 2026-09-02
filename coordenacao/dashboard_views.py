@@ -2,7 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, IntegerField
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils import timezone
@@ -784,7 +784,11 @@ def dashboard_cozinha(request):
     total_refeicoes = refeicoes.aggregate(total=Coalesce(Sum("quantidade_solicitada"), 0))["total"]
     consumidas = refeicoes.aggregate(total=Coalesce(Sum("quantidade_consumida"), 0))["total"]
     suplementos = produtos.aggregate(
-        total=Coalesce(Sum("quantidade_solicitada"), Decimal("0.00"))
+        total=Coalesce(
+            Sum("quantidade_solicitada"),
+            0,
+            output_field=IntegerField(),
+        )
     )["total"]
     etiquetas, refeicoes_dia = serie_data(
         pedidos.filter(tipo=TipoPedidoCozinha.REFEICOES), "data_servico", inicio, fim

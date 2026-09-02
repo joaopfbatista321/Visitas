@@ -5,8 +5,11 @@ from django.db.models import Q
 from visitas.models import Utente
 
 from .models import (
+    AreaReabilitacao,
     EstadoParticipacaoFisioterapia,
     EstadoSessaoFisioterapia,
+    GRUPO_POR_AREA_REABILITACAO,
+    GRUPOS_REABILITACAO,
     LocalSessaoFisioterapia,
     ParticipacaoFisioterapia,
     RegistoFisioterapia,
@@ -16,9 +19,22 @@ from .models import (
 )
 
 
-GRUPO_FISIOTERAPIA = "UCCI_Fisioterapia"
-
 User = get_user_model()
+
+
+def _areas_permitidas(utilizador):
+    if not utilizador or not utilizador.is_authenticated:
+        return []
+
+    grupos = set(
+        utilizador.groups.values_list("name", flat=True)
+    )
+
+    return [
+        area
+        for area, grupo in GRUPO_POR_AREA_REABILITACAO.items()
+        if grupo in grupos
+    ]
 
 
 class ProfissionalFisioterapiaChoiceField(
@@ -31,13 +47,13 @@ class ProfissionalFisioterapiaChoiceField(
 
 class SessaoFisioterapiaForm(forms.ModelForm):
     profissional = ProfissionalFisioterapiaChoiceField(
-        label="Fisioterapeuta responsável",
+        label="Profissional responsável",
         queryset=User.objects.none(),
         widget=forms.Select(
             attrs={"class": "form-select"}
         ),
         help_text=(
-            "Profissional que realizará a sessão e poderá "
+            "Profissional da área que realizará a sessão e poderá "
             "editar e validar as presenças."
         ),
     )
@@ -50,7 +66,7 @@ class SessaoFisioterapiaForm(forms.ModelForm):
         ),
         help_text=(
             "Pode selecionar um ou vários tipos de "
-            "fisioterapia ou reabilitação."
+            "intervenção da área escolhida."
         ),
         error_messages={
             "required": (
@@ -77,6 +93,7 @@ class SessaoFisioterapiaForm(forms.ModelForm):
     class Meta:
         model = SessaoFisioterapia
         fields = [
+            "area",
             "profissional",
             "tipo",
             "tipos_intervencao",
@@ -90,6 +107,9 @@ class SessaoFisioterapiaForm(forms.ModelForm):
         ]
 
         widgets = {
+            "area": forms.Select(
+                attrs={"class": "form-select"}
+            ),
             "tipo": forms.Select(
                 attrs={"class": "form-select"}
             ),
@@ -150,6 +170,35 @@ class SessaoFisioterapiaForm(forms.ModelForm):
 
         self.utilizador_atual = profissional
 
+        areas_permitidas = _areas_permitidas(profissional)
+        self.fields["area"].choices = [
+            escolha
+            for escolha in AreaReabilitacao.choices
+            if escolha[0] in areas_permitidas
+        ]
+
+        if self.is_bound:
+            area_selecionada = self.data.get("area")
+        elif self.instance and self.instance.pk:
+            area_selecionada = self.instance.area
+        else:
+            area_selecionada = (
+                self.initial.get("area")
+                or (areas_permitidas[0] if areas_permitidas else None)
+            )
+
+        if area_selecionada in areas_permitidas:
+            self.fields["area"].initial = area_selecionada
+            grupos_profissionais = [
+                GRUPO_POR_AREA_REABILITACAO[area_selecionada]
+            ]
+        else:
+            grupos_profissionais = [
+                grupo
+                for grupo in GRUPOS_REABILITACAO
+                if grupo in GRUPO_POR_AREA_REABILITACAO.values()
+            ]
+
         self.fields["inicio"].input_formats = [
             "%Y-%m-%dT%H:%M",
         ]
@@ -161,7 +210,7 @@ class SessaoFisioterapiaForm(forms.ModelForm):
             User.objects
             .filter(
                 is_active=True,
-                groups__name=GRUPO_FISIOTERAPIA,
+                groups__name__in=grupos_profissionais,
             )
             .distinct()
             .order_by(
@@ -185,14 +234,20 @@ class SessaoFisioterapiaForm(forms.ModelForm):
 
         tipos_intervencao = (
             TipoIntervencaoFisioterapia.objects
-            .filter(ativo=True)
+            .filter(
+                ativo=True,
+                area=area_selecionada,
+            )
         )
 
         if self.instance and self.instance.pk:
             tipos_intervencao = (
                 TipoIntervencaoFisioterapia.objects
                 .filter(
-                    Q(ativo=True)
+                    Q(
+                        ativo=True,
+                        area=area_selecionada,
+                    )
                     | Q(sessoes=self.instance)
                 )
                 .distinct()
@@ -243,6 +298,7 @@ class SessaoFisioterapiaForm(forms.ModelForm):
         )
 
         self.order_fields([
+            "area",
             "profissional",
             "tipo",
             "tipos_intervencao",
@@ -259,6 +315,7 @@ class SessaoFisioterapiaForm(forms.ModelForm):
         cleaned_data = super().clean()
 
         profissional = cleaned_data.get("profissional")
+        area = cleaned_data.get("area")
         tipo = cleaned_data.get("tipo")
         tipos_intervencao = cleaned_data.get(
             "tipos_intervencao"
@@ -278,6 +335,27 @@ class SessaoFisioterapiaForm(forms.ModelForm):
                     "Selecione pelo menos um tipo "
                     "de intervenção."
                 ),
+            )
+
+        if area and tipos_intervencao:
+            intervencoes_invalidas = tipos_intervencao.exclude(
+                area=area
+            )
+            if intervencoes_invalidas.exists():
+                self.add_error(
+                    "tipos_intervencao",
+                    "Selecione apenas intervenções da área escolhida.",
+                )
+
+        grupo_area = GRUPO_POR_AREA_REABILITACAO.get(area)
+        if (
+            profissional
+            and grupo_area
+            and not profissional.groups.filter(name=grupo_area).exists()
+        ):
+            self.add_error(
+                "profissional",
+                "Selecione um profissional da área escolhida.",
             )
 
         if (
@@ -364,7 +442,7 @@ class SessaoFisioterapiaForm(forms.ModelForm):
             self.add_error(
                 "inicio",
                 (
-                    "O fisioterapeuta selecionado já possui "
+                    "O profissional selecionado já possui "
                     "outra sessão marcada neste horário."
                 ),
             )
@@ -483,6 +561,7 @@ class RegistoFisioterapiaForm(forms.ModelForm):
         self,
         *args,
         participacao=None,
+        area=None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -493,14 +572,14 @@ class RegistoFisioterapiaForm(forms.ModelForm):
 
         tipos_intervencao = (
             TipoIntervencaoFisioterapia.objects
-            .filter(ativo=True)
+            .filter(ativo=True, area=area)
         )
 
         if self.instance and self.instance.pk:
             tipos_intervencao = (
                 TipoIntervencaoFisioterapia.objects
                 .filter(
-                    Q(ativo=True)
+                    Q(ativo=True, area=area)
                     | Q(registos=self.instance)
                 )
                 .distinct()

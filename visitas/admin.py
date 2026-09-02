@@ -1,5 +1,14 @@
 from django.contrib import admin
-from .models import Quarto, Utente, Visita, Externo, Isolamento, MovimentoFinanceiro
+from .models import (
+    Externo,
+    Isolamento,
+    Mensalidade,
+    MovimentoFinanceiro,
+    PagamentoMensalidade,
+    Quarto,
+    Utente,
+    Visita,
+)
 
 
 # =========================
@@ -7,7 +16,7 @@ from .models import Quarto, Utente, Visita, Externo, Isolamento, MovimentoFinanc
 # =========================
 @admin.register(Quarto)
 class QuartoAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "piso", "descricao")
+    list_display = ("codigo", "piso", "capacidade", "descricao")
     list_filter = ("piso",)
     search_fields = ("codigo", "descricao")
 
@@ -36,6 +45,9 @@ class UtenteAdmin(admin.ModelAdmin):
         "nome",
         "numero_processo",
         "quarto",
+        "valor_caucao",
+        "valor_dia",
+        "paga_dias_ausencia",
         "ativo",
         "em_isolamento",
     )
@@ -199,4 +211,74 @@ class MovimentoFinanceiroAdmin(admin.ModelAdmin):
     search_fields = ("utente__nome", "descricao")
 
 
+@admin.register(Mensalidade)
+class MensalidadeAdmin(admin.ModelAdmin):
+    list_display = (
+        "utente",
+        "ano",
+        "mes",
+        "dias_faturaveis",
+        "valor_total",
+        "pago",
+        "necessita_revisao",
+        "confirmado_por",
+    )
+    list_filter = ("ano", "mes", "pago", "necessita_revisao")
+    search_fields = ("utente__nome", "utente__numero_processo")
+    readonly_fields = (
+        "utente",
+        "ano",
+        "mes",
+        "valor_dia",
+        "dias_estadia",
+        "dias_ausencia",
+        "dias_faturaveis",
+        "valor_total",
+        "pago",
+        "pago_em",
+        "observacoes",
+        "confirmado_por",
+        "necessita_revisao",
+        "criado_em",
+        "atualizado_em",
+    )
 
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(PagamentoMensalidade)
+class PagamentoMensalidadeAdmin(admin.ModelAdmin):
+    list_display = (
+        "mensalidade",
+        "valor",
+        "data_pagamento",
+        "registado_por",
+        "criado_em",
+    )
+    list_filter = ("data_pagamento", "criado_em")
+    search_fields = (
+        "mensalidade__utente__nome",
+        "mensalidade__utente__numero_processo",
+        "observacoes",
+    )
+    readonly_fields = (
+        "mensalidade",
+        "valor",
+        "data_pagamento",
+        "observacoes",
+        "registado_por",
+        "criado_em",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

@@ -1,6 +1,9 @@
 from .settings import *
 
 
+ROOT_URLCONF = "config.urls_test"
+
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",

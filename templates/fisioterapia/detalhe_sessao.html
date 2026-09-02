@@ -136,7 +136,12 @@
 
           <div class="col-md-6">
             <p>
-              <strong>Fisioterapeuta responsável:</strong><br>
+              <strong>Área:</strong><br>
+              {{ sessao.get_area_display }}
+            </p>
+
+            <p>
+              <strong>Profissional responsável:</strong><br>
               {{ sessao.profissional.get_full_name|default:sessao.profissional.username }}
             </p>
 

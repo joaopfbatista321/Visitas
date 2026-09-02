@@ -46,6 +46,14 @@
           >
             <i data-feather="log-out" class="me-1"></i>Ausências / Transferências
           </a>
+          {% if pode_ver_isolamentos %}
+            <a
+              href="{% url 'visitas:isolamentos_ativos' %}"
+              class="btn {% if request.resolver_match.url_name == 'isolamentos_ativos' or request.resolver_match.url_name == 'criar_isolamento' or request.resolver_match.url_name == 'editar_isolamento' or request.resolver_match.url_name == 'terminar_isolamento' %}btn-danger{% else %}btn-outline-danger{% endif %}"
+            >
+              <i data-feather="shield" class="me-1"></i>Isolamentos
+            </a>
+          {% endif %}
           <a
             href="{% url 'enfermagem:calendario_reabilitacao' %}"
             class="btn {% if request.resolver_match.url_name == 'calendario_reabilitacao' %}btn-danger{% else %}btn-outline-danger{% endif %}"

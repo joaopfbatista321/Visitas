@@ -7,21 +7,27 @@
     <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <div>
-        <h2 class="mb-0">Financeiro do Utente</h2>
+        <h2 class="mb-0">Conta pessoal do utente</h2>
         <small class="text-muted">{{ utente.nome }}</small>
       </div>
 
       <a href="{% url 'visitas:lista_financeira_utentes' %}"
          class="btn btn-outline-secondary btn-sm">
-        Voltar às contas
+        Voltar às contas pessoais
       </a>
+    </div>
+
+    <div class="alert alert-info" role="alert">
+      Este saldo é dinheiro próprio do utente para despesas pessoais. Os
+      movimentos desta conta não pagam mensalidades, e os pagamentos de
+      mensalidades não alteram este saldo.
     </div>
 
     <!-- SALDO -->
     <div class="card mb-3">
       <div class="card-body d-flex justify-content-between align-items-center">
         <div>
-          <h5 class="mb-1">Saldo atual</h5>
+          <h5 class="mb-1">Saldo da conta pessoal</h5>
           <span class="fs-3 fw-bold">
             {{ utente.saldo }} €
           </span>
@@ -32,12 +38,13 @@
     <!-- NOVO MOVIMENTO -->
     <div class="card mb-3">
       <div class="card-header">
-        <h5 class="mb-0">Novo movimento financeiro</h5>
+        <h5 class="mb-0">Novo movimento da conta pessoal</h5>
       </div>
 
       <div class="card-body">
         <form method="post" class="row g-3">
           {% csrf_token %}
+          <input type="hidden" name="acao" value="movimento">
 
           <div class="col-md-3">
             <label class="form-label">Tipo</label>
@@ -56,7 +63,7 @@
 
           <div class="col-12 text-end">
             <button type="submit" class="btn btn-primary">
-              Registar movimento
+              Registar movimento pessoal
             </button>
           </div>
         </form>
@@ -66,7 +73,7 @@
     <!-- HISTÓRICO -->
     <div class="card">
       <div class="card-header">
-        <h5 class="mb-0">Histórico de movimentos</h5>
+        <h5 class="mb-0">Movimentos da conta pessoal</h5>
       </div>
 
       <div class="card-body table-responsive">
@@ -101,7 +108,7 @@
             {% empty %}
               <tr>
                 <td colspan="5" class="text-center">
-                  Sem movimentos financeiros.
+                  Sem movimentos na conta pessoal.
                 </td>
               </tr>
             {% endfor %}

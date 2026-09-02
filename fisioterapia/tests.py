@@ -17,6 +17,7 @@ from visitas.models import (
 )
 
 from .models import (
+    AreaReabilitacao,
     CategoriaIntervencaoFisioterapia,
     EstadoParticipacaoFisioterapia,
     EstadoSessaoFisioterapia,
@@ -28,26 +29,88 @@ from .models import (
     TipoIntervencaoFisioterapia,
     TipoSessaoFisioterapia,
 )
+from .forms import SessaoFisioterapiaForm
 from .services import alterar_estado_participacao
 
 
 User = get_user_model()
 
 
+class CatalogoIntervencoesReabilitacaoTests(TestCase):
+    def test_catalogo_esta_separado_por_area(self):
+        esperados = {
+            AreaReabilitacao.FISIOTERAPIA: 16,
+            AreaReabilitacao.TERAPIA_OCUPACIONAL: 23,
+            AreaReabilitacao.TERAPIA_FALA: 17,
+        }
+
+        for area, quantidade in esperados.items():
+            self.assertEqual(
+                TipoIntervencaoFisioterapia.objects.filter(
+                    area=area,
+                    ativo=True,
+                ).count(),
+                quantidade,
+            )
+
+        self.assertEqual(
+            TipoIntervencaoFisioterapia.objects.filter(
+                nome="Outros",
+                ativo=True,
+            ).count(),
+            3,
+        )
+
+    def test_formulario_mostra_apenas_intervencoes_da_area(self):
+        grupo, _ = Group.objects.get_or_create(
+            name="UCCI_TerapiaOcupacional"
+        )
+        profissional = User.objects.create_user(
+            username="terapeuta_ocupacional",
+            password="teste",
+        )
+        profissional.groups.add(grupo)
+
+        form = SessaoFisioterapiaForm(
+            profissional=profissional,
+        )
+        intervencoes = form.fields[
+            "tipos_intervencao"
+        ].queryset
+
+        self.assertTrue(intervencoes.exists())
+        self.assertFalse(
+            intervencoes.exclude(
+                area=AreaReabilitacao.TERAPIA_OCUPACIONAL
+            ).exists()
+        )
+        self.assertTrue(
+            intervencoes.filter(nome="Treino de AVDI").exists()
+        )
+
+        self.client.force_login(profissional)
+        resposta = self.client.get(
+            reverse("fisioterapia:criar_sessao")
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, "Terapia Ocupacional")
+        self.assertContains(resposta, "Treino de AVDI")
+
+
 class FisioterapiaBaseTests(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.grupo_fisioterapia = Group.objects.create(
+        cls.grupo_fisioterapia = Group.objects.get_or_create(
             name="UCCI_Fisioterapia"
-        )
+        )[0]
 
-        cls.grupo_enfermagem = Group.objects.create(
+        cls.grupo_enfermagem = Group.objects.get_or_create(
             name="UCCI_Enfermagem"
-        )
+        )[0]
 
-        cls.grupo_rececao = Group.objects.create(
+        cls.grupo_rececao = Group.objects.get_or_create(
             name="UCCI_Rececao"
-        )
+        )[0]
 
         cls.fisioterapeuta_a = User.objects.create_user(
             username="fisio_a",
@@ -273,6 +336,7 @@ class AtribuicaoProfissionalTests(
                 "fisioterapia:criar_sessao"
             ),
             {
+                "area": AreaReabilitacao.FISIOTERAPIA,
                 "profissional": (
                     self.fisioterapeuta_b.pk
                 ),
@@ -457,6 +521,7 @@ class EstadoSessaoFisioterapiaTests(
                 EstadoParticipacaoFisioterapia.FALTOU
             ),
             utilizador=self.fisioterapeuta_a,
+            motivo="Utente não compareceu.",
         )
 
         sessao.refresh_from_db()

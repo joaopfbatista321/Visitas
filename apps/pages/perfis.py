@@ -435,3 +435,24 @@ PERFIS_PORTAL = {
 
 
 }
+
+
+PERFIS_PORTAL["UCCI_TerapiaOcupacional"] = {
+    **PERFIS_PORTAL["UCCI_Fisioterapia"],
+    "slug": "terapia-ocupacional",
+    "titulo": "Terapia Ocupacional",
+    "descricao": (
+        "Planeamento, realização e registo das intervenções "
+        "de Terapia Ocupacional."
+    ),
+}
+
+PERFIS_PORTAL["UCCI_TerapiaFala"] = {
+    **PERFIS_PORTAL["UCCI_Fisioterapia"],
+    "slug": "terapia-da-fala",
+    "titulo": "Terapia da Fala",
+    "descricao": (
+        "Planeamento, realização e registo das intervenções "
+        "de Terapia da Fala."
+    ),
+}

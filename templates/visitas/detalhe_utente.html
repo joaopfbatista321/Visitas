@@ -34,7 +34,7 @@
             href="{% url 'visitas:financeiro_utente' utente.pk %}"
             class="btn btn-outline-success btn-sm"
           >
-            Financeiro
+            Conta pessoal
           </a>
         {% endif %}
 
@@ -44,15 +44,6 @@
             class="btn btn-primary btn-sm"
           >
             Registar visita
-          </a>
-        {% endif %}
-
-        {% if pode_ver_isolamentos and not utente.isolamento_ativo %}
-          <a
-            href="{% url 'visitas:criar_isolamento' utente.pk %}"
-            class="btn btn-outline-danger btn-sm"
-          >
-            Registar isolamento
           </a>
         {% endif %}
 
@@ -189,7 +180,102 @@
                         Registar queda
                       </a>
                     {% endif %}
+
+                    {% if pode_criar_registos_enfermagem and not utente.data_saida %}
+                      {% if ausencia_ativa %}
+                        <a
+                          href="{% url 'enfermagem:detalhe_ausencia' ausencia_ativa.pk %}"
+                          class="btn btn-outline-danger btn-sm"
+                        >
+                          <i data-feather="log-out" class="me-1"></i>
+                          Ver ausência ativa
+                        </a>
+
+                        <a
+                          href="{% url 'enfermagem:registar_regresso_ausencia' ausencia_ativa.pk %}"
+                          class="btn btn-success btn-sm"
+                        >
+                          <i data-feather="log-in" class="me-1"></i>
+                          Registar regresso
+                        </a>
+                      {% else %}
+                        <a
+                          href="{% url 'enfermagem:criar_ausencia' utente.pk %}"
+                          class="btn btn-outline-danger btn-sm"
+                        >
+                          <i data-feather="log-out" class="me-1"></i>
+                          Registar ausência
+                        </a>
+                      {% endif %}
+                    {% endif %}
+
+                    {% if pode_ver_isolamentos and not utente.data_saida %}
+                      {% if utente.isolamento_ativo %}
+                        <a
+                          href="{% url 'visitas:editar_isolamento' utente.isolamento_ativo.pk %}"
+                          class="btn btn-outline-danger btn-sm"
+                        >
+                          <i data-feather="shield" class="me-1"></i>
+                          Gerir isolamento
+                        </a>
+                      {% else %}
+                        <a
+                          href="{% url 'visitas:criar_isolamento' utente.pk %}"
+                          class="btn btn-outline-danger btn-sm"
+                        >
+                          <i data-feather="shield" class="me-1"></i>
+                          Registar isolamento
+                        </a>
+                      {% endif %}
+                    {% endif %}
                   </div>
+
+                  {% if ausencia_ativa %}
+                    <div class="alert alert-danger mt-3 mb-0 py-2 small">
+                      <strong>Utente ausente desde</strong>
+                      {{ ausencia_ativa.data_hora_inicio|date:"d/m/Y H:i" }}.
+                      {% if ausencia_ativa.destino %}
+                        Destino: {{ ausencia_ativa.destino }}.
+                      {% endif %}
+                    </div>
+                  {% endif %}
+
+                  {% if pode_ver_registos_enfermagem and ausencias_recentes %}
+                    <div class="table-responsive mt-3">
+                      <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                          <tr>
+                            <th>Ausência</th>
+                            <th>Início</th>
+                            <th>Regresso</th>
+                            <th>Estado</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for ausencia in ausencias_recentes %}
+                            <tr>
+                              <td>{{ ausencia.get_tipo_display }}</td>
+                              <td>{{ ausencia.data_hora_inicio|date:"d/m/Y H:i" }}</td>
+                              <td>{{ ausencia.data_hora_regresso|date:"d/m/Y H:i"|default:"—" }}</td>
+                              <td>
+                                {% if ausencia.estado == "ATIVA" %}
+                                  <span class="badge bg-danger">Ausente</span>
+                                {% elif ausencia.estado == "TERMINADA" %}
+                                  <span class="badge bg-success">Regressou</span>
+                                {% else %}
+                                  <span class="badge bg-secondary">Cancelada</span>
+                                {% endif %}
+                              </td>
+                              <td class="text-end">
+                                <a href="{% url 'enfermagem:detalhe_ausencia' ausencia.pk %}" class="btn btn-sm btn-outline-danger">Abrir</a>
+                              </td>
+                            </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  {% endif %}
 
                   {% if utente.data_saida %}
                     <div class="alert alert-secondary mt-3 mb-0 py-2 small">
@@ -200,7 +286,7 @@
               </div>
             {% endif %}
 
-            <!-- Fisioterapia -->
+            <!-- Reabilitação -->
             {% if pode_ver_registos_clinicos or pode_gerir_fisioterapia %}
               <div class="col-lg-6">
                 <div class="border rounded h-100 p-3">
@@ -210,9 +296,9 @@
                     </div>
 
                     <div>
-                      <h6 class="mb-0">Fisioterapia</h6>
+                      <h6 class="mb-0">Reabilitação</h6>
                       <small class="text-muted">
-                        Reabilitação e acompanhamento funcional
+                        Fisioterapia, Terapia Ocupacional e Terapia da Fala
                       </small>
                     </div>
                   </div>
@@ -364,6 +450,77 @@
         </p>
       </div>
     </div>
+
+    {% if pode_ver_financeiro %}
+      <!-- MENSALIDADE -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+              <div class="avtar bg-light-success text-success">
+                <i data-feather="credit-card"></i>
+              </div>
+              <div>
+                <h5 class="mb-0">Mensalidade</h5>
+                <small class="text-muted">Configuração financeira do utente</small>
+              </div>
+            </div>
+
+            <a href="{% url 'visitas:configuracao_mensalidade_utente' utente.pk %}" class="btn btn-outline-success btn-sm">Configurar mensalidade</a>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <small class="text-muted d-block">Valor diário</small>
+              <strong class="fs-5">{{ utente.valor_dia|floatformat:2 }} €</strong>
+            </div>
+
+            <div class="col-md-4">
+              <small class="text-muted d-block">Cobrança durante ausências</small>
+              {% if utente.paga_dias_ausencia %}
+                <span class="badge bg-success">Dias cobrados</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Dias descontados</span>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- CAUÇÃO -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header">
+          <h5 class="mb-0">Caução</h5>
+          <small class="text-muted">Valor administrativo independente da mensalidade e da conta pessoal.</small>
+        </div>
+        <div class="card-body">
+          <small class="text-muted d-block">Valor da caução</small>
+          {% if utente.valor_caucao > 0 %}
+            <strong class="fs-5">{{ utente.valor_caucao|floatformat:2 }} €</strong>
+          {% else %}
+            <span class="text-muted">Não definida</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- CONTA PESSOAL -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <h5 class="mb-0">Conta pessoal do utente</h5>
+            <small class="text-muted">Dinheiro próprio para despesas pessoais; não corresponde à mensalidade.</small>
+          </div>
+          <a href="{% url 'visitas:financeiro_utente' utente.pk %}" class="btn btn-outline-primary btn-sm">Abrir conta pessoal</a>
+        </div>
+        <div class="card-body">
+          <small class="text-muted d-block">Saldo da conta pessoal</small>
+          <strong class="fs-5">{{ utente.saldo|floatformat:2 }} €</strong>
+        </div>
+      </div>
+    {% endif %}
 
     <!-- VISITAS -->
     {% if pode_ver_visitas %}

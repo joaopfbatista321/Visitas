@@ -1,0 +1,112 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Mapa de ocupação{% endblock title %}
+
+{% block content %}
+<div class="pc-container">
+  <div class="pc-content">
+    <div class="page-header">
+      <div class="page-block">
+        <h3 class="mb-1">Mapa de ocupação</h3>
+        <p class="text-muted mb-0">Taxa de ocupação e presença física por piso.</p>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label" for="periodo">Período</label>
+            <select class="form-select" id="periodo" name="periodo">
+              <option value="dia" {% if periodo == "dia" %}selected{% endif %}>Dia</option>
+              <option value="semana" {% if periodo == "semana" %}selected{% endif %}>Semana</option>
+              <option value="mes" {% if periodo == "mes" %}selected{% endif %}>Mês</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="data">Data de referência</label>
+            <input class="form-control" id="data" type="date" name="data" value="{{ referencia|date:'Y-m-d' }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="piso">Piso</label>
+            <select class="form-select" id="piso" name="piso">
+              <option value="">Todos os pisos</option>
+              {% for valor, nome in pisos %}
+                <option value="{{ valor }}" {% if piso == valor %}selected{% endif %}>{{ nome }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button class="btn btn-primary flex-grow-1" type="submit">Consultar</button>
+            <a class="btn btn-light" href="{% url 'visitas:mapa_ocupacao' %}">Hoje</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <strong>Período:</strong> {{ inicio|date:"d/m/Y" }} a {{ fim_inclusivo|date:"d/m/Y" }}.
+      A ocupação administrativa mantém a cama atribuída durante ausências; a presença física desconta esses dias.
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+          <small class="text-muted">Capacidade</small>
+          <h3 class="mb-0">{{ total.capacidade }} camas</h3>
+        </div></div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+          <small class="text-muted">Taxa de ocupação</small>
+          <h3 class="mb-0 text-primary">{% if total.taxa_ocupacao is not None %}{{ total.taxa_ocupacao|floatformat:1 }}%{% else %}—{% endif %}</h3>
+        </div></div>
+      </div>
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+          <small class="text-muted">Presença física</small>
+          <h3 class="mb-0 text-success">{% if total.taxa_presenca is not None %}{{ total.taxa_presenca|floatformat:1 }}%{% else %}—{% endif %}</h3>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+      <div class="card-header"><h5 class="mb-0">Ocupação por piso</h5></div>
+      <div class="card-body table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Piso</th>
+              <th class="text-center">Camas</th>
+              <th class="text-center">Camas-dia disponíveis</th>
+              <th class="text-center">Camas-dia ocupadas</th>
+              <th class="text-center">Camas-dia com presença</th>
+              <th class="text-end">Ocupação</th>
+              <th class="text-end">Presença</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for linha in linhas %}
+              <tr>
+                <td><strong>{{ linha.piso_nome }}</strong></td>
+                <td class="text-center">{{ linha.capacidade }}</td>
+                <td class="text-center">{{ linha.camas_dia_disponiveis }}</td>
+                <td class="text-center">{{ linha.ocupacao_camas_dia }}</td>
+                <td class="text-center">{{ linha.presenca_camas_dia }}</td>
+                <td class="text-end fw-bold">{% if linha.taxa_ocupacao is not None %}{{ linha.taxa_ocupacao|floatformat:1 }}%{% else %}—{% endif %}</td>
+                <td class="text-end">{% if linha.taxa_presenca is not None %}{{ linha.taxa_presenca|floatformat:1 }}%{% else %}—{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if total.capacidade == 0 %}
+      <div class="alert alert-warning mt-3">
+        Configure o número de camas de cada quarto na administração para obter a taxa de ocupação.
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}

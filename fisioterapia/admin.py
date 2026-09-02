@@ -9,12 +9,14 @@ class TipoIntervencaoFisioterapiaAdmin(
 ):
     list_display = [
         "nome",
+        "area",
         "categoria",
         "ativo",
         "ordem",
     ]
 
     list_filter = [
+        "area",
         "categoria",
         "ativo",
     ]
@@ -30,6 +32,7 @@ class TipoIntervencaoFisioterapiaAdmin(
     ]
 
     ordering = [
+        "area",
         "ordem",
         "categoria",
         "nome",
@@ -41,6 +44,7 @@ class TipoIntervencaoFisioterapiaAdmin(
             {
                 "fields": [
                     "nome",
+                    "area",
                     "categoria",
                     "descricao",
                 ],

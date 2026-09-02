@@ -8,6 +8,7 @@ from .models import (
     Isolamento,
     MeioTransporte,
     MovimentoFinanceiro,
+    PagamentoMensalidade,
     PedidoTransporte,
     TipoAlta,
     Transporte,
@@ -70,6 +71,9 @@ class UtenteForm(BaseStyledModelForm):
             "alerta_visitas",
             "observacoes",
             "saldo",
+            "valor_caucao",
+            "valor_dia",
+            "paga_dias_ausencia",
             "contacto_emergencia1_nome",
             "contacto_emergencia1_telefone",
             "contacto_emergencia1_parentesco",
@@ -84,6 +88,12 @@ class UtenteForm(BaseStyledModelForm):
             "data_saida": DateInput(),
             "observacoes": forms.Textarea(attrs={"rows": 4}),
             "alerta_visitas": forms.Textarea(attrs={"rows": 3}),
+            "valor_dia": forms.NumberInput(
+                attrs={"step": "0.01", "min": "0"}
+            ),
+            "valor_caucao": forms.NumberInput(
+                attrs={"step": "0.01", "min": "0"}
+            ),
         }
 
 
@@ -206,6 +216,48 @@ class MovimentoFinanceiroForm(forms.ModelForm):
                 attrs={
                     "class": "form-control",
                     "placeholder": "Justificação obrigatória",
+                }
+            ),
+        }
+
+
+class ConfiguracaoMensalidadeUtenteForm(forms.ModelForm):
+    class Meta:
+        model = Utente
+        fields = ["valor_dia", "paga_dias_ausencia"]
+        widgets = {
+            "valor_dia": forms.NumberInput(
+                attrs={
+                    "class": "form-control",
+                    "step": "0.01",
+                    "min": "0",
+                }
+            ),
+            "paga_dias_ausencia": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+        }
+
+
+class PagamentoMensalidadeForm(forms.ModelForm):
+    class Meta:
+        model = PagamentoMensalidade
+        fields = ["valor", "data_pagamento", "observacoes"]
+        widgets = {
+            "valor": forms.NumberInput(
+                attrs={
+                    "class": "form-control form-control-sm",
+                    "step": "0.01",
+                    "min": "0.01",
+                }
+            ),
+            "data_pagamento": DateInput(
+                attrs={"class": "form-control form-control-sm"}
+            ),
+            "observacoes": forms.TextInput(
+                attrs={
+                    "class": "form-control form-control-sm",
+                    "placeholder": "Observações (opcional)",
                 }
             ),
         }

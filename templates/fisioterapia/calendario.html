@@ -270,7 +270,7 @@
 
           {% for intervencao in tipos_intervencao %}
             <option value="{{ intervencao.pk }}">
-              {{ intervencao.nome }}
+              {{ intervencao.get_area_display }} — {{ intervencao.nome }}
             </option>
           {% endfor %}
         </select>
@@ -315,7 +315,7 @@
 
     <div>
       <h5 class="mb-1">
-        Calendário de Fisioterapia
+        Calendário de Reabilitação
       </h5>
 
       <small

@@ -175,7 +175,7 @@ class FiltroFisioterapiaForm(FiltroPeriodoPisoForm):
         choices=[("", "Individual e grupo"), *TipoSessaoFisioterapia.choices],
     )
     profissional = forms.ModelChoiceField(
-        label="Fisioterapeuta",
+        label="Profissional de Reabilitação",
         required=False,
         queryset=User.objects.none(),
         empty_label="Todos os profissionais",
@@ -184,7 +184,12 @@ class FiltroFisioterapiaForm(FiltroPeriodoPisoForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["profissional"].queryset = User.objects.filter(
-            groups__name="UCCI_Fisioterapia", is_active=True
+            groups__name__in=(
+                "UCCI_Fisioterapia",
+                "UCCI_TerapiaOcupacional",
+                "UCCI_TerapiaFala",
+            ),
+            is_active=True,
         ).distinct().order_by("first_name", "last_name", "username")
 
 

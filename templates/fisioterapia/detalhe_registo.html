@@ -7,7 +7,7 @@
   <div>
     <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
       <h4 class="mb-0">
-        Registo de Fisioterapia
+        Registo de Reabilitação
       </h4>
 
       {% if registo.visibilidade == "CONFIDENCIAL" %}
@@ -27,6 +27,7 @@
 
     <p class="text-muted mb-0">
       {{ registo.utente.nome }}
+      · {{ registo.get_area_display }}
       · Processo {{ registo.utente.numero_processo }}
       · {{ registo.data_registo|date:"d/m/Y H:i" }}
     </p>
@@ -256,8 +257,8 @@
         <strong>Registo do grupo profissional</strong>
 
         <div class="small mt-1">
-          Este conteúdo está disponível para a equipa
-          de Fisioterapia.
+          Este conteúdo está disponível para os profissionais
+          da mesma área de Reabilitação.
         </div>
       </div>
 
@@ -267,7 +268,8 @@
 
         <div class="small mt-1">
           Disponível para Enfermagem, Médicos, Psicologia,
-          Fisioterapia e Serviço Social.
+          Fisioterapia, Terapia Ocupacional, Terapia da Fala
+          e Serviço Social.
         </div>
       </div>
     {% endif %}
